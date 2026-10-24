@@ -1,0 +1,8 @@
+{
+  // Tests run in Node: they may use Node APIs, the game code (src/) may not.
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "types": ["vite/client", "node"]
+  },
+  "include": ["./**/*.ts", "../src/**/*.ts", "../src/**/*.json"]
+}
