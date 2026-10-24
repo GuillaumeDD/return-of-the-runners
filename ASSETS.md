@@ -1,0 +1,12 @@
+# Assets
+
+Every graphics, sound, music, font or level-pack file in this repository is listed
+here with its author, source and license. Files without an entry are not merged.
+
+- Project assets and levels are licensed under **CC BY-SA 4.0** unless stated otherwise.
+- Third-party assets must be CC0, CC BY, CC BY-SA or GPL-3.0 compatible.
+- **Nothing extracted from the original game** (graphics, sound, music, level data).
+
+| File              | Author | Source | License |
+| ----------------- | ------ | ------ | ------- |
+| _(no assets yet)_ |        |        |         |

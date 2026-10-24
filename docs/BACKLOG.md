@@ -1,0 +1,19 @@
+# Backlog
+
+Scoped work items. Ideas start in the Growth section of `docs/PRD.md`.
+Each item lands in its own commit, which also flips its status here.
+
+Statuses: `todo` / `in-progress` / `done`.
+
+| ID    | Item                                                    | Acceptance criteria                                                                                                                                         | Status |
+| ----- | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| B-001 | Project skeleton (step 0)                               | TS strict + Vite build; ESLint + Prettier; Vitest; EN/FR i18n with a test that both catalogs have the same keys; strict CSP                                 | done   |
+| B-002 | CI                                                      | On every PR and push to `main`: `npm ci`, typecheck, lint, test, build, `npm audit --omit=dev`, gitleaks over full history                                  | done   |
+| B-003 | GitHub Pages deploy                                     | Push to `main` publishes `dist/` to Pages; workflow has least-privilege permissions; actions pinned by SHA                                                  | done   |
+| B-004 | Level format v1 + validator                             | JSON schema documented in ARCHITECTURE; strict validator rejects unknown versions, oversized grids and unknown tiles; fuzz test with random/malformed input | todo   |
+| B-005 | Simulation core: grid, movement, ladders, bars, falling | Pure module under `src/sim/`; enumerated unit tests per rule                                                                                                | todo   |
+| B-006 | Digging and hole refill                                 | Dig left/right, refill timer, player death in refilled hole; unit tests                                                                                     | todo   |
+| B-007 | Gold and exit                                           | Collect all gold, exit appears/opens, level complete; unit tests                                                                                            | todo   |
+| B-008 | Monks and AI                                            | Chase, fall into holes, carry/drop gold, respawn; randomized cross-check of pathfinding against a naive reference                                           | todo   |
+| B-009 | Renderer + input + first playable level                 | Canvas renderer, keyboard input, one hand-made level playable in the deployed build                                                                         | todo   |
+| B-010 | Replay determinism                                      | Recorded input log replays to the same state hash in Node and in a headless browser (Playwright)                                                            | todo   |
