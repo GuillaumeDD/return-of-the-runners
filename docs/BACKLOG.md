@@ -2,6 +2,7 @@
 
 Scoped work items. Ideas start in the Growth section of `docs/PRD.md`.
 Each item lands in its own commit, which also flips its status here.
+Step 1 (B-004 to B-010) is planned in [`plans/step-1.md`](plans/step-1.md), including the delivery order.
 
 Statuses: `todo` / `in-progress` / `done`.
 
