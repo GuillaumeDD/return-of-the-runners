@@ -21,10 +21,13 @@ Every new runtime dependency is justified in its PR (CLAUDE.md § Security).
 ## Module layout
 
 ```
-index.html ── src/main.ts        entry point: wires DOM, input, rendering
+index.html ── src/main.ts        entry point: wires DOM, input, loop, rendering
               src/i18n/          UI strings (en, fr)
               src/sim/           pure, deterministic game simulation
-              src/render/        (step 1) Canvas 2D rendering of a simulation state
+              src/game/loop.ts   fixed-timestep accumulator (real time → whole ticks)
+              src/input/         keyboard → per-tick PlayerInput, via a bindings table
+              src/render/        Canvas 2D rendering of a simulation state
+              src/levels/        bundled levels (JSON, validated at load like any import)
               src/level/         level format: types, validator (migrations from v2 on)
 tests/                           Vitest tests, mirroring src/
 tests/fixtures/levels/           one fixture set per level format version
@@ -64,6 +67,18 @@ Code: `src/sim/`. Entry points: `createState(level, seed)` and
 - Speeds are periods: an actor moves one sub-unit every `RUNNER_PERIOD.*` ticks.
 - **All tunable values live in `src/sim/rules.ts`** and are provisional until checked
   against the original (see the table below).
+
+## Game loop, input and rendering
+
+- `requestAnimationFrame` drives the loop; `advance()` turns elapsed time into whole
+  ticks using integer millionths of a tick (no drift at any refresh rate) and caps a
+  frame at 250 ms, so a background tab does not trigger a burst of catch-up ticks.
+- Input is sampled once per frame and applied to every tick of that frame. Keys are
+  bound by `KeyboardEvent.code` (physical position, so AZERTY works). Held keys are
+  cleared on window blur, since a key released while unfocused never fires `keyup`.
+- The renderer draws the state with placeholder shapes, `TILE_PX = 24` pixels per tile
+  (3 per sub-unit); the canvas is sized to the level and scaled by CSS.
+- Bundled levels go through `parseLevel` like any imported level.
 
 ## Level format
 

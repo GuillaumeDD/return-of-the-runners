@@ -6,7 +6,7 @@ editor. 1–2 players on one keyboard.
 
 **Play:** https://guillaumedd.github.io/return-of-the-runners/
 
-> Status: early development (project skeleton). See the [roadmap](docs/PRD.md#7-roadmap).
+> Status: early development: the runner can move around a first level. See the [roadmap](docs/PRD.md#7-roadmap).
 
 ## Development
 
