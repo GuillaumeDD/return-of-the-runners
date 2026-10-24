@@ -1,49 +1,51 @@
 # CLAUDE.md
 
-> This file says **how we work**. **What we build** (scope, features, targets,
-> licensing choices, roadmap) lives in [`docs/PRD.md`](docs/PRD.md). Read it before
-> starting any feature; if a request conflicts with the PRD, say so.
+This file says **how we work**. It delegates the rest:
+
+- **What we build** (scope, requirements, targets, licensing, roadmap, Growth) →
+  [`docs/PRD.md`](docs/PRD.md).
+- **How it is built** (stack, module layout, simulation, level format, i18n,
+  security architecture, build and deploy, observed original behavior) →
+  [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+
+If a request conflicts with either document, say so before acting. If a change makes
+either document wrong, update it in the same commit.
 
 ## 1. Project
 
-**Return of the Runners**: faithful browser remake of _Lode Runner: The Legend Returns_ (Presage/Sierra, 1994),
-with an integrated level editor. See `docs/PRD.md`.
+**Return of the Runners**: a faithful browser fan remake of _Lode Runner: The Legend
+Returns_ (Presage/Sierra, 1994), with an integrated level editor.
 
-### Stack
+### Read before you start
 
-- **Language & build:** TypeScript + Vite
-- **Rendering & audio:** Canvas 2D, WebAudio
-- **Tests:** Vitest (unit), Playwright (headless browser)
+| When you…                                    | Read first                                          |
+| -------------------------------------------- | --------------------------------------------------- |
+| start or scope a feature                     | `docs/PRD.md`, `docs/BACKLOG.md`                    |
+| touch code, dependencies, CI or the build    | `docs/ARCHITECTURE.md`                              |
+| implement or change gameplay                 | `docs/ARCHITECTURE.md` § Observed original behavior |
+| add or change an asset (image, sound, level) | `ASSETS.md`, `docs/PRD.md` § Content and licensing  |
 
-### Hard rules
+### Non-negotiables
 
-- **Assets:** original or recreated only. Never commit assets, music or data files
-  extracted from the original game.
-- **Asset provenance:** every asset file is listed in `ASSETS.md` with its author,
-  source and license. An asset without a provenance entry does not get merged.
-  Licenses must be compatible with the project licenses defined in the PRD.
-- **Architecture:** game logic is a pure, fixed-timestep simulation (integer ticks,
-  integer grid coordinates), fully separated from rendering, input and audio.
-- **Privacy:** the repo is public (GitHub Pages), so every commit is published.
-  Apply §5 "Privacy, secrets & publishing" before every push, not only at release.
-- **Level format:** versioned; every format change ships with a migration, and
-  every version has fixture files in `tests/fixtures/levels/` that migrations are
-  tested against.
+Short on purpose: each rule is detailed in the linked document, but holds even when
+you haven't read it.
+
+- **No original game content.** Never commit assets, music or data extracted from the
+  original game; every asset has an `ASSETS.md` entry (PRD § Content and licensing).
+- **Pure, deterministic simulation.** Game logic never touches the DOM, time, audio
+  or `Math.random` (ARCHITECTURE § Simulation).
+- **Versioned level format.** Every format change ships with a migration and fixtures
+  (ARCHITECTURE § Level format).
+- **Level data is untrusted.** Validate at the boundary; never `innerHTML`/`eval`
+  (ARCHITECTURE § Security).
+- **Public repo.** Every commit is published: apply §5 "Privacy, secrets &
+  publishing" before every push.
 
 ### Language
 
 - Code, comments, commits, PRs and docs: **English**.
-- No hard-coded user-facing strings: every UI string goes through `src/i18n/`, and a
-  new string lands with all supported translations (see PRD) in the same commit.
-
-### Key documents
-
-| File                   | Purpose                                                             |
-| ---------------------- | ------------------------------------------------------------------- |
-| `docs/PRD.md`          | What we build: scope, requirements, targets, roadmap, **Growth**    |
-| `docs/ARCHITECTURE.md` | How it is built; observed original behavior; intentional deviations |
-| `docs/BACKLOG.md`      | Tracked work items with acceptance criteria and status              |
-| `ASSETS.md`            | Provenance and license of every asset file                          |
+- No hard-coded user-facing strings: every UI string lands with all supported
+  translations in the same commit (ARCHITECTURE § Internationalization).
 
 ---
 
