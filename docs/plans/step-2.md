@@ -1,6 +1,6 @@
 # Step 2 plan: level editor v1
 
-Status: **proposed** (awaiting review). Roadmap: `docs/PRD.md` §7, step 2.
+Status: **approved** (PR #17). Roadmap: `docs/PRD.md` §7, step 2.
 Backlog items: B-011 to B-017.
 
 ## Goal
@@ -101,14 +101,18 @@ a screenshot in its PR.
   (the UI passes the translated default name);
 - `paint` sets one cell; painting the same tile again is a no-op (no undo entry);
 - placing `P` where a runner start already exists moves it (exactly one `P` remains);
-- `paintLine` fills every cell between two points (Bresenham), with no gaps, in both
-  directions and on diagonals;
-- one mouse stroke (press → drag → release) is one undo step;
+- painting outside the grid changes nothing;
+- `lineCells` covers both ends with no gaps, checked on 500 random segments;
+  `paintLine` fills every cell between two points (Bresenham), in both directions and
+  on diagonals;
+- one mouse stroke (press → drag → release) is one undo step; a stroke that changes
+  nothing adds none;
 - `undo` then `redo` restores the exact grid; a new edit clears the redo stack; undo
   history is capped (oldest steps dropped);
 - `resize` keeps the top-left content, crops or pads with empty cells, and is clamped to
   the format limits (8–64 × 8–48);
-- `rename` trims and caps the name at 64 code points;
+- `rename` caps the name at 64 code points and keeps spaces while typing; the saved
+  document is trimmed;
 - `toLevel` returns the validator's error codes for an invalid grid (no `P`, no `$`, no
   `E`, 17 `M`) and a level for a valid one;
 - randomized: 2,000 random edit sequences never leave the grid out of shape (row count
@@ -125,6 +129,8 @@ a screenshot in its PR.
 - pixel → cell at the corners and edges of each cell, at any CSS scale of the canvas;
 - outside the grid → no cell;
 - left button paints, right button erases, other buttons do nothing.
+- a stroke ends on pointer release, cancel or lost capture (releasing outside the
+  window must not merge later edits into one undo step).
 
 `tests/i18n.test.ts` (existing): still checks that EN and FR have the same keys.
 
