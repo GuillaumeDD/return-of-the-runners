@@ -175,7 +175,8 @@ Plus an i18n key for any new UI string (EN + FR), and a screenshot in the PR.
 - cannot dig bedrock, ladders, empty cells, or under a brick/ladder/gold blocking
   the cell above the target;
 - cannot dig while falling or while on a ladder/bar (to confirm against original);
-- the hole stays open for `HOLE_OPEN_TICKS`, then refills over `HOLE_REFILL_TICKS`;
+- the hole is dug over `HOLE_TICKS.digging`, stays open for `HOLE_TICKS.open`, then
+  refills over `HOLE_TICKS.closing`;
 - a runner inside a hole when it refills dies;
 - the runner can fall into and walk through an open hole.
 

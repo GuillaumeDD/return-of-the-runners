@@ -10,6 +10,9 @@ export const DEFAULT_BINDINGS: Bindings = {
   right: ["ArrowRight"],
   up: ["ArrowUp"],
   down: ["ArrowDown"],
+  // Physical positions: the two keys right of left Shift. Labelled Z/X on QWERTY, W/X on AZERTY.
+  digLeft: ["KeyZ"],
+  digRight: ["KeyX"],
 };
 
 /** The set of currently held key codes. Plain data; updated by `keyDown` / `keyUp`. */
@@ -38,6 +41,8 @@ export function inputFrom(held: HeldKeys, bindings: Bindings = DEFAULT_BINDINGS)
     right: pressed("right"),
     up: pressed("up"),
     down: pressed("down"),
+    digLeft: pressed("digLeft"),
+    digRight: pressed("digRight"),
   };
 }
 

@@ -1,5 +1,6 @@
 import { TILE } from "../level/format";
-import { SUB } from "../sim/rules";
+import { holeAt, holePhase } from "../sim/holes";
+import { HOLE_TICKS, SUB } from "../sim/rules";
 import type { GameState } from "../sim/state";
 
 /** On-screen size of one tile, in canvas pixels. A multiple of SUB keeps motion crisp. */
@@ -18,6 +19,7 @@ const COLOR = {
   exit: "#4caf50",
   runner: "#f5f5f5",
   runnerFace: "#3a7bd5",
+  runnerDead: "#d64545",
 } as const;
 
 export function canvasSize(state: Pick<GameState, "width" | "height">): {
@@ -34,10 +36,44 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState): void {
 
   state.tiles.forEach((row, cy) => {
     for (let cx = 0; cx < row.length; cx++) {
-      drawTile(ctx, row.charAt(cx), cx * TILE_PX, cy * TILE_PX);
+      const tile = row.charAt(cx);
+      const hole = holeAt(state.holes, cx, cy);
+      if (hole === undefined) drawTile(ctx, tile, cx * TILE_PX, cy * TILE_PX);
+      else drawHole(ctx, brickLeft(hole.age), cx * TILE_PX, cy * TILE_PX);
     }
   });
-  drawRunner(ctx, state.runner.x * PX_PER_SUB, state.runner.y * PX_PER_SUB, state.runner.facing);
+  drawRunner(
+    ctx,
+    state.runner.x * PX_PER_SUB,
+    state.runner.y * PX_PER_SUB,
+    state.runner.facing,
+    state.status === "dead",
+  );
+}
+
+/**
+ * How much of a hole's brick is visible, from 1 (whole brick) to 0 (fully open): it
+ * shrinks while being dug and grows back while closing.
+ */
+export function brickLeft(age: number): number {
+  switch (holePhase(age)) {
+    case "digging":
+      return 1 - age / HOLE_TICKS.digging;
+    case "open":
+      return 0;
+    case "closing":
+      return (age - HOLE_TICKS.digging - HOLE_TICKS.open) / HOLE_TICKS.closing;
+    case "filled":
+      return 1;
+  }
+}
+
+/** A partly dug brick: the visible part sits at the bottom of the cell. */
+function drawHole(ctx: CanvasRenderingContext2D, left: number, x: number, y: number): void {
+  const h = Math.round(TILE_PX * left);
+  if (h === 0) return;
+  ctx.fillStyle = COLOR.brick;
+  ctx.fillRect(x, y + TILE_PX - h, TILE_PX, h);
 }
 
 function drawTile(ctx: CanvasRenderingContext2D, tile: string, x: number, y: number): void {
@@ -79,9 +115,15 @@ function drawTile(ctx: CanvasRenderingContext2D, tile: string, x: number, y: num
   }
 }
 
-function drawRunner(ctx: CanvasRenderingContext2D, x: number, y: number, facing: -1 | 1): void {
+function drawRunner(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  facing: -1 | 1,
+  dead: boolean,
+): void {
   const s = TILE_PX;
-  ctx.fillStyle = COLOR.runner;
+  ctx.fillStyle = dead ? COLOR.runnerDead : COLOR.runner;
   ctx.fillRect(x + 8, y + 2, 8, 7); // head
   ctx.fillRect(x + 6, y + 9, 12, 9); // body
   ctx.fillRect(x + 7, y + 18, 4, s - 18); // legs

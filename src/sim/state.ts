@@ -1,4 +1,5 @@
 import { TILE, type Level } from "../level/format";
+import type { Hole } from "./holes";
 import { SUB } from "./rules";
 
 export type Facing = -1 | 1;
@@ -8,7 +9,11 @@ export interface Actor {
   readonly x: number;
   readonly y: number;
   readonly facing: Facing;
+  /** Ticks left in an action that blocks movement (digging); 0 when free. */
+  readonly busy: number;
 }
+
+export type Status = "playing" | "dead";
 
 /**
  * The whole game state: plain data only (no classes, no functions), so it can be
@@ -21,7 +26,10 @@ export interface GameState {
   readonly height: number;
   /** Static terrain, `height` rows of `width` tile chars; start markers become empty. */
   readonly tiles: readonly string[];
+  /** Holes being dug or open, ordered by creation (deterministic). */
+  readonly holes: readonly Hole[];
   readonly runner: Actor;
+  readonly status: Status;
 }
 
 export function createState(level: Level, seed: number): GameState {
@@ -40,6 +48,8 @@ export function createState(level: Level, seed: number): GameState {
     width: level.width,
     height: level.height,
     tiles,
-    runner: { x: runnerCol * SUB, y: runnerRow * SUB, facing: 1 },
+    holes: [],
+    runner: { x: runnerCol * SUB, y: runnerRow * SUB, facing: 1, busy: 0 },
+    status: "playing",
   };
 }

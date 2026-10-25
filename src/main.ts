@@ -1,11 +1,11 @@
 import { advance, type Accumulator } from "./game/loop";
+import { createSession, tickSession, type Session } from "./game/session";
 import { detectLocale, translate, type Locale, type MessageKey } from "./i18n";
 import { inputFrom, isBound, keyDown, keyUp, type HeldKeys } from "./input/keyboard";
 import { parseLevel } from "./level/parse";
 import firstSteps from "./levels/first-steps.json?raw";
 import { canvasSize, render } from "./render/canvas";
 import { createState, type GameState } from "./sim/state";
-import { step } from "./sim/step";
 
 function byId<T extends HTMLElement>(id: string, type: new () => T): T {
   const el = document.getElementById(id);
@@ -49,12 +49,12 @@ if (!parsed.ok) {
 }
 
 function start(context: CanvasRenderingContext2D, initial: GameState): void {
-  let state = initial;
+  let session: Session = createSession(initial);
   let held: HeldKeys = new Set();
   let acc: Accumulator = { carry: 0 };
   let last: number | null = null;
 
-  const size = canvasSize(state);
+  const size = canvasSize(initial);
   canvas.width = size.width;
   canvas.height = size.height;
 
@@ -75,8 +75,13 @@ function start(context: CanvasRenderingContext2D, initial: GameState): void {
     last = now;
     acc = result.acc;
     const input = inputFrom(held);
-    for (let i = 0; i < result.ticks; i++) state = step(state, input);
-    render(context, state);
+    for (let i = 0; i < result.ticks; i++) session = tickSession(session, input);
+    const key: MessageKey = session.state.status === "dead" ? "caught" : "controls";
+    if (key !== messageKey) {
+      messageKey = key;
+      renderText();
+    }
+    render(context, session.state);
     requestAnimationFrame(frame);
   };
   requestAnimationFrame(frame);
