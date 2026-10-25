@@ -73,10 +73,12 @@ Code: `src/sim/`. Entry points: `createState(level, seed)` and
   (both passable), then it is removed and the brick is back (`HOLE_TICKS`).
 - `tileAt()` reads an open or closing hole as empty, so movement, falling and support
   need no special case for holes.
-- **Digging** (`step.ts`, `tryDig`): exactly one dig key, the runner aligned on both
-  axes, standing (not falling, not on a ladder or bar), the target diagonally below on
-  that side an undug brick, and the cell above the target empty (no brick, ladder, bar
-  or gold). The runner turns that way and is busy (frozen) while the hole is dug.
+- **Digging** (`step.ts`, `tryDig`): exactly one dig key, the runner on a row (not
+  between two rows), standing (not falling, not on a ladder or bar) in the column
+  nearest to it, the target diagonally below on that side an undug brick, and the cell
+  above the target empty (no brick, ladder, bar or gold). Walking usually stops between
+  two columns, so the runner snaps onto the nearest one (up to half a tile), turns that
+  way and is busy (frozen) while the hole is dug.
 - Order within a tick: the runner acts (dig or move), holes age, then a runner whose
   box overlaps a hole that just filled dies. A dead state only counts ticks;
   `game/session.ts` restarts the level `RESTART_DELAY_TICKS` later.

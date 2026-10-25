@@ -61,23 +61,25 @@ export function overlapsCell(a: Actor, cx: number, cy: number): boolean {
 }
 
 /**
- * Digs the brick diagonally below on the given side. Requires the runner to stand
- * aligned on solid ground (not falling, not on a ladder or bar: provisional, see
- * ARCHITECTURE), the target to be an undug brick, and the cell above it to be empty.
+ * Digs the brick diagonally below on the given side. The runner digs from the column
+ * nearest to it and snaps onto it, since walking usually stops between two tiles. It
+ * must stand there on solid ground (not falling, not on a ladder or bar: provisional,
+ * see ARCHITECTURE); the target must be an undug brick with an empty cell above it.
  */
 function tryDig(t: Terrain, a: Actor, input: PlayerInput): { runner: Actor; hole: Hole } | null {
   if (input.digLeft === input.digRight) return null;
   const dir: Facing = input.digLeft ? -1 : 1;
-  if (offsetOf(a.x) !== 0 || offsetOf(a.y) !== 0 || isFalling(t, a)) return null;
-  const cx = cellOf(a.x);
+  if (offsetOf(a.y) !== 0) return null;
+  const cx = cellOf(a.x + SUB / 2);
   const cy = cellOf(a.y);
-  if (isLadder(t, cx, cy) || isBar(t, cx, cy)) return null;
+  const snapped: Actor = { ...a, x: cx * SUB };
+  if (isFalling(t, snapped) || isLadder(t, cx, cy) || isBar(t, cx, cy)) return null;
   const tx = cx + dir;
   const ty = cy + 1;
   if (tileAt(t, tx, ty) !== TILE.brick || holeAt(t.holes, tx, ty) !== undefined) return null;
   if (tileAt(t, tx, cy) !== TILE.empty) return null;
   return {
-    runner: { ...a, facing: dir, busy: HOLE_TICKS.digging },
+    runner: { ...snapped, facing: dir, busy: HOLE_TICKS.digging },
     hole: { cx: tx, cy: ty, age: 0 },
   };
 }

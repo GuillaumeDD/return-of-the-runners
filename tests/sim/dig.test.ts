@@ -3,10 +3,10 @@ import { TILE } from "../../src/level/format";
 import { HOLE_LIFETIME, holePhase } from "../../src/sim/holes";
 import { NO_INPUT, type PlayerInput } from "../../src/sim/input";
 import { tileAt } from "../../src/sim/physics";
-import { HOLE_TICKS } from "../../src/sim/rules";
+import { HOLE_TICKS, SUB } from "../../src/sim/rules";
 import type { GameState } from "../../src/sim/state";
 import { step } from "../../src/sim/step";
-import { atCell, cell, press, run, stateFrom } from "./helpers";
+import { atCell, cell, placeRunner, press, run, stateFrom } from "./helpers";
 
 const digLeft: PlayerInput = { ...NO_INPUT, digLeft: true };
 const digRight: PlayerInput = { ...NO_INPUT, digRight: true };
@@ -69,9 +69,35 @@ describe("digging", () => {
     expect(step(s, digRight).holes).toEqual([]);
   });
 
-  it("cannot dig when not aligned on the grid", () => {
-    const s = step(step(stateFrom(floor), press.right), press.right);
-    expect(s.runner.x % 8).not.toBe(0);
+  // Regression: walking stops between two tiles, and digging used to need exact alignment,
+  // so it only worked where climbing had aligned the runner (the top of a ladder).
+  it("digs after walking and stopping between two tiles", () => {
+    let s = run(stateFrom(["........", "P.......", "########"]), press.right, 21);
+    expect(s.runner.x % SUB).not.toBe(0);
+    s = step(s, digRight);
+    expect(holes(s)).toEqual([{ cx: 2, cy: 2 }]);
+    expect(s.runner.x).toBe(SUB);
+  });
+
+  it.each([0, 1, 2, 3, 4, 5, 6, 7])(
+    "from offset %i, digs from the nearest column and snaps onto it",
+    (offset) => {
+      const s = placeRunner(stateFrom(floor), 3 * SUB + offset, SUB);
+      const near = offset < SUB / 2 ? 3 : 4;
+      const right = step(s, digRight);
+      expect(holes(right)).toEqual([{ cx: near + 1, cy: 2 }]);
+      expect(right.runner.x).toBe(near * SUB);
+      expect(holes(step(s, digLeft))).toEqual([{ cx: near - 1, cy: 2 }]);
+    },
+  );
+
+  it("cannot dig when the nearest column has no floor under it", () => {
+    const s = placeRunner(stateFrom(["P.......", "###....."]), 2 * SUB + 5, 0);
+    expect(step(s, digLeft).holes).toEqual([]);
+  });
+
+  it("cannot dig while between two rows", () => {
+    const s = placeRunner(stateFrom(["P..H....", "...H....", "########"]), 3 * SUB, 4);
     expect(step(s, digRight).holes).toEqual([]);
   });
 
