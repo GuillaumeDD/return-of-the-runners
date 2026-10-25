@@ -1,8 +1,9 @@
 {
   "title": "Return of the Runners",
   "subtitle": "A fan remake of Lode Runner: The Legend Returns",
-  "controls": "Arrow keys: run and climb. Z / X: dig left / right. Gold and monks are coming next.",
+  "controls": "Arrow keys: run and climb. Z / X: dig left / right. Collect all the gold to open the exit door. Monks are coming next.",
   "caught": "Caught in a refilling hole! Restarting…",
+  "won": "Level complete! Playing it again…",
   "levelError": "This level could not be loaded.",
   "switchLanguage": "Français"
 }

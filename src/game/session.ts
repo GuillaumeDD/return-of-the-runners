@@ -2,26 +2,29 @@ import type { PlayerInput } from "../sim/input";
 import type { GameState } from "../sim/state";
 import { step } from "../sim/step";
 
-/** Ticks the death screen stays up before the level restarts (1.5 s). */
+/** Ticks the end screen (caught or level complete) stays up before the level restarts (1.5 s). */
 export const RESTART_DELAY_TICKS = 90;
 
-/** One play session of a level: the simulation plus how long the runner has been dead. */
+/** One play session of a level: the simulation plus how long the game has been over. */
 export interface Session {
   readonly start: GameState;
   readonly state: GameState;
-  readonly deadTicks: number;
+  readonly endTicks: number;
 }
 
 export function createSession(start: GameState): Session {
-  return { start, state: start, deadTicks: 0 };
+  return { start, state: start, endTicks: 0 };
 }
 
-/** Advances one tick; restarts the level from `start` once the death delay is over. */
+/**
+ * Advances one tick; once the runner is caught or has won, restarts the level from
+ * `start` after the delay (there is a single level until packs exist).
+ */
 export function tickSession(session: Session, input: PlayerInput): Session {
-  if (session.state.status === "dead") {
-    const deadTicks = session.deadTicks + 1;
-    if (deadTicks >= RESTART_DELAY_TICKS) return createSession(session.start);
-    return { ...session, deadTicks };
+  if (session.state.status !== "playing") {
+    const endTicks = session.endTicks + 1;
+    if (endTicks >= RESTART_DELAY_TICKS) return createSession(session.start);
+    return { ...session, endTicks };
   }
   return { ...session, state: step(session.state, input) };
 }
