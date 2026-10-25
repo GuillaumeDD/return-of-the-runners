@@ -23,7 +23,7 @@ Every new runtime dependency is justified in its PR (CLAUDE.md § Security).
 ```
 index.html ── src/main.ts        entry point: wires DOM, input, rendering
               src/i18n/          UI strings (en, fr)
-              src/sim/           (step 1) pure, deterministic game simulation
+              src/sim/           pure, deterministic game simulation
               src/render/        (step 1) Canvas 2D rendering of a simulation state
               src/level/         level format: types, validator (migrations from v2 on)
 tests/                           Vitest tests, mirroring src/
@@ -32,15 +32,38 @@ tests/fixtures/levels/           one fixture set per level format version
 
 ## Simulation
 
-- **Pure and deterministic.** Fixed timestep, integer ticks, integer grid
-  coordinates, seeded PRNG. It never touches the DOM, wall-clock time, audio or
-  `Math.random`.
+Code: `src/sim/`. Entry points: `createState(level, seed)` and
+`step(state, input) → state`.
+
+- **Pure and deterministic.** Fixed timestep (`TICKS_PER_SECOND = 60`), integer ticks,
+  integer positions, seeded PRNG (`prng.ts`, mulberry32, state stored in `GameState`).
+  It never touches the DOM, wall-clock time, audio or `Math.random`.
+- **Plain-data state** (`state.ts`): no classes or closures, never mutated, so it can be
+  hashed (`hash.ts`, FNV-1a over a canonical field order) and compared in tests.
 - **Data flow:** input is fed to the simulation as per-tick commands; rendering only
   reads its state. This makes gameplay unit-testable and replayable.
 - **Engine-independent:** no transcendental `Math` functions, no reliance on the
   iteration order of objects keyed by numeric-looking strings.
 - **Replays:** a recorded input log must replay to the same state hash in Node and in
   a headless browser (BACKLOG B-010).
+
+### Movement model
+
+- Positions are in **sub-units**: one tile is `SUB = 8` sub-units on each axis. An actor
+  is aligned on an axis when its position there is a multiple of `SUB`.
+- An actor is between two tiles on at most one axis at a time. To change axis (turn
+  onto a ladder, step off one), it first **snaps** toward the nearest aligned position.
+- **Support** (`physics.ts`): an aligned actor is held up by a ladder or bar in its own
+  cell, or by brick, bedrock, a ladder or the level floor below it. Otherwise it falls,
+  and input is ignored until it lands or catches a bar.
+- **Up** needs a ladder in the current cell; **down** works onto or along a ladder, and
+  lets go of a bar. Vertical input wins when it can move; otherwise horizontal applies.
+  There is no jump.
+- Outside the level reads as bedrock (walls and ceiling); the bottom row stands on the
+  level floor.
+- Speeds are periods: an actor moves one sub-unit every `RUNNER_PERIOD.*` ticks.
+- **All tunable values live in `src/sim/rules.ts`** and are provisional until checked
+  against the original (see the table below).
 
 ## Level format
 
@@ -138,9 +161,10 @@ data and the supply chain.
 Each entry: the rule or timing, its value, and its provenance (video link +
 timestamp, or own playtest). Filled in as gameplay is implemented.
 
-| Behavior     | Value | Provenance |
-| ------------ | ----- | ---------- |
-| _(none yet)_ |       |            |
+| Behavior                        | Value                              | Provenance                 |
+| ------------------------------- | ---------------------------------- | -------------------------- |
+| Runner walk / climb / bar speed | 1 tile per 16 ticks (3.75 tiles/s) | **Provisional**, 1982 feel |
+| Fall speed                      | 1 tile per 8 ticks (7.5 tiles/s)   | **Provisional**, 1982 feel |
 
 ## Intentional deviations from the original
 
