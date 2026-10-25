@@ -5,7 +5,7 @@ import { inputFrom, isBound, keyDown, keyUp, type HeldKeys } from "./input/keybo
 import { parseLevel } from "./level/parse";
 import firstSteps from "./levels/first-steps.json?raw";
 import { canvasSize, render } from "./render/canvas";
-import { createState, type GameState } from "./sim/state";
+import { createState, type GameState, type Status } from "./sim/state";
 
 function byId<T extends HTMLElement>(id: string, type: new () => T): T {
   const el = document.getElementById(id);
@@ -23,6 +23,12 @@ if (!ctx) throw new Error("Canvas 2D is not available");
 
 let locale: Locale = detectLocale(navigator.languages);
 let messageKey: MessageKey = "controls";
+
+const STATUS_MESSAGE: Readonly<Record<Status, MessageKey>> = {
+  playing: "controls",
+  dead: "caught",
+  won: "won",
+};
 
 function renderText(): void {
   document.documentElement.lang = locale;
@@ -76,7 +82,7 @@ function start(context: CanvasRenderingContext2D, initial: GameState): void {
     acc = result.acc;
     const input = inputFrom(held);
     for (let i = 0; i < result.ticks; i++) session = tickSession(session, input);
-    const key: MessageKey = session.state.status === "dead" ? "caught" : "controls";
+    const key = STATUS_MESSAGE[session.state.status];
     if (key !== messageKey) {
       messageKey = key;
       renderText();

@@ -1,8 +1,9 @@
 {
   "title": "Return of the Runners",
   "subtitle": "Un remake de fan de Lode Runner: The Legend Returns",
-  "controls": "Flèches : courir et grimper. W / X (clavier AZERTY) : creuser à gauche / à droite. L'or et les moines arrivent bientôt.",
+  "controls": "Flèches : courir et grimper. W / X (clavier AZERTY) : creuser à gauche / à droite. Ramassez tout l'or pour ouvrir la porte de sortie. Les moines arrivent bientôt.",
   "caught": "Pris dans un trou qui se referme ! On recommence…",
+  "won": "Niveau terminé ! On le rejoue…",
   "levelError": "Impossible de charger ce niveau.",
   "switchLanguage": "English"
 }

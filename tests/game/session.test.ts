@@ -14,7 +14,16 @@ describe("session", () => {
   it("steps the simulation while playing", () => {
     const s = tickSession(createSession(stateFrom(rows)), press.right);
     expect(s.state.tick).toBe(1);
-    expect(s.deadTicks).toBe(0);
+    expect(s.endTicks).toBe(0);
+  });
+
+  it("restarts the level RESTART_DELAY_TICKS ticks after a win", () => {
+    const start = stateFrom(rows);
+    let s: Session = { ...createSession(start), state: { ...start, status: "won" } };
+    for (let i = 0; i < RESTART_DELAY_TICKS - 1; i++) s = tickSession(s, NO_INPUT);
+    expect(s.state.status).toBe("won");
+    s = tickSession(s, NO_INPUT);
+    expect(s.state).toBe(start);
   });
 
   it("restarts the level RESTART_DELAY_TICKS ticks after death", () => {
@@ -22,9 +31,9 @@ describe("session", () => {
     let s: Session = { ...createSession(start), state: { ...start, tick: 50, status: "dead" } };
     for (let i = 0; i < RESTART_DELAY_TICKS - 1; i++) s = tickSession(s, NO_INPUT);
     expect(s.state.status).toBe("dead");
-    expect(s.deadTicks).toBe(RESTART_DELAY_TICKS - 1);
+    expect(s.endTicks).toBe(RESTART_DELAY_TICKS - 1);
     s = tickSession(s, NO_INPUT);
     expect(s.state).toBe(start);
-    expect(s.deadTicks).toBe(0);
+    expect(s.endTicks).toBe(0);
   });
 });

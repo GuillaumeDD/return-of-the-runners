@@ -83,6 +83,20 @@ Code: `src/sim/`. Entry points: `createState(level, seed)` and
 - **All tunable values live in `src/sim/rules.ts`** and are provisional until checked
   against the original (see the table below).
 
+### Gold and exit
+
+- `GameState.goldLeft` counts the gold the runner has not collected yet (later, gold
+  carried by monks too). It starts at the number of `$` tiles (`gold.ts`).
+- An actor **touches** a cell once its centre is inside it (`centerCell`), so it need
+  not be aligned. The runner collects the gold it touches, which removes it from
+  `tiles`, also while falling. Gold is neither solid nor support.
+- The exit (`E`) is a door: passable, no support, locked while `goldLeft > 0`.
+  Touching it once the last gold is taken sets the status to `won`, which freezes the
+  state like `dead`, and takes precedence over a hole filling on the same tick.
+- Order within a tick: act (dig or move), collect gold, check the exit, age holes,
+  check for death. `game/session.ts` restarts the level after a win, since there is
+  only one level until packs exist.
+
 ## Game loop, input and rendering
 
 - `requestAnimationFrame` drives the loop; `advance()` turns elapsed time into whole
@@ -199,6 +213,8 @@ timestamp, or own playtest). Filled in as gameplay is implemented.
 | Hole stays open                 | 240 ticks (4 s)                    | **Provisional**, 1982 feel |
 | Hole refill time                | 30 ticks (0.5 s)                   | **Provisional**, 1982 feel |
 | Digging from a ladder or bar    | not allowed                        | **Provisional**, 1982 rule |
+| Gold is collected               | when the runner's centre enters it | **Provisional**            |
+| Exit                            | door, opens once all gold is taken | **Provisional**, to check  |
 
 ## Intentional deviations from the original
 

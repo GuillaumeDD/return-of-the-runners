@@ -21,7 +21,9 @@ describe("hashState", () => {
       { ...base, runner: { ...base.runner, facing: -1 } },
       { ...base, runner: { ...base.runner, busy: 1 } },
       { ...base, holes: [{ cx: 1, cy: 4, age: 0 }] },
+      { ...base, goldLeft: base.goldLeft + 1 },
       { ...base, status: "dead" },
+      { ...base, status: "won" },
     ];
     for (const v of variants) expect(hashState(v)).not.toBe(hashState(base));
   });
@@ -49,6 +51,7 @@ describe("hashState", () => {
         x: base.runner.x,
       },
       holes: base.holes,
+      goldLeft: base.goldLeft,
       tiles: base.tiles,
       height: base.height,
       width: base.width,
@@ -73,4 +76,4 @@ describe("hashState", () => {
   });
 });
 
-const COMMITTED_HASH = 1883907308;
+const COMMITTED_HASH = 1643784316;
