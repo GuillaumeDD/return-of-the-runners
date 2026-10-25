@@ -19,7 +19,9 @@ their own levels.
 
 ### Goals
 
-- Gameplay faithful to the original (rules, tiles, tools, monk behavior, timings).
+- Gameplay and look faithful to the original (rules, tiles, tools, monk behavior,
+  timings, art style). The reference is TLR (1994), not the 1982 game: a 1982 rule
+  is only a provisional fallback where TLR's behavior is not known yet.
 - An integrated level editor with level packs and easy sharing.
 - 1 player, plus 2 players (co-op and versus) on the **same keyboard**.
 - Zero install: play from a link.
@@ -113,6 +115,7 @@ rejects the feature.
 | Hand-recreated original levels pack (from longplay screenshots) | proposed | Separate pack, family use                        |
 | Local importer for files from one's own copy of the original    | proposed | Reverse-engineering track; nothing redistributed |
 | Replays (record/playback from input log)                        | proposed | Falls out of the deterministic simulation        |
+| Recreated art in the style of TLR (1994): sprites, tile sets    | planned  | Placeholders until then; never extracted assets  |
 | Online multiplayer                                              | rejected | Same keyboard is enough (2026-10-24)             |
 | Decoding the original 150 levels                                | rejected | No public source found (2026-10-24)              |
 | Mobile/touch controls                                           | rejected | Out of scope                                     |
