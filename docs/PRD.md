@@ -55,7 +55,9 @@ their own levels.
 - Tile palette, paint with the mouse, "Test" button for instant play.
 - Level metadata: name, world/tile set, day/night, music, tools.
 - Level packs (ordered lists of levels).
-- Validator: at least one player start, gold, a reachable exit.
+- Validator: exactly one player start, at least one gold and one exit. Whether the
+  level can be finished is checked by the maker with "Test", not by the validator
+  (decided 2026-10-25: a path search cannot foresee every dug route).
 - Sharing: export/import as a file, or as a link with the level compressed in the URL.
 
 ### 4.4 Controls
@@ -115,6 +117,7 @@ rejects the feature.
 | Hand-recreated original levels pack (from longplay screenshots) | proposed | Separate pack, family use                        |
 | Local importer for files from one's own copy of the original    | proposed | Reverse-engineering track; nothing redistributed |
 | Replays (record/playback from input log)                        | proposed | Format and player exist (B-010); needs the UI    |
+| Editor warning for gold or exit unreachable without digging     | proposed | Only if makers ask for it; never blocking        |
 | Recreated art in the style of TLR (1994): sprites, tile sets    | planned  | Placeholders until then; never extracted assets  |
 | Online multiplayer                                              | rejected | Same keyboard is enough (2026-10-24)             |
 | Decoding the original 150 levels                                | rejected | No public source found (2026-10-24)              |

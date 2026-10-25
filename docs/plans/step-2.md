@@ -22,11 +22,12 @@ need format v2), TLR-only tiles, 2 players, menus beyond what the editor needs.
    pure functions (paint, fill a line, resize, undo/redo), like the simulation. The DOM
    layer only turns mouse and keyboard events into model operations, so the editor is
    unit-testable without a browser.
-3. **Validation that guides, not blocks.** The validator's errors (no runner, no gold,
-   no exit, too many monks…) block testing and sharing, and are shown translated next
-   to the grid. The PRD's "reachable exit" check is a **warning only**: a path search
-   cannot know every route the player may dig, so it would wrongly reject some good
-   levels (see B-016).
+3. **Simple validation; the maker proves the level.** The validator's errors (no
+   runner, no gold, no exit, too many monks…) block testing and sharing, and are shown
+   translated next to the grid. There is **no reachability check**: a path search
+   cannot know every route the player may dig, so it would reject good levels. The
+   maker plays the level with "Test" to check it can be finished (decided 2026-10-25;
+   a possible warning is kept in PRD Growth).
 4. **Share links carry the level in the URL fragment** (`#level=…`): the JSON is
    compressed with the browser's built-in `CompressionStream("deflate-raw")` (no new
    dependency) and encoded in base64url. The fragment is never sent to a server.
@@ -53,7 +54,7 @@ need format v2), TLR-only tiles, 2 players, menus beyond what the editor needs.
 | 3     | Painting     | B-013   | **paint a level with the mouse**                       |
 | 4     | Test play    | B-014   | **play the level being edited, then go back to it**    |
 | 5     | My levels    | B-015   | levels kept in the browser: save, open, rename, delete |
-| 6     | Files        | B-016   | export and import `.json` files; reachability warning  |
+| 6     | Files        | B-016   | export and import `.json` files                        |
 | 7     | Share links  | B-017   | **send a link that opens the level**                   |
 
 Every UI string lands in EN and FR in the same PR, and every visible change comes with
@@ -146,26 +147,16 @@ a screenshot in its PR.
 - a full storage (`QuotaExceededError`) returns an error instead of throwing;
 - ids are unique (a counter in the document, never `Math.random` or the clock).
 
-### B-016 — Export, import, reachability warning
+### B-016 — Export and import files
 
 - Export downloads `<name>.rotr.json`, the exact v1 document. Import uses a file
   picker; files over 64 KB are rejected before they are read.
-- `src/level/reach.ts`: `unreachable(level)` → the gold and exit cells the runner cannot
-  reach by walking, climbing, hanging and falling, without digging.
 
 `tests/level/export.test.ts`
 
 - export then import gives back the same level (byte-identical JSON);
 - an oversized file is rejected without reading it; an invalid one returns the
   validator's errors.
-
-`tests/level/reach.test.ts`
-
-- hand-made cases: gold on an island with no ladder is unreachable; reachable by a
-  ladder, a bar, a fall; the exit counted like gold;
-- randomized cross-check: 2,000 random small levels, `unreachable` agrees with a naive
-  reference that explores the simulation itself (stepping `step()` from every reached
-  aligned cell with each input, no digging).
 
 ### B-017 — Share links
 
