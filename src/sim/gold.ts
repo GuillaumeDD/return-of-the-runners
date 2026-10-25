@@ -22,5 +22,10 @@ export function centerCell(a: Actor): { cx: number; cy: number } {
 export function takeGold(tiles: readonly string[], cx: number, cy: number): string[] | null {
   const row = tiles[cy];
   if (row?.charAt(cx) !== TILE.gold) return null;
-  return tiles.map((r, y) => (y === cy ? r.slice(0, cx) + TILE.empty + r.slice(cx + 1) : r));
+  return setTile(tiles, cx, cy, TILE.empty);
+}
+
+/** Returns the tiles with the cell (cx, cy) set to `tile`. */
+export function setTile(tiles: readonly string[], cx: number, cy: number, tile: string): string[] {
+  return tiles.map((r, y) => (y === cy ? r.slice(0, cx) + tile + r.slice(cx + 1) : r));
 }

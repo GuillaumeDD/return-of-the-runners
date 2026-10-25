@@ -1,7 +1,7 @@
 import { TILE } from "../level/format";
 import { holeAt, holePhase } from "../sim/holes";
 import { HOLE_TICKS, SUB } from "../sim/rules";
-import type { GameState } from "../sim/state";
+import type { GameState, Monk } from "../sim/state";
 
 /** On-screen size of one tile, in canvas pixels. A multiple of SUB keeps motion crisp. */
 export const TILE_PX = 24;
@@ -21,6 +21,8 @@ const COLOR = {
   runner: "#f5f5f5",
   runnerFace: "#3a7bd5",
   runnerDead: "#d64545",
+  monk: "#e07b39",
+  monkFace: "#2b1a0e",
 } as const;
 
 export function canvasSize(state: Pick<GameState, "width" | "height">): {
@@ -44,6 +46,7 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState): void {
       else drawHole(ctx, brickLeft(hole.age), cx * TILE_PX, cy * TILE_PX);
     }
   });
+  for (const m of state.monks) drawMonk(ctx, m);
   drawRunner(
     ctx,
     state.runner.x * PX_PER_SUB,
@@ -143,4 +146,21 @@ function drawRunner(
   ctx.fillRect(x + 13, y + 18, 4, s - 18);
   ctx.fillStyle = COLOR.runnerFace;
   ctx.fillRect(facing === 1 ? x + 13 : x + 9, y + 4, 2, 2); // eye shows facing
+}
+
+/** A monk: a robed figure; a gold band on its head while it carries gold. */
+function drawMonk(ctx: CanvasRenderingContext2D, m: Monk): void {
+  if (m.mode === "dead") return;
+  const s = TILE_PX;
+  const x = m.x * PX_PER_SUB;
+  const y = m.y * PX_PER_SUB;
+  ctx.fillStyle = COLOR.monk;
+  ctx.fillRect(x + 8, y + 2, 8, 7); // head
+  ctx.fillRect(x + 5, y + 9, 14, s - 9); // robe
+  ctx.fillStyle = COLOR.monkFace;
+  ctx.fillRect(m.facing === 1 ? x + 13 : x + 9, y + 4, 2, 2); // eye shows facing
+  if (m.carry > 0) {
+    ctx.fillStyle = COLOR.gold;
+    ctx.fillRect(x + 8, y + 1, 8, 2);
+  }
 }
