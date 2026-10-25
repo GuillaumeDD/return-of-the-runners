@@ -49,9 +49,16 @@ describe("digging", () => {
     ["a brick", "...P#..."],
     ["a ladder", "...PH..."],
     ["a bar", "...P-..."],
-    ["gold", "...P$..."],
   ])("cannot dig under %s in the cell above the target", (_name, row) => {
     expect(step(stateFrom(["........", row, "########"]), digRight).holes).toEqual([]);
+  });
+
+  // Regression: gold above the target used to block digging (a 1982 rule). Guillaume
+  // remembers TLR allowing it; the gold stays in place above the hole.
+  it("digs under gold, leaving the gold in place", () => {
+    const s = step(stateFrom(["........", "...P$...", "########"]), digRight);
+    expect(holes(s)).toEqual([{ cx: 4, cy: 2 }]);
+    expect(s.tiles[1]?.charAt(4)).toBe(TILE.gold);
   });
 
   it("cannot dig while falling", () => {

@@ -75,8 +75,8 @@ Code: `src/sim/`. Entry points: `createState(level, seed)` and
   need no special case for holes.
 - **Digging** (`step.ts`, `tryDig`): exactly one dig key, the runner not falling (on
   the ground, on a ladder or hanging on a bar), the target diagonally below its nearest
-  cell an undug brick, and the cell above the target empty (no brick, ladder, bar or
-  gold). Walking or climbing usually stops between two tiles, so the runner snaps onto
+  cell an undug brick, and the cell above the target empty or holding gold (a brick,
+  ladder or bar blocks; the gold stays in place). Walking or climbing usually stops between two tiles, so the runner snaps onto
   the nearest cell (up to half a tile), turns that way and is busy (frozen) while the
   hole is dug.
 - Order within a tick: the runner acts (dig or move), holes age, then a runner whose
@@ -201,13 +201,12 @@ timestamp, or own playtest). Filled in as gameplay is implemented.
 | Hole stays open                 | 240 ticks (4 s)                    | **Provisional**, 1982 feel |
 | Hole refill time                | 30 ticks (0.5 s)                   | **Provisional**, 1982 feel |
 | Digging from a ladder or bar    | allowed                            | 1982 rule [^lrtr]          |
-| Digging under gold              | not allowed                        | 1982 rule [^lrtr]          |
+| Digging under gold              | allowed, the gold stays in place   | Guillaume's memory of TLR  |
 
 [^lrtr]:
     1982 rules as reimplemented by _Lode Runner Total Recall_, `ok2Dig()` in
     [`lodeRunner.runner.js`](https://github.com/SimonHung/LodeRunner_TotalRecall/blob/master/lodeRunner.runner.js):
-    only the target and the cell above it are checked, and gold above blocks. Still
-    to check against TLR.
+    only the target and the cell above it are checked. Still to check against TLR.
 
 ## Intentional deviations from the original
 

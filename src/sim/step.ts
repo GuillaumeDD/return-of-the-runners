@@ -64,7 +64,8 @@ export function overlapsCell(a: Actor, cx: number, cy: number): boolean {
  * Digs the brick diagonally below on the given side. The runner digs from the cell
  * nearest to it and snaps onto it, since walking or climbing usually stops between two
  * tiles. It must not be falling; standing on a ladder or hanging on a bar is fine. The
- * target must be an undug brick with an empty cell above it (no gold, ladder or bar).
+ * target must be an undug brick whose cell above is empty or holds gold (TLR allows
+ * digging under gold; the gold stays where it is). A brick, ladder or bar above blocks.
  */
 function tryDig(t: Terrain, a: Actor, input: PlayerInput): { runner: Actor; hole: Hole } | null {
   if (input.digLeft === input.digRight) return null;
@@ -77,7 +78,8 @@ function tryDig(t: Terrain, a: Actor, input: PlayerInput): { runner: Actor; hole
   const tx = cx + dir;
   const ty = cy + 1;
   if (tileAt(t, tx, ty) !== TILE.brick || holeAt(t.holes, tx, ty) !== undefined) return null;
-  if (tileAt(t, tx, cy) !== TILE.empty) return null;
+  const above = tileAt(t, tx, cy);
+  if (above !== TILE.empty && above !== TILE.gold) return null;
   return {
     runner: { ...snapped, facing: dir, busy: HOLE_TICKS.digging },
     hole: { cx: tx, cy: ty, age: 0 },
