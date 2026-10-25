@@ -5,16 +5,16 @@ in [`../CLAUDE.md`](../CLAUDE.md).
 
 ## Stack
 
-| Concern       | Choice                                 | Notes                                                        |
-| ------------- | -------------------------------------- | ------------------------------------------------------------ |
-| Language      | TypeScript (`strict`)                  | Pinned to 6.0.x: `typescript-eslint` 8.x supports TS < 6.1   |
-| Build / dev   | Vite                                   | `base: "/return-of-the-runners/"` for GitHub Pages           |
-| Rendering     | Canvas 2D, 640×480 logical resolution  | Scaled with `image-rendering: pixelated`                     |
-| Audio         | WebAudio                               | (step 4)                                                     |
-| Unit tests    | Vitest                                 | `tests/**/*.test.ts`                                         |
-| Browser tests | Playwright                             | (step 1) replay determinism in a real engine                 |
-| Lint / format | ESLint (`strictTypeChecked`), Prettier | Lint bans `Math.random`, `innerHTML`, `eval`, `new Function` |
-| Runtime       | Node 22 (`.nvmrc`)                     | Dev and CI only; the game has **no runtime dependencies**    |
+| Concern       | Choice                                 | Notes                                                                                            |
+| ------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Language      | TypeScript (`strict`)                  | Pinned to 6.0.x: `typescript-eslint` 8.x supports TS < 6.1                                       |
+| Build / dev   | Vite                                   | `base: "/return-of-the-runners/"` for GitHub Pages                                               |
+| Rendering     | Canvas 2D, 640×480 logical resolution  | Scaled with `image-rendering: pixelated`                                                         |
+| Audio         | WebAudio                               | (step 4)                                                                                         |
+| Unit tests    | Vitest                                 | `tests/**/*.test.ts`; tests have their own `tsconfig` with Node types, which `src/` does not get |
+| Browser tests | Playwright                             | (step 1) replay determinism in a real engine                                                     |
+| Lint / format | ESLint (`strictTypeChecked`), Prettier | Lint bans `Math.random`, `innerHTML`, `eval`, `new Function`                                     |
+| Runtime       | Node 22 (`.nvmrc`)                     | Dev and CI only; the game has **no runtime dependencies**                                        |
 
 Every new runtime dependency is justified in its PR (CLAUDE.md § Security).
 
@@ -25,9 +25,9 @@ index.html ── src/main.ts        entry point: wires DOM, input, rendering
               src/i18n/          UI strings (en, fr)
               src/sim/           (step 1) pure, deterministic game simulation
               src/render/        (step 1) Canvas 2D rendering of a simulation state
-              src/level/         (step 1) level format: schema, validator, migrations
+              src/level/         level format: types, validator (migrations from v2 on)
 tests/                           Vitest tests, mirroring src/
-tests/fixtures/levels/           (step 1) one fixture set per level format version
+tests/fixtures/levels/           one fixture set per level format version
 ```
 
 ## Simulation
@@ -44,12 +44,63 @@ tests/fixtures/levels/           (step 1) one fixture set per level format versi
 
 ## Level format
 
-- Human-readable JSON: a text grid (one character per tile) plus metadata (name,
-  world/tile set, day/night, music, tools). Full schema documented here in step 1.
-- Carries an explicit `version`. Every change bumps it and ships a migration from the
-  previous version.
-- Every version keeps fixture files in `tests/fixtures/levels/`; migrations are
-  tested against all of them.
+Code: `src/level/format.ts` (types, tile alphabet, limits) and `src/level/parse.ts`
+(`parseLevel(text)`: validates untrusted input and never throws; errors are values with
+a stable `code`, translated in the UI).
+
+### Version 1
+
+```json
+{
+  "format": "return-of-the-runners/level",
+  "version": 1,
+  "name": "First steps",
+  "width": 28,
+  "height": 16,
+  "grid": ["............................", "..."]
+}
+```
+
+All six fields are required; any other field is rejected. `grid` has `height` rows of
+exactly `width` tiles, top row first.
+
+| Char | Tile                                   |
+| ---- | -------------------------------------- |
+| `.`  | empty                                  |
+| `#`  | brick (diggable)                       |
+| `@`  | bedrock (not diggable)                 |
+| `H`  | ladder                                 |
+| `-`  | bar (hand-over-hand)                   |
+| `$`  | gold                                   |
+| `E`  | exit (locked until all gold collected) |
+| `P`  | runner start                           |
+| `M`  | monk start                             |
+
+| Rule              | Limit                                   | Error code                                |
+| ----------------- | --------------------------------------- | ----------------------------------------- |
+| Input size        | ≤ 64 KB (UTF-8 bytes)                   | `too-large`                               |
+| `format`          | exactly `"return-of-the-runners/level"` | `wrong-format`                            |
+| `version`         | the number `1`                          | `unsupported-version`                     |
+| Fields            | exactly the six above                   | `missing-field`, `unknown-field`          |
+| `name`            | 1–64 code points, not blank             | `invalid-name`                            |
+| `width`, `height` | integers, 8–64 and 8–48                 | `invalid-dimension`                       |
+| `grid`            | array of strings, right shape           | `invalid-grid`, `row-count`, `row-length` |
+| Tiles             | only the characters above               | `unknown-tile`                            |
+| Runner            | exactly one `P`                         | `runner-count`                            |
+| Gold, exit        | at least one `$` and one `E`            | `no-gold`, `no-exit`                      |
+| Monks             | at most 16 `M`                          | `too-many-monks`                          |
+
+Structural errors (size, JSON, format, version) stop validation; all other errors are
+reported together. The TLR grid size is not yet confirmed (see `plans/step-1.md`), which
+is why width and height are per-level properties.
+
+### Versioning
+
+- Every format change bumps `version` and ships a migration from the previous version.
+- Every version keeps fixture files in `tests/fixtures/levels/v<N>/` (`valid/` and
+  `invalid/`; an invalid fixture is named after its expected error code, with an
+  optional `--variant` suffix). Fixtures are excluded from Prettier so they stay
+  byte-for-byte as written.
 - Editor levels are stored in the browser (IndexedDB/localStorage) and can always be
   exported/imported as files.
 
