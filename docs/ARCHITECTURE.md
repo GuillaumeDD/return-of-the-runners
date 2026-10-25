@@ -242,8 +242,11 @@ data and the supply chain.
 ## Build, CI and deploy
 
 - `.github/workflows/ci.yml` (PRs and `main`): `npm ci`, typecheck, lint, test,
-  build, `npm audit --omit=dev`; a `replays` job runs `npm run e2e` in Chromium,
-  Firefox and WebKit; a separate job runs gitleaks over the full history.
+  build, `npm audit --omit=dev`; a separate job runs gitleaks over the full history.
+- `.github/workflows/replays.yml` (PRs that touch more than docs, and `main`): runs
+  `npm run e2e` in Chromium, Firefox and WebKit. Browsers are cached per Playwright
+  version; the job times out after 5 minutes (a normal run takes about one), so a
+  hung download fails fast.
 - `.github/workflows/deploy.yml` (push to `main`): builds and publishes `dist/` to
   GitHub Pages. Only the deploy job gets `pages: write` and `id-token: write`.
 - All actions are pinned to a full commit SHA. Dependabot updates npm weekly and
