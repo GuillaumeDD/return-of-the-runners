@@ -174,7 +174,7 @@ Plus an i18n key for any new UI string (EN + FR), and a screenshot in the PR.
 - digging left/right opens a hole in the brick diagonally below on that side;
 - cannot dig bedrock, ladders, empty cells, or under a brick/ladder/gold blocking
   the cell above the target;
-- cannot dig while falling or while on a ladder/bar (to confirm against original);
+- cannot dig while falling; can dig from a ladder or a bar (1982 rule, see ARCHITECTURE);
 - the hole is dug over `HOLE_TICKS.digging`, stays open for `HOLE_TICKS.open`, then
   refills over `HOLE_TICKS.closing`;
 - a runner inside a hole when it refills dies;

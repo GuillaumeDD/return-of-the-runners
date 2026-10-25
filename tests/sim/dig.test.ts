@@ -59,14 +59,22 @@ describe("digging", () => {
     expect(step(s, digRight).holes).toEqual([]);
   });
 
-  it("cannot dig while on a ladder (provisional)", () => {
-    const s = atCell(stateFrom(["P..H....", "...H....", "########"]), 3, 1);
+  it("cannot dig while falling between two rows", () => {
+    const s = placeRunner(stateFrom(["...P....", "........", "########"]), 3 * SUB, 4);
     expect(step(s, digRight).holes).toEqual([]);
   });
 
-  it("cannot dig while hanging on a bar (provisional)", () => {
+  // Regression: digging from a ladder or a bar used to be refused. The 1982 rules allow it
+  // (the runner's own cell is not checked), see ARCHITECTURE.
+  it("digs while standing on a ladder", () => {
+    const s = atCell(stateFrom(["P..H....", "...H....", "########"]), 3, 1);
+    expect(holes(step(s, digRight))).toEqual([{ cx: 4, cy: 2 }]);
+    expect(holes(step(s, digLeft))).toEqual([{ cx: 2, cy: 2 }]);
+  });
+
+  it("digs while hanging on a bar", () => {
     const s = atCell(stateFrom(["P..-....", "########"]), 3, 0);
-    expect(step(s, digRight).holes).toEqual([]);
+    expect(holes(step(s, digRight))).toEqual([{ cx: 4, cy: 1 }]);
   });
 
   // Regression: walking stops between two tiles, and digging used to need exact alignment,
@@ -96,10 +104,20 @@ describe("digging", () => {
     expect(step(s, digLeft).holes).toEqual([]);
   });
 
-  it("cannot dig while between two rows", () => {
-    const s = placeRunner(stateFrom(["P..H....", "...H....", "########"]), 3 * SUB, 4);
-    expect(step(s, digRight).holes).toEqual([]);
-  });
+  it.each([1, 2, 3, 4, 5, 6, 7])(
+    "on a ladder %i sub-units below a row, digs from the nearest row and snaps onto it",
+    (offset) => {
+      const near = offset < SUB / 2 ? 1 : 2;
+      // A ladder in column 3; bricks to its right only under the nearest row.
+      const rows = ["P..H....", "...H....", "...H....", "...H....", "########"].map((r, y) =>
+        y === near + 1 ? "...H####" : r,
+      );
+      const s = placeRunner(stateFrom(rows), 3 * SUB, SUB + offset);
+      const dug = step(s, digRight);
+      expect(holes(dug)).toEqual([{ cx: 4, cy: near + 1 }]);
+      expect(dug.runner.y).toBe(near * SUB);
+    },
+  );
 
   it("digging freezes the runner for HOLE_TICKS.digging ticks", () => {
     let s = step(stateFrom(floor), digRight);
