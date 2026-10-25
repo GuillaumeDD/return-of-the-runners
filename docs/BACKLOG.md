@@ -2,7 +2,8 @@
 
 Scoped work items. Ideas start in the Growth section of `docs/PRD.md`.
 Each item lands in its own commit, which also flips its status here.
-Step 1 (B-004 to B-010) is planned in [`plans/step-1.md`](plans/step-1.md), including the delivery order.
+Step 1 (B-004 to B-010) is planned in [`plans/step-1.md`](plans/step-1.md), step 2 (B-011 to
+B-017) in [`plans/step-2.md`](plans/step-2.md), each with its delivery order.
 
 Statuses: `todo` / `in-progress` / `done`.
 
@@ -18,3 +19,10 @@ Statuses: `todo` / `in-progress` / `done`.
 | B-008 | Monks and AI                                            | Chase, fall into holes, carry/drop gold, respawn; randomized cross-check of pathfinding against a naive reference                                           | done   |
 | B-009 | Renderer + input + first playable level                 | Canvas renderer, keyboard input, one hand-made level playable in the deployed build                                                                         | done   |
 | B-010 | Replay determinism                                      | Recorded input log replays to the same state hash in Node and in headless browsers (Playwright: Chromium, Firefox, WebKit)                                  | done   |
+| B-011 | Screens and routing                                     | Play / Editor switch by URL hash (`#play`, `#edit`, `#level=…`); back button works; game loop runs only on play screens                                     | todo   |
+| B-012 | Editor model                                            | Pure model: paint, line, erase, resize, rename, undo/redo; one stroke = one undo step; output always goes through `parseLevel`; randomized shape test       | todo   |
+| B-013 | Painting UI                                             | Palette with translated tile names and number keys; left paints, right erases, drag fills gaps; name and size fields; EN + FR                               | todo   |
+| B-014 | Test play                                               | "Test" plays the edited level and returns to the editor unchanged; blocked with translated errors while the level is invalid                                | todo   |
+| B-015 | My levels (browser storage)                             | Save, list, open, rename, delete in `localStorage`; stored data validated on read; corrupt entries skipped and reported; quota errors handled               | todo   |
+| B-016 | Export / import files, reachability warning             | Download and import `.rotr.json` (64 KB cap before reading); warning for gold or exit unreachable without digging, cross-checked against the simulation     | todo   |
+| B-017 | Share links                                             | Level in the URL fragment (deflate-raw + base64url); length and decompressed-size caps; fuzzed; link opens in Chromium, Firefox and WebKit (Playwright)     | todo   |
