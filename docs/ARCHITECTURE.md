@@ -21,7 +21,9 @@ Every new runtime dependency is justified in its PR (CLAUDE.md § Security).
 ## Module layout
 
 ```
-index.html ── src/main.ts        entry point: wires DOM, input, loop, rendering
+index.html ── src/main.ts        entry point: wires DOM, screens, input, loop, rendering
+              src/app/           screens by URL hash (`#play`, `#edit`, `#level=…`)
+              src/editor/        level editor (step 2)
               src/i18n/          UI strings (en, fr)
               src/sim/           pure, deterministic game simulation
               src/game/loop.ts   fixed-timestep accumulator (real time → whole ticks)
@@ -156,6 +158,13 @@ Code: `src/sim/`. Entry points: `createState(level, seed)` and
 - The renderer draws the state with placeholder shapes, `TILE_PX = 24` pixels per tile
   (3 per sub-unit); the canvas is sized to the level and scaled by CSS.
 - Bundled levels go through `parseLevel` like any imported level.
+- **Screens** (`app/route.ts`): the URL hash picks the screen, so the back button works
+  without a server. `#edit` is the editor, `#level=<payload>` a shared level (payloads
+  over `MAX_SHARE_PAYLOAD` are never decoded; until B-017 it plays the bundled level),
+  anything else is play. The game loop and its key listeners run only while the play
+  screen is shown; coming back resumes the same game without catch-up ticks.
+- The editor draws the level grid with `renderGrid`: tiles as in the game, start
+  markers as the actors, and faint cell lines.
 
 ## Level format
 

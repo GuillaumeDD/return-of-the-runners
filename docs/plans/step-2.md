@@ -71,9 +71,23 @@ a screenshot in its PR.
 `tests/app/route.test.ts`
 
 - `""`, `#`, `#play` → play; `#edit` → edit; `#level=abc` → shared with payload `abc`;
-- unknown hashes fall back to play; `routeHash(parseRoute(h))` round-trips for every
-  known route;
-- a payload longer than the share-link cap is rejected at routing (never decoded).
+- unknown hashes (wrong case, trailing characters, empty payload, no `#`) fall back to
+  play;
+- `parseRoute(routeHash(r))` gives back every known route `r`;
+- a payload at the share-link cap is kept; one character longer is rejected at routing
+  (never decoded).
+
+`tests/editor/blank.test.ts`
+
+- a new grid is 28×16 by default, empty rows on a bedrock floor; any size within the
+  format limits works, and sizes outside them (too big, negative, not integers) are
+  clamped.
+
+`tests/render/grid.test.ts`
+
+- `gridCanvasSize` is the grid size times `TILE_PX`, and 0 × 0 for an empty grid;
+- `renderGrid` fills the background first, draws start markers as the runner and monk
+  (not as tiles), and does not throw on an empty grid.
 
 ### B-012 — Editor model
 

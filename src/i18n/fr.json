@@ -5,5 +5,8 @@
   "caught": "Attrapé ! On recommence…",
   "won": "Niveau terminé ! On le rejoue…",
   "levelError": "Impossible de charger ce niveau.",
-  "switchLanguage": "English"
+  "switchLanguage": "English",
+  "navPlay": "Jouer",
+  "navEdit": "Éditeur",
+  "editorHint": "Éditeur de niveaux : la peinture à la souris arrive dans la prochaine mise à jour."
 }

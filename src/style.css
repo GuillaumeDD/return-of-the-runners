@@ -52,3 +52,32 @@ button {
   padding: 4px 12px;
   cursor: pointer;
 }
+
+.screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.screen[hidden] {
+  display: none;
+}
+
+.tabs {
+  display: flex;
+  gap: 16px;
+}
+
+.tabs a {
+  color: #aaa;
+  text-decoration: none;
+  padding: 4px 12px;
+  border-bottom: 2px solid transparent;
+}
+
+.tabs a[aria-current="page"] {
+  color: #f2c94c;
+  border-bottom-color: #f2c94c;
+}

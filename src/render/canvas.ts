@@ -23,6 +23,7 @@ const COLOR = {
   runnerDead: "#d64545",
   monk: "#e07b39",
   monkFace: "#2b1a0e",
+  gridLine: "#222",
 } as const;
 
 export function canvasSize(state: Pick<GameState, "width" | "height">): {
@@ -38,13 +39,10 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState): void {
   ctx.fillRect(0, 0, width, height);
 
   const exitOpen = state.goldLeft === 0;
-  state.tiles.forEach((row, cy) => {
-    for (let cx = 0; cx < row.length; cx++) {
-      const tile = row.charAt(cx);
-      const hole = holeAt(state.holes, cx, cy);
-      if (hole === undefined) drawTile(ctx, tile, cx * TILE_PX, cy * TILE_PX, exitOpen);
-      else drawHole(ctx, brickLeft(hole.age), cx * TILE_PX, cy * TILE_PX);
-    }
+  drawTiles(state.tiles, (tile, cx, cy, x, y) => {
+    const hole = holeAt(state.holes, cx, cy);
+    if (hole === undefined) drawTile(ctx, tile, x, y, exitOpen);
+    else drawHole(ctx, brickLeft(hole.age), x, y);
   });
   for (const m of state.monks) drawMonk(ctx, m);
   drawRunner(
@@ -54,6 +52,41 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState): void {
     state.runner.facing,
     state.status === "dead",
   );
+}
+
+/**
+ * Draws a level grid as the editor shows it: tiles as in the game (exit locked), and
+ * the runner and monk start markers as the actors that will stand there.
+ */
+export function renderGrid(ctx: CanvasRenderingContext2D, grid: readonly string[]): void {
+  const size = gridCanvasSize(grid);
+  ctx.fillStyle = COLOR.background;
+  ctx.fillRect(0, 0, size.width, size.height);
+  drawTiles(grid, (tile, _cx, _cy, x, y) => {
+    if (tile === TILE.runnerStart) drawRunner(ctx, x, y, 1, false);
+    else if (tile === TILE.monkStart) drawMonkAt(ctx, x, y, -1, false);
+    else drawTile(ctx, tile, x, y, false);
+  });
+  // Faint cell lines, so empty cells can be aimed at.
+  ctx.fillStyle = COLOR.gridLine;
+  for (let x = TILE_PX; x < size.width; x += TILE_PX) ctx.fillRect(x, 0, 1, size.height);
+  for (let y = TILE_PX; y < size.height; y += TILE_PX) ctx.fillRect(0, y, size.width, 1);
+}
+
+/** Canvas size for a grid; an empty grid gives 0 × 0. */
+export function gridCanvasSize(grid: readonly string[]): { width: number; height: number } {
+  return canvasSize({ width: grid[0]?.length ?? 0, height: grid.length });
+}
+
+/** Calls `draw` for every cell, with its tile, cell and pixel position. */
+function drawTiles(
+  rows: readonly string[],
+  draw: (tile: string, cx: number, cy: number, x: number, y: number) => void,
+): void {
+  rows.forEach((row, cy) => {
+    for (let cx = 0; cx < row.length; cx++)
+      draw(row.charAt(cx), cx, cy, cx * TILE_PX, cy * TILE_PX);
+  });
 }
 
 /**
@@ -151,15 +184,23 @@ function drawRunner(
 /** A monk: a robed figure; a gold band on its head while it carries gold. */
 function drawMonk(ctx: CanvasRenderingContext2D, m: Monk): void {
   if (m.mode === "dead") return;
+  drawMonkAt(ctx, m.x * PX_PER_SUB, m.y * PX_PER_SUB, m.facing, m.carry > 0);
+}
+
+function drawMonkAt(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  facing: -1 | 1,
+  carrying: boolean,
+): void {
   const s = TILE_PX;
-  const x = m.x * PX_PER_SUB;
-  const y = m.y * PX_PER_SUB;
   ctx.fillStyle = COLOR.monk;
   ctx.fillRect(x + 8, y + 2, 8, 7); // head
   ctx.fillRect(x + 5, y + 9, 14, s - 9); // robe
   ctx.fillStyle = COLOR.monkFace;
-  ctx.fillRect(m.facing === 1 ? x + 13 : x + 9, y + 4, 2, 2); // eye shows facing
-  if (m.carry > 0) {
+  ctx.fillRect(facing === 1 ? x + 13 : x + 9, y + 4, 2, 2); // eye shows facing
+  if (carrying) {
     ctx.fillStyle = COLOR.gold;
     ctx.fillRect(x + 8, y + 1, 8, 2);
   }
