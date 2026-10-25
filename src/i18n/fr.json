@@ -1,6 +1,7 @@
 {
   "title": "Return of the Runners",
   "subtitle": "Un remake de fan de Lode Runner: The Legend Returns",
-  "pressKey": "Bientôt : creuse, ramasse l'or, échappe aux moines",
+  "controls": "Flèches : courir, grimper et se laisser tomber. Le creusement, l'or et les moines arrivent bientôt.",
+  "levelError": "Impossible de charger ce niveau.",
   "switchLanguage": "English"
 }

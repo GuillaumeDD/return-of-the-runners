@@ -7,6 +7,7 @@ here with its author, source and license. Files without an entry are not merged.
 - Third-party assets must be CC0, CC BY, CC BY-SA or GPL-3.0 compatible.
 - **Nothing extracted from the original game** (graphics, sound, music, level data).
 
-| File              | Author | Source | License |
-| ----------------- | ------ | ------ | ------- |
-| _(no assets yet)_ |        |        |         |
+| File                          | Author                             | Source                                                            | License      |
+| ----------------------------- | ---------------------------------- | ----------------------------------------------------------------- | ------------ |
+| `src/levels/first-steps.json` | Return of the Runners contributors | Original level, made for this project                             | CC BY-SA 4.0 |
+| `docs/screenshots/*.png`      | Return of the Runners contributors | Screenshots of this game (placeholder shapes, no third-party art) | CC BY-SA 4.0 |
