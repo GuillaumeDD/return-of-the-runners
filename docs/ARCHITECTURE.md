@@ -60,7 +60,8 @@ Code: `src/sim/`. Entry points: `createState(level, seed)` and
   cell, or by brick, bedrock, a ladder or the level floor below it. Otherwise it falls,
   and input is ignored until it lands or catches a bar.
 - **Up** needs a ladder in the current cell; **down** works onto or along a ladder, and
-  lets go of a bar. Vertical input wins when it can move; otherwise horizontal applies.
+  lets go of a bar. Moving along a bar usually stops between two columns: down then
+  snaps the actor onto the nearest column (up to half a tile) and it drops from there. Vertical input wins when it can move; otherwise horizontal applies.
   There is no jump.
 - Outside the level reads as bedrock (walls and ceiling); the bottom row stands on the
   level floor.

@@ -123,7 +123,8 @@ Ordered so something visible arrives early (B-009 right after movement):
 - walks left/right on brick, stops at walls and level edges;
 - climbs up and down a ladder; cannot climb where there is no ladder;
 - reaching the top of a ladder lets the runner step onto the floor beside/above it;
-- moves along a bar; pressing down on a bar drops the runner;
+- moves along a bar; pressing down on a bar drops the runner, also when it stopped
+  between two columns (snaps to the nearest one first);
 - falls when there is no support (empty below, not on ladder/bar), lands on brick,
   bedrock, ladder top, or the bottom row;
 - grabs a bar when falling through its cell;
