@@ -5,5 +5,8 @@
   "caught": "Caught! Restarting…",
   "won": "Level complete! Playing it again…",
   "levelError": "This level could not be loaded.",
-  "switchLanguage": "Français"
+  "switchLanguage": "Français",
+  "navPlay": "Play",
+  "navEdit": "Editor",
+  "editorHint": "Level editor: painting with the mouse arrives in the next update."
 }

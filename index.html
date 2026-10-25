@@ -16,8 +16,18 @@
         <h1 id="title"></h1>
         <p id="subtitle"></p>
       </header>
-      <canvas id="screen" width="672" height="384"></canvas>
-      <p id="message" class="hint"></p>
+      <nav class="tabs">
+        <a id="nav-play" href="#play"></a>
+        <a id="nav-edit" href="#edit"></a>
+      </nav>
+      <section id="play-screen" class="screen">
+        <canvas id="screen" width="672" height="384"></canvas>
+        <p id="message" class="hint"></p>
+      </section>
+      <section id="edit-screen" class="screen" hidden>
+        <canvas id="editor-grid" width="672" height="384"></canvas>
+        <p id="editor-hint" class="hint"></p>
+      </section>
       <p><button id="lang" type="button"></button></p>
     </main>
     <script type="module" src="./src/main.ts"></script>
