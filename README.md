@@ -17,6 +17,7 @@ npm ci            # install exact locked dependencies
 npm run dev       # local dev server
 npm run typecheck && npm run lint && npm test   # must pass before each commit
 npm run build     # production build in dist/
+npm run e2e       # replays in real browsers (first: npx playwright install chromium firefox webkit)
 ```
 
 ## Documents

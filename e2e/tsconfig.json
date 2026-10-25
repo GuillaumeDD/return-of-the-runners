@@ -1,0 +1,8 @@
+{
+  // Playwright specs and config run in Node; the harness runs in the browser.
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "types": ["vite/client", "node"]
+  },
+  "include": ["./**/*.ts", "../src/**/*.ts", "../tests/helpers/**/*.ts"]
+}

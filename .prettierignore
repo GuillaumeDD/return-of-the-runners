@@ -3,3 +3,6 @@ node_modules/
 package-lock.json
 LICENSE
 tests/fixtures/
+dist-e2e/
+test-results/
+playwright-report/

@@ -114,7 +114,7 @@ rejects the feature.
 | --------------------------------------------------------------- | -------- | ------------------------------------------------ |
 | Hand-recreated original levels pack (from longplay screenshots) | proposed | Separate pack, family use                        |
 | Local importer for files from one's own copy of the original    | proposed | Reverse-engineering track; nothing redistributed |
-| Replays (record/playback from input log)                        | proposed | Falls out of the deterministic simulation        |
+| Replays (record/playback from input log)                        | proposed | Format and player exist (B-010); needs the UI    |
 | Recreated art in the style of TLR (1994): sprites, tile sets    | planned  | Placeholders until then; never extracted assets  |
 | Online multiplayer                                              | rejected | Same keyboard is enough (2026-10-24)             |
 | Decoding the original 150 levels                                | rejected | No public source found (2026-10-24)              |

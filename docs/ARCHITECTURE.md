@@ -12,7 +12,7 @@ in [`../CLAUDE.md`](../CLAUDE.md).
 | Rendering     | Canvas 2D, 640×480 logical resolution  | Scaled with `image-rendering: pixelated`                                                         |
 | Audio         | WebAudio                               | (step 4)                                                                                         |
 | Unit tests    | Vitest                                 | `tests/**/*.test.ts`; tests have their own `tsconfig` with Node types, which `src/` does not get |
-| Browser tests | Playwright                             | (step 1) replay determinism in a real engine                                                     |
+| Browser tests | Playwright                             | `e2e/`: replay determinism in Chromium, Firefox and WebKit                                       |
 | Lint / format | ESLint (`strictTypeChecked`), Prettier | Lint bans `Math.random`, `innerHTML`, `eval`, `new Function`                                     |
 | Runtime       | Node 22 (`.nvmrc`)                     | Dev and CI only; the game has **no runtime dependencies**                                        |
 
@@ -31,6 +31,8 @@ index.html ── src/main.ts        entry point: wires DOM, input, loop, render
               src/level/         level format: types, validator (migrations from v2 on)
 tests/                           Vitest tests, mirroring src/
 tests/fixtures/levels/           one fixture set per level format version
+tests/fixtures/replays/          committed replays and the result each must reach
+e2e/                             Playwright: the replays in real browser engines
 ```
 
 ## Simulation
@@ -47,8 +49,21 @@ Code: `src/sim/`. Entry points: `createState(level, seed)` and
   reads its state. This makes gameplay unit-testable and replayable.
 - **Engine-independent:** no transcendental `Math` functions, no reliance on the
   iteration order of objects keyed by numeric-looking strings.
-- **Replays:** a recorded input log must replay to the same state hash in Node and in
-  a headless browser (BACKLOG B-010).
+- **Replays** (`replay.ts`): a level, a seed and a run-length encoded input log
+  (`[ticks, keys]`, keys in the canonical order `LRUD<>`, `""` for no input) rebuild
+  the exact same game. `runReplay` returns the final state and a checkpoint hash every
+  simulated second. `parseReplay` validates untrusted replays (known version, capped
+  size, ticks and runs; the level goes through the level validator).
+- **Determinism evidence** (CLAUDE.md § Determinism): each replay in
+  `tests/fixtures/replays/` (`{ about, replay, expected }`) must reach its committed
+  tick, status and hash in Node (`tests/sim/replay.test.ts`), and the same checkpoints
+  in Chromium, Firefox and WebKit (`e2e/replay.spec.ts`, run in CI). Node and Chromium
+  share V8, so Firefox (SpiderMonkey) and WebKit (JavaScriptCore) are the real
+  cross-engine evidence. The browsers run a harness (`e2e/harness.html`) built by the
+  same Vite pipeline as the game, never deployed.
+- **When a replay's hash changes, gameplay changed.** Update `expected` only together
+  with an intentional rules change, and say so in the PR (the failing test prints the
+  new values).
 
 ### Movement model
 
@@ -227,7 +242,8 @@ data and the supply chain.
 ## Build, CI and deploy
 
 - `.github/workflows/ci.yml` (PRs and `main`): `npm ci`, typecheck, lint, test,
-  build, `npm audit --omit=dev`; a separate job runs gitleaks over the full history.
+  build, `npm audit --omit=dev`; a `replays` job runs `npm run e2e` in Chromium,
+  Firefox and WebKit; a separate job runs gitleaks over the full history.
 - `.github/workflows/deploy.yml` (push to `main`): builds and publishes `dist/` to
   GitHub Pages. Only the deploy job gets `pages: write` and `id-token: write`.
 - All actions are pinned to a full commit SHA. Dependabot updates npm weekly and

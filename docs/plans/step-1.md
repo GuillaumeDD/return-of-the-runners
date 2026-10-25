@@ -216,17 +216,31 @@ Plus an i18n key for any new UI string (EN + FR), and a screenshot in the PR.
 
 ### B-010 — Replay determinism
 
-- `src/sim/replay.ts`: input log format (run-length encoded per tick).
-- `tests/fixtures/replays/*.json`: level + seed + inputs + expected final hash.
+- `src/sim/replay.ts`: input log format (run-length encoded per tick), `runReplay`,
+  strict `parseReplay`.
+- `tests/fixtures/replays/*.json`: level + seed + inputs + expected final tick, status
+  and hash (a win, a monk trapped then respawned, seeded random play on the bundled
+  level).
 
 `tests/sim/replay.test.ts`
 
-- each committed replay reaches its expected hash in Node;
-- replaying twice in the same process gives the same hash at every 60th tick.
+- each committed replay reaches its expected tick, status and hash in Node;
+- replaying twice in the same process gives the same hash at every 60th tick;
+- each replay of a finished game ends on the tick the game ends (no padding);
+- an empty log gives one checkpoint (the initial state); a checkpoint every 60th tick,
+  plus the last tick when it is not one;
+- keys encode in canonical order and decode back for all 64 inputs; unknown, repeated
+  or out-of-order keys are rejected;
+- run-length encoding merges equal neighbours, and the round trip is exact (randomized);
+- `parseReplay` accepts valid replays and rejects, with a reason: non-JSON, wrong
+  format, unknown version, unknown field, bad seed, invalid level, malformed runs, too
+  many ticks or runs, oversized input;
+- `parseReplay` never throws on 2,000 random mutations of a valid replay.
 
-`e2e/replay.spec.ts` (Playwright, Chromium, run in CI)
+`e2e/replay.spec.ts` (Playwright, run in CI in Chromium, Firefox and WebKit)
 
-- the same replays run in the browser bundle reach the same hashes.
+- the same replays, run in a harness built like the game, reach the same checkpoint
+  hashes as in Node, and the committed final hash.
 
 ## Open questions (faithfulness)
 
