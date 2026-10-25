@@ -33,6 +33,11 @@ describe("keyboard input", () => {
     expect(b.has("ArrowUp")).toBe(true);
   });
 
+  it("maps the dig keys", () => {
+    expect(inputFrom(keyDown(new Set(), "KeyZ"))).toEqual({ ...NO_INPUT, digLeft: true });
+    expect(inputFrom(keyDown(new Set(), "KeyX"))).toEqual({ ...NO_INPUT, digRight: true });
+  });
+
   it("ignores unbound keys", () => {
     expect(inputFrom(keyDown(new Set(), "KeyQ"))).toEqual(NO_INPUT);
     expect(isBound("KeyQ")).toBe(false);
@@ -40,7 +45,14 @@ describe("keyboard input", () => {
   });
 
   it("uses the bindings table, so keys can be remapped", () => {
-    const wasd: Bindings = { left: ["KeyA"], right: ["KeyD"], up: ["KeyW"], down: ["KeyS"] };
+    const wasd: Bindings = {
+      left: ["KeyA"],
+      right: ["KeyD"],
+      up: ["KeyW"],
+      down: ["KeyS"],
+      digLeft: ["KeyQ"],
+      digRight: ["KeyE"],
+    };
     expect(inputFrom(keyDown(new Set(), "KeyA"), wasd)).toEqual({ ...NO_INPUT, left: true });
     expect(inputFrom(keyDown(new Set(), "ArrowLeft"), wasd)).toEqual(NO_INPUT);
   });

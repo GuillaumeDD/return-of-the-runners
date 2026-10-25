@@ -65,6 +65,21 @@ Code: `src/sim/`. Entry points: `createState(level, seed)` and
 - Outside the level reads as bedrock (walls and ceiling); the bottom row stands on the
   level floor.
 - Speeds are periods: an actor moves one sub-unit every `RUNNER_PERIOD.*` ticks.
+
+### Digging and holes
+
+- `holes.ts`: a hole is `{ cx, cy, age }`, kept in `GameState.holes` in creation order.
+  Its phase comes from its age only: **digging** (still solid), **open**, **closing**
+  (both passable), then it is removed and the brick is back (`HOLE_TICKS`).
+- `tileAt()` reads an open or closing hole as empty, so movement, falling and support
+  need no special case for holes.
+- **Digging** (`step.ts`, `tryDig`): exactly one dig key, the runner aligned on both
+  axes, standing (not falling, not on a ladder or bar), the target diagonally below on
+  that side an undug brick, and the cell above the target empty (no brick, ladder, bar
+  or gold). The runner turns that way and is busy (frozen) while the hole is dug.
+- Order within a tick: the runner acts (dig or move), holes age, then a runner whose
+  box overlaps a hole that just filled dies. A dead state only counts ticks;
+  `game/session.ts` restarts the level `RESTART_DELAY_TICKS` later.
 - **All tunable values live in `src/sim/rules.ts`** and are provisional until checked
   against the original (see the table below).
 
@@ -180,6 +195,10 @@ timestamp, or own playtest). Filled in as gameplay is implemented.
 | ------------------------------- | ---------------------------------- | -------------------------- |
 | Runner walk / climb / bar speed | 1 tile per 16 ticks (3.75 tiles/s) | **Provisional**, 1982 feel |
 | Fall speed                      | 1 tile per 8 ticks (7.5 tiles/s)   | **Provisional**, 1982 feel |
+| Hole digging time               | 15 ticks (0.25 s)                  | **Provisional**, 1982 feel |
+| Hole stays open                 | 240 ticks (4 s)                    | **Provisional**, 1982 feel |
+| Hole refill time                | 30 ticks (0.5 s)                   | **Provisional**, 1982 feel |
+| Digging from a ladder or bar    | not allowed                        | **Provisional**, 1982 rule |
 
 ## Intentional deviations from the original
 

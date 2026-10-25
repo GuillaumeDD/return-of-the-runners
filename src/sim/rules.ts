@@ -18,3 +18,13 @@ export const RUNNER_PERIOD = {
   bar: 2,
   fall: 1,
 } as const;
+
+/** Digging and holes. A hole goes through: digging → open → closing → brick again. */
+export const HOLE_TICKS = {
+  /** The brick is still solid while being dug; the runner cannot move meanwhile. */
+  digging: 15,
+  /** Fully open: actors can fall in and walk through. */
+  open: 240,
+  /** Refilling: still passable; whoever is inside when it ends dies. */
+  closing: 30,
+} as const;

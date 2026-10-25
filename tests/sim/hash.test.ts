@@ -19,14 +19,36 @@ describe("hashState", () => {
       { ...base, runner: { ...base.runner, x: base.runner.x + 1 } },
       { ...base, runner: { ...base.runner, y: base.runner.y + 1 } },
       { ...base, runner: { ...base.runner, facing: -1 } },
+      { ...base, runner: { ...base.runner, busy: 1 } },
+      { ...base, holes: [{ cx: 1, cy: 4, age: 0 }] },
+      { ...base, status: "dead" },
     ];
     for (const v of variants) expect(hashState(v)).not.toBe(hashState(base));
+  });
+
+  it("distinguishes hole fields", () => {
+    const base = stateFrom(rows);
+    const a = { ...base, holes: [{ cx: 1, cy: 4, age: 0 }] };
+    for (const h of [
+      { cx: 2, cy: 4, age: 0 },
+      { cx: 1, cy: 3, age: 0 },
+      { cx: 1, cy: 4, age: 1 },
+    ]) {
+      expect(hashState({ ...base, holes: [h] })).not.toBe(hashState(a));
+    }
   });
 
   it("does not depend on object key order", () => {
     const base = stateFrom(rows);
     const reordered: GameState = {
-      runner: { facing: base.runner.facing, y: base.runner.y, x: base.runner.x },
+      status: base.status,
+      runner: {
+        busy: base.runner.busy,
+        facing: base.runner.facing,
+        y: base.runner.y,
+        x: base.runner.x,
+      },
+      holes: base.holes,
       tiles: base.tiles,
       height: base.height,
       width: base.width,
@@ -45,8 +67,10 @@ describe("hashState", () => {
     s = run(s, press.right, 152);
     s = run(s, press.none, 300);
     expect(s.tick).toBe(600);
+    // Position first, so a movement regression is told apart from a serialization change.
+    expect(s.runner).toEqual({ x: 56, y: 24, facing: 1, busy: 0 });
     expect(hashState(s)).toBe(COMMITTED_HASH);
   });
 });
 
-const COMMITTED_HASH = 2978874540;
+const COMMITTED_HASH = 1883907308;

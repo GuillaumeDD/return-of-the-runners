@@ -1,14 +1,85 @@
+import { TILE } from "../level/format";
+import { HOLE_LIFETIME, holeAt, type Hole } from "./holes";
 import type { PlayerInput } from "./input";
-import { cellOf, isBar, isLadder, isPassable, isSupported, offsetOf } from "./physics";
-import { RUNNER_PERIOD, SUB } from "./rules";
+import {
+  cellOf,
+  isBar,
+  isLadder,
+  isPassable,
+  isSupported,
+  offsetOf,
+  tileAt,
+  type Terrain,
+} from "./physics";
+import { HOLE_TICKS, RUNNER_PERIOD, SUB } from "./rules";
 import type { Actor, Facing, GameState } from "./state";
 
-type Terrain = Pick<GameState, "width" | "height" | "tiles">;
-
-/** Advances the game by one tick. Pure: returns a new state. */
+/**
+ * Advances the game by one tick. Pure: returns a new state.
+ *
+ * Order within a tick: the runner acts (dig or move) on the current terrain, then holes
+ * age, then a runner inside a hole that just filled dies.
+ */
 export function step(state: GameState, input: PlayerInput): GameState {
   const tick = state.tick + 1;
-  return { ...state, tick, runner: stepActor(state, state.runner, input, tick) };
+  if (state.status !== "playing") return { ...state, tick };
+
+  let runner = state.runner;
+  let holes = state.holes;
+  if (runner.busy > 0) {
+    runner = { ...runner, busy: runner.busy - 1 };
+  } else {
+    const dig = tryDig(state, runner, input);
+    if (dig !== null) {
+      runner = dig.runner;
+      holes = [...holes, dig.hole];
+    } else {
+      runner = stepActor(state, runner, input, tick);
+    }
+  }
+
+  const aged = holes.map((h) => ({ ...h, age: h.age + 1 }));
+  const filled = aged.filter((h) => h.age >= HOLE_LIFETIME);
+  const status = filled.some((h) => overlapsCell(runner, h.cx, h.cy)) ? "dead" : "playing";
+  return {
+    ...state,
+    tick,
+    runner,
+    holes: aged.filter((h) => h.age < HOLE_LIFETIME),
+    status,
+  };
+}
+
+/** Whether any part of the actor's tile-sized box is inside cell (cx, cy). */
+export function overlapsCell(a: Actor, cx: number, cy: number): boolean {
+  return (
+    cellOf(a.x) <= cx &&
+    cx <= cellOf(a.x + SUB - 1) &&
+    cellOf(a.y) <= cy &&
+    cy <= cellOf(a.y + SUB - 1)
+  );
+}
+
+/**
+ * Digs the brick diagonally below on the given side. Requires the runner to stand
+ * aligned on solid ground (not falling, not on a ladder or bar: provisional, see
+ * ARCHITECTURE), the target to be an undug brick, and the cell above it to be empty.
+ */
+function tryDig(t: Terrain, a: Actor, input: PlayerInput): { runner: Actor; hole: Hole } | null {
+  if (input.digLeft === input.digRight) return null;
+  const dir: Facing = input.digLeft ? -1 : 1;
+  if (offsetOf(a.x) !== 0 || offsetOf(a.y) !== 0 || isFalling(t, a)) return null;
+  const cx = cellOf(a.x);
+  const cy = cellOf(a.y);
+  if (isLadder(t, cx, cy) || isBar(t, cx, cy)) return null;
+  const tx = cx + dir;
+  const ty = cy + 1;
+  if (tileAt(t, tx, ty) !== TILE.brick || holeAt(t.holes, tx, ty) !== undefined) return null;
+  if (tileAt(t, tx, cy) !== TILE.empty) return null;
+  return {
+    runner: { ...a, facing: dir, busy: HOLE_TICKS.digging },
+    hole: { cx: tx, cy: ty, age: 0 },
+  };
 }
 
 /** Whether the actor is falling: aligned on x and not held up. */
