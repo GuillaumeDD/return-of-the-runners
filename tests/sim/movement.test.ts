@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { RUNNER_PERIOD, SUB } from "../../src/sim/rules";
-import { isFalling } from "../../src/sim/step";
+import { isFalling } from "../../src/sim/move";
 import { atCell, cell, placeRunner, press, run, stateFrom } from "./helpers";
 
 const TILE_TICKS = {

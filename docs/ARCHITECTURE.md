@@ -99,6 +99,36 @@ Code: `src/sim/`. Entry points: `createState(level, seed)` and
   check for death. `game/session.ts` restarts the level after a win, since there is
   only one level until packs exist.
 
+### Monks
+
+- `GameState.monks`, created from the `M` markers in reading order, which is also the
+  update order. They move with the runner's rules (`move.ts`, shared) at their own,
+  slower speed (`MONK_PERIOD`). A monk's body is floor: the runner and other monks can
+  stand on it (`physics.ts`, `monkAt`). Monks never overlap: a move into another monk
+  is cancelled.
+- **Chase AI** (`ai.ts`): the classic 1982 algorithm, reimplemented. Same row and a
+  walkable floor between them: go straight at the runner. Otherwise scan the monk's
+  floor up to the walls and edges; from each column, see where falling or a ladder
+  would lead, and rate it: the runner's row (nearest column first), then above it, then
+  below it. The AI reads static tiles, so a hole looks like brick and monks walk into
+  it. Like the original, the same-row check ignores walls: a monk on the runner's row
+  presses against a wall rather than going around it. A randomized test checks the AI
+  against a naive reference implementation.
+- **Holes** (`monks.ts`): a monk aligned in an open hole is `trapped` for
+  `MONK_TICKS.trapped`, then `escaping`: it climbs to the row above and walks off
+  sideways, without falling back in (walled in on both sides, it falls back in). If the hole refills on it, it is `dead` for
+  `MONK_TICKS.respawn`, then reappears on the second row from a PRNG-chosen column (the
+  first empty cell from there, wrapping, else the next row down).
+- **Gold**: a monk with nothing picks up the gold it touches and carries it for
+  `MONK_CARRY.min` plus a PRNG draw in `[0, MONK_CARRY.spread)` cells, then drops it on
+  the next free floor cell; it waits one cell before picking gold up again. A trapped
+  monk drops its gold on top of the hole and waits two cells, so it does not take it
+  back while climbing out. Carried gold still counts in `goldLeft`.
+- **Catching**: a monk whose centre cell is the runner's catches it (status `dead`). A
+  monk standing over a dig target blocks the dig.
+- Order within a tick: runner, gold and exit as above, then each monk in order (move,
+  gold, trap, catch), then holes age and kill whoever they fill.
+
 ## Game loop, input and rendering
 
 - `requestAnimationFrame` drives the loop; `advance()` turns elapsed time into whole
@@ -218,14 +248,21 @@ timestamp, or own playtest). Filled in as gameplay is implemented.
 | Digging under gold              | allowed, the gold stays in place   | Guillaume's memory of TLR  |
 | Gold is collected               | when the runner's centre enters it | **Provisional**            |
 | Exit                            | door, opens once all gold is taken | **Provisional**, to check  |
+| Monk speed                      | 2/3 of the runner's                | **Provisional**, 1982 feel |
+| Monk chase AI                   | classic floor scan (see Monks)     | 1982 rule [^lrtr]          |
+| Monk stuck in a hole            | 120 ticks (2 s), then climbs out   | **Provisional**            |
+| Monk respawn                    | after 60 ticks, second row, random | 1982 rule [^lrtr]          |
+| Monk carries gold               | 12 to 37 cells, then drops it      | 1982 rule [^lrtr]          |
+| Caught by a monk                | same centre cell                   | **Provisional**            |
 
 [^lrtr]:
     1982 rules as reimplemented by _Lode Runner Total Recall_, `ok2Dig()` in
     [`lodeRunner.runner.js`](https://github.com/SimonHung/LodeRunner_TotalRecall/blob/master/lodeRunner.runner.js):
-    only the target and the cell above it are checked. Still to check against TLR.
+    only the target and the cell above it are checked. The monk rules come from
+    `lodeRunner.guard.js` in the same project. Still to check against TLR.
 
 ## Intentional deviations from the original
 
-| Deviation    | Reason |
-| ------------ | ------ |
-| _(none yet)_ |        |
+| Deviation                                                                                                        | Reason                                                |
+| ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| A trapped monk with no room above its hole keeps its gold (1982: it is lost), even if it then dies and reappears | Losing gold would make the level impossible to finish |

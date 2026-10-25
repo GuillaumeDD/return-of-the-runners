@@ -3,7 +3,11 @@ import { isDugOut } from "./holes";
 import { SUB } from "./rules";
 import type { GameState } from "./state";
 
-export type Terrain = Pick<GameState, "width" | "height" | "tiles" | "holes">;
+/**
+ * What movement needs to know: the terrain, the holes, and the monks, whose bodies hold
+ * up whoever stands on them. When moving a monk, `monks` holds the other monks only.
+ */
+export type Terrain = Pick<GameState, "width" | "height" | "tiles" | "holes" | "monks">;
 
 /**
  * Tile at a cell, as actors experience it: a dug-out brick reads as empty, and anything
@@ -34,13 +38,20 @@ export function isBar(t: Terrain, cx: number, cy: number): boolean {
 
 /**
  * Whether an actor standing exactly on cell (cx, cy) is held up: by a ladder or bar in
- * its own cell, or by a solid tile, a ladder, or the level floor below it.
+ * its own cell, or by a solid tile, a ladder, a monk, or the level floor below it.
  */
 export function isSupported(t: Terrain, cx: number, cy: number): boolean {
   if (isLadder(t, cx, cy) || isBar(t, cx, cy)) return true;
   if (cy + 1 >= t.height) return true;
   const below = tileAt(t, cx, cy + 1);
-  return isSolid(below) || below === TILE.ladder;
+  return isSolid(below) || below === TILE.ladder || monkAt(t, cx, cy + 1);
+}
+
+/** Whether a monk's body (its centre cell) is in cell (cx, cy). Dead monks are not. */
+export function monkAt(t: Pick<Terrain, "monks">, cx: number, cy: number): boolean {
+  return t.monks.some(
+    (m) => m.mode !== "dead" && cellOf(m.x + SUB / 2) === cx && cellOf(m.y + SUB / 2) === cy,
+  );
 }
 
 /** Floor division that also works for negative offsets. */

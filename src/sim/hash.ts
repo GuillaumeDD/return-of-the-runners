@@ -1,6 +1,12 @@
-import type { GameState, Status } from "./state";
+import type { GameState, MonkMode, Status } from "./state";
 
 const STATUS_CODE: Readonly<Record<Status, number>> = { playing: 0, dead: 1, won: 2 };
+const MONK_MODE_CODE: Readonly<Record<MonkMode, number>> = {
+  free: 0,
+  trapped: 1,
+  escaping: 2,
+  dead: 3,
+};
 
 const FNV_OFFSET = 0x811c9dc5;
 const FNV_PRIME = 0x01000193;
@@ -41,6 +47,18 @@ export function hashState(s: GameState): number {
     int(h.cx);
     int(h.cy);
     int(h.age);
+  }
+  int(s.monks.length);
+  for (const m of s.monks) {
+    int(m.x);
+    int(m.y);
+    int(m.facing);
+    int(m.busy);
+    int(MONK_MODE_CODE[m.mode]);
+    int(m.timer);
+    int(m.carry);
+    int(m.holeX);
+    int(m.holeY);
   }
   int(STATUS_CODE[s.status]);
   // When adding a field to GameState, add it here too (hash.test.ts checks each field).

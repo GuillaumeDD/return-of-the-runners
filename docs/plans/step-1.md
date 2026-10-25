@@ -192,14 +192,18 @@ Plus an i18n key for any new UI string (EN + FR), and a screenshot in the PR.
 
 `tests/sim/monk.test.ts`
 
-- monks follow the same movement and falling rules as the runner (shared code);
-- a monk touching the runner kills them;
-- a monk that walks over gold may pick it up (one at a time) and drops it when it
-  falls into a hole (to confirm against original);
-- a monk in a hole is stuck for `MONK_TRAPPED_TICKS`, then climbs out if the hole is
-  still open; the runner can walk across a trapped monk's head;
-- a monk inside a refilling hole dies and respawns at a PRNG-chosen top-row cell
-  after `MONK_RESPAWN_TICKS`;
+- monks are created from `M` markers in reading order;
+- monks walk and fall at `MONK_PERIOD` with the runner's movement rules (shared code),
+  and climb ladders toward the runner;
+- a monk touching the runner kills them; the runner can stand on a monk's head; a
+  monk over a dig target blocks the dig;
+- a monk that walks over gold picks it up (one at a time), carries it for
+  `MONK_CARRY` cells, drops it on free floor, and waits a cell before taking more;
+  a trapped monk drops its gold on top of the hole; carried gold still counts as left;
+- a monk walking over an open hole falls in and is trapped, aligned in it, for
+  `MONK_TICKS.trapped`, then climbs out and leaves the hole's column;
+- a monk inside a refilling hole dies and reappears after `MONK_TICKS.respawn` on the
+  second row, at a PRNG-chosen column (skipping taken cells, wrapping, then lower);
 - monks never overlap each other.
 
 `tests/sim/monk-ai.test.ts`
