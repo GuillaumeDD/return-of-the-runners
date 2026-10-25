@@ -1,4 +1,5 @@
 import { TILE, type Level } from "../level/format";
+import { countGold } from "./gold";
 import type { Hole } from "./holes";
 import { SUB } from "./rules";
 
@@ -13,7 +14,7 @@ export interface Actor {
   readonly busy: number;
 }
 
-export type Status = "playing" | "dead";
+export type Status = "playing" | "dead" | "won";
 
 /**
  * The whole game state: plain data only (no classes, no functions), so it can be
@@ -24,8 +25,13 @@ export interface GameState {
   readonly rng: number;
   readonly width: number;
   readonly height: number;
-  /** Static terrain, `height` rows of `width` tile chars; start markers become empty. */
+  /**
+   * Terrain, `height` rows of `width` tile chars. Start markers become empty; collected
+   * gold is removed.
+   */
   readonly tiles: readonly string[];
+  /** Gold not yet collected by the runner. The exit opens when it reaches 0. */
+  readonly goldLeft: number;
   /** Holes being dug or open, ordered by creation (deterministic). */
   readonly holes: readonly Hole[];
   readonly runner: Actor;
@@ -48,6 +54,7 @@ export function createState(level: Level, seed: number): GameState {
     width: level.width,
     height: level.height,
     tiles,
+    goldLeft: countGold(tiles),
     holes: [],
     runner: { x: runnerCol * SUB, y: runnerRow * SUB, facing: 1, busy: 0 },
     status: "playing",

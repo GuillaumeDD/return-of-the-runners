@@ -1,4 +1,5 @@
 import { TILE } from "../level/format";
+import { centerCell, takeGold } from "./gold";
 import { HOLE_LIFETIME, holeAt, type Hole } from "./holes";
 import type { PlayerInput } from "./input";
 import {
@@ -17,8 +18,9 @@ import type { Actor, Facing, GameState } from "./state";
 /**
  * Advances the game by one tick. Pure: returns a new state.
  *
- * Order within a tick: the runner acts (dig or move) on the current terrain, then holes
- * age, then a runner inside a hole that just filled dies.
+ * Order within a tick: the runner acts (dig or move) on the current terrain, picks up
+ * the gold it touches and wins if it touches the open exit; then holes age, and a runner
+ * inside a hole that just filled dies (unless it just won).
  */
 export function step(state: GameState, input: PlayerInput): GameState {
   const tick = state.tick + 1;
@@ -38,15 +40,27 @@ export function step(state: GameState, input: PlayerInput): GameState {
     }
   }
 
+  const { cx, cy } = centerCell(runner);
+  let tiles = state.tiles;
+  let goldLeft = state.goldLeft;
+  const taken = takeGold(tiles, cx, cy);
+  if (taken !== null) {
+    tiles = taken;
+    goldLeft -= 1;
+  }
+  const won = goldLeft === 0 && tiles[cy]?.charAt(cx) === TILE.exit;
+
   const aged = holes.map((h) => ({ ...h, age: h.age + 1 }));
   const filled = aged.filter((h) => h.age >= HOLE_LIFETIME);
-  const status = filled.some((h) => overlapsCell(runner, h.cx, h.cy)) ? "dead" : "playing";
+  const dead = filled.some((h) => overlapsCell(runner, h.cx, h.cy));
   return {
     ...state,
     tick,
+    tiles,
+    goldLeft,
     runner,
     holes: aged.filter((h) => h.age < HOLE_LIFETIME),
-    status,
+    status: won ? "won" : dead ? "dead" : "playing",
   };
 }
 

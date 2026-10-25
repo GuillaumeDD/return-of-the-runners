@@ -16,7 +16,8 @@ const COLOR = {
   ladder: "#d9b36c",
   bar: "#cfcfcf",
   gold: "#f2c94c",
-  exit: "#4caf50",
+  exitLocked: "#666",
+  exitOpen: "#4caf50",
   runner: "#f5f5f5",
   runnerFace: "#3a7bd5",
   runnerDead: "#d64545",
@@ -34,11 +35,12 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState): void {
   ctx.fillStyle = COLOR.background;
   ctx.fillRect(0, 0, width, height);
 
+  const exitOpen = state.goldLeft === 0;
   state.tiles.forEach((row, cy) => {
     for (let cx = 0; cx < row.length; cx++) {
       const tile = row.charAt(cx);
       const hole = holeAt(state.holes, cx, cy);
-      if (hole === undefined) drawTile(ctx, tile, cx * TILE_PX, cy * TILE_PX);
+      if (hole === undefined) drawTile(ctx, tile, cx * TILE_PX, cy * TILE_PX, exitOpen);
       else drawHole(ctx, brickLeft(hole.age), cx * TILE_PX, cy * TILE_PX);
     }
   });
@@ -76,7 +78,13 @@ function drawHole(ctx: CanvasRenderingContext2D, left: number, x: number, y: num
   ctx.fillRect(x, y + TILE_PX - h, TILE_PX, h);
 }
 
-function drawTile(ctx: CanvasRenderingContext2D, tile: string, x: number, y: number): void {
+function drawTile(
+  ctx: CanvasRenderingContext2D,
+  tile: string,
+  x: number,
+  y: number,
+  exitOpen: boolean,
+): void {
   const s = TILE_PX;
   switch (tile) {
     case TILE.brick:
@@ -106,9 +114,14 @@ function drawTile(ctx: CanvasRenderingContext2D, tile: string, x: number, y: num
       ctx.fillRect(x + 6, y + s - 10, s - 12, 8);
       break;
     case TILE.exit:
-      ctx.strokeStyle = COLOR.exit;
+      // A door: an outline while locked, filled once all the gold is collected.
+      ctx.strokeStyle = exitOpen ? COLOR.exitOpen : COLOR.exitLocked;
       ctx.lineWidth = 2;
       ctx.strokeRect(x + 4, y + 2, s - 8, s - 3);
+      if (exitOpen) {
+        ctx.fillStyle = COLOR.exitOpen;
+        ctx.fillRect(x + 7, y + 5, s - 14, s - 9);
+      }
       break;
     default:
       break;
