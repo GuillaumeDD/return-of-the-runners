@@ -90,10 +90,16 @@ function tryVertical(
   const cy = cellOf(a.y);
 
   if (offsetOf(a.x) !== 0) {
-    // Not aligned on x: only a ladder can be turned onto, so snap toward the ladder column.
+    // Not aligned on x: snap toward the nearest column if a ladder is there, or, going
+    // down, to let go of the bar the actor hangs from (it drops once aligned).
     const near = offsetOf(a.x) < SUB / 2 ? cx : cx + 1;
     const ladderNear = isLadder(t, near, cy) || (dir === 1 && isLadder(t, near, cy + 1));
-    if (!ladderNear) return null;
+    const letGo =
+      dir === 1 &&
+      offsetOf(a.y) === 0 &&
+      (isBar(t, cx, cy) || isBar(t, cx + 1, cy)) &&
+      isPassable(t, near, cy + 1);
+    if (!ladderNear && !letGo) return null;
     return every(tick, period.walk) ? { ...a, x: snap(a.x) } : a;
   }
 

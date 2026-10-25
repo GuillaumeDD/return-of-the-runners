@@ -137,6 +137,30 @@ describe("bars", () => {
     expect(cell(s)).toEqual({ x: 3, y: 6 });
   });
 
+  // Regression: down did nothing when the runner hung mid-tile, i.e. after moving along
+  // the bar and stopping between two columns.
+  it("lets go of a bar when pressing down mid-tile, at any offset", () => {
+    for (let off = 1; off < SUB; off++) {
+      const start = placeRunner(stateFrom(bars), 3 * SUB + off, 2 * SUB);
+      const s = run(start, press.down, 200);
+      expect(cell(s), `offset ${String(off)}`).toEqual({ x: off < SUB / 2 ? 3 : 4, y: 6 });
+    }
+  });
+
+  it("lets go of a bar after moving along it and stopping", () => {
+    const moved = run(atCell(stateFrom(bars), 1, 2), press.right, RUNNER_PERIOD.bar * 5);
+    expect(moved.runner.x % SUB).not.toBe(0);
+    const s = run(moved, press.down, 200);
+    expect(cell(s)).toEqual({ x: 2, y: 6 });
+  });
+
+  it("hanging past the end of a bar, still lets go", () => {
+    // Moving left off column 1: the runner is between column 0 and the bar's first cell.
+    const start = placeRunner(stateFrom(bars), SUB - 3, 2 * SUB);
+    const s = run(start, press.down, 200);
+    expect(cell(s)).toEqual({ x: 1, y: 6 });
+  });
+
   it("grabs a bar when falling through its cell", () => {
     const s = run(atCell(stateFrom(bars), 3, 0), press.none, 200);
     expect(cell(s)).toEqual({ x: 3, y: 2 });
