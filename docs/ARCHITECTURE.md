@@ -167,30 +167,6 @@ Code: `src/sim/`. Entry points: `createState(level, seed)` and
   length: the decoder refuses one over `MAX_SHARE_PAYLOAD` with a message),
   anything else is play. The game loop and its key listeners run only while the play
   screen is shown; coming back resumes the same game without catch-up ticks.
-- The editor draws the level grid with `renderGrid`: tiles as in the game, start
-  markers as the actors, and faint cell lines.
-- **Editor model** (`editor/model.ts`): plain data and pure functions, like the
-  simulation. `paint` moves the runner start instead of adding a second one;
-  `paintLine` fills a segment (Bresenham) so a fast drag leaves no gaps. Undo covers
-  the grid only (at most 100 steps); one mouse stroke (`beginStroke` … `endStroke`) is
-  one step. `toLevel` runs the edited document through `parseLevel`, so the editor
-  never hands the game a level an import would reject.
-- **Editor screen** (`editor/view.ts`, the only editor file that touches the DOM): a
-  palette (number keys 1–9 by `KeyboardEvent.code`, like the game keys), name and size
-  fields, undo and redo. `editor/pointer.ts` maps canvas pixels to cells at any CSS
-  scale and turns pointer events into model operations: the left button paints, the
-  right one erases, and release, cancel and lost capture all end the stroke, so letting
-  go outside the window cannot merge later edits into one undo step. A drag follows
-  one pointer: a second finger is ignored. Ctrl+Z / Ctrl+Y go
-  by `KeyboardEvent.key`, as in other applications; keys typed in a field are left to
-  the field.
-- **Test play** (`editor/test-play.ts`): "Test" runs the edited level through the
-  validator and, when it passes, plays it in the editor screen with `PLAY_SEED`, the
-  play screen's seed (`game/session.ts`); `Esc` or "Back to editor" returns to the editor as it was (the test never
-  touches the editor state). A refused test lists the validator's errors, translated
-  from their codes (`i18n/level-errors.ts`, a `Record` over every code, so a new code
-  without a message fails the build; limits such as the monk cap are filled in from
-  `LIMITS`); the list refreshes on every edit until the level is valid.
 
 ## Level format
 
@@ -251,6 +227,36 @@ is why width and height are per-level properties.
   `invalid/`; an invalid fixture is named after its expected error code, with an
   optional `--variant` suffix). Fixtures are excluded from Prettier so they stay
   byte-for-byte as written.
+
+## Editor
+
+Code: `src/editor/` (pure modules, and `view.ts` / `library-view.ts` for the DOM),
+`src/storage/levels.ts`, `src/level/file.ts`, `src/share/link.ts`.
+
+- **Grid**: the editor draws the level grid with `renderGrid`: tiles as in the game, start
+  markers as the actors, and faint cell lines.
+- **Editor model** (`editor/model.ts`): plain data and pure functions, like the
+  simulation. `paint` moves the runner start instead of adding a second one;
+  `paintLine` fills a segment (Bresenham) so a fast drag leaves no gaps. Undo covers
+  the grid only (at most 100 steps); one mouse stroke (`beginStroke` … `endStroke`) is
+  one step. `toLevel` runs the edited document through `parseLevel`, so the editor
+  never hands the game a level an import would reject.
+- **Editor screen** (`editor/view.ts`, the only editor file that touches the DOM): a
+  palette (number keys 1–9 by `KeyboardEvent.code`, like the game keys), name and size
+  fields, undo and redo. `editor/pointer.ts` maps canvas pixels to cells at any CSS
+  scale and turns pointer events into model operations: the left button paints, the
+  right one erases, and release, cancel and lost capture all end the stroke, so letting
+  go outside the window cannot merge later edits into one undo step. A drag follows
+  one pointer: a second finger is ignored. Ctrl+Z / Ctrl+Y go
+  by `KeyboardEvent.key`, as in other applications; keys typed in a field are left to
+  the field.
+- **Test play** (`editor/test-play.ts`): "Test" runs the edited level through the
+  validator and, when it passes, plays it in the editor screen with `PLAY_SEED`, the
+  play screen's seed (`game/session.ts`); `Esc` or "Back to editor" returns to the editor as it was (the test never
+  touches the editor state). A refused test lists the validator's errors, translated
+  from their codes (`i18n/level-errors.ts`, a `Record` over every code, so a new code
+  without a message fails the build; limits such as the monk cap are filled in from
+  `LIMITS`); the list refreshes on every edit until the level is valid.
 - Editor levels are stored in the browser (`storage/levels.ts`): one `localStorage` key,
   `rotr.levels.v1`, holding a versioned document (`return-of-the-runners/my-levels`)
   with an id counter and the levels as v1 documents. They are **drafts**
@@ -270,21 +276,43 @@ is why width and height are per-level properties.
   non-ASCII `download` "download"), and Windows device names get a `-level` suffix. A
   slow read is dropped if the editor changed or another import started meanwhile.
 - **Share links** (`share/link.ts`): `#level=<payload>`, where the payload is the
-  level's compact v1 JSON, compressed with raw DEFLATE (`CompressionStream
-("deflate-raw")`, built into the browsers and Node, so no dependency) and written in
-  base64url. The fragment never reaches a server. Decoding is untrusted input, capped
-  at each step: at most `MAX_SHARE_PAYLOAD` (16 K) characters, base64url only, and the
-  inflated output is read until it passes 64 KB, then dropped (`too-large`); the input
-  is fed in 256-byte slices, and DEFLATE expands at most ~1,032:1, so a "zip bomb"
-  costs at most ~12 MB of work. Then `parseLevel` with the game rules. "Share" needs a
-  playable level; it copies the link and also shows it in a read-only field, since the
-  clipboard can be refused (the write starts within the click, with a promise of the
-  link, because Safari only allows it during a user gesture). Base64url is canonical:
-  spare bits must be zero. A link opens on the play screen; "Edit a copy" saves it as
-  a new level in "My levels" and opens it, unless the editor has unsaved changes, which
-  are kept (the copy then waits in the list). If the browser refuses to store the copy
-  while the editor has unsaved changes, the link stays on screen with a message. The bundled level is about 300
-  characters of link; the largest level fits well under the cap.
+  level's compact v1 JSON, compressed with raw DEFLATE (`CompressionStream`, built
+  into the browsers and Node, so no dependency) and written in base64url. The fragment
+  never reaches a server. Decoding is untrusted input, capped at each step: at most
+  `MAX_SHARE_PAYLOAD` (16 K) characters, canonical base64url (spare bits must be zero),
+  and the inflated output is read until it passes 64 KB, then dropped (`too-large`);
+  the input is fed in 256-byte slices, and DEFLATE expands at most ~1,032:1, so a "zip
+  bomb" costs at most ~12 MB of work. Then `parseLevel` with the game rules. The
+  bundled level is a 266-character payload; the largest level fits well under the cap.
+- "Share" needs a playable level. It copies the link and also shows it in a read-only
+  field, since the clipboard can be refused. A link opens on the play screen; "Edit a
+  copy" saves it as a new level in "My levels" and opens it, unless the editor has
+  unsaved changes, which are kept (the copy then waits in the list). If the browser
+  refuses to store the copy while the editor has unsaved changes, the link stays on
+  screen with a message.
+
+### Conventions
+
+- **Async UI results**: a result that arrives later (a file read, a compression, a
+  clipboard write, a decoded link) is applied only if its ticket is the latest one and
+  the state it started from is unchanged; otherwise it is dropped.
+- **Untrusted text**: shown with `textContent` or set as an input `value`. A message
+  placeholder is filled with a function, `replace("{name}", () => name)`, since a
+  replacement string would expand patterns such as `$&` from a level name.
+
+### Browser quirks
+
+Each cost a debugging round in step 2; check here before relying on a web API.
+"Measured" says where it was seen; the others are known rules not yet run here (the
+e2e UI tests of B-018 will run them in all three engines).
+
+| Quirk                                                                   | Measured                | Where it bites                                                   |
+| ----------------------------------------------------------------------- | ----------------------- | ---------------------------------------------------------------- |
+| A non-ASCII `download` file name becomes "download"                     | headless Chromium       | Export: file names are made ASCII                                |
+| Node's `DecompressionStream` reads all input regardless of backpressure | Node 22                 | Share: a zip bomb is bounded by the payload cap, not the slicing |
+| Clipboard writes are allowed only during the user gesture               | no (Safari, documented) | Share: the write starts in the click, with a promise of the link |
+| Reading `window.localStorage` throws when site data is blocked          | no (documented)         | My levels: `browserStorage()` in `main.ts`                       |
+| A click on a link that is not in the document starts no download        | no (older Firefox)      | Export: the link is appended, clicked, then removed              |
 
 ## Internationalization
 
@@ -318,6 +346,11 @@ data and the supply chain.
   GitHub Pages. Only the deploy job gets `pages: write` and `id-token: write`.
 - All actions are pinned to a full commit SHA. Dependabot updates npm weekly and
   actions monthly.
+- **Clean-room check** of a release (CLAUDE.md § Privacy, secrets & publishing): open
+  the deployed site, or, when it cannot be reached (a cloud session whose network
+  policy does not allow `guillaumedd.github.io`), a fresh clone of `main` with
+  `npm ci && npm run build` and `vite preview`, driven by Playwright. The PR or reply
+  says which one was checked.
 
 ## Observed behavior of the original game
 
