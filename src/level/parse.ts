@@ -16,12 +16,18 @@ const KNOWN_FIELDS: ReadonlySet<string> = new Set(FIELDS);
 
 const utf8 = new TextEncoder();
 
+export interface ParseOptions {
+  /** False checks only the level's shape, for drafts (see `LevelDraft`). Default true. */
+  readonly gameRules?: boolean;
+}
+
 /**
  * Parses and validates an untrusted level document. Never throws: every problem is
  * returned as a `LevelError`. Structural problems (size, JSON, format, version) stop
  * validation early; content problems are all reported together.
  */
-export function parseLevel(text: string): ParseResult {
+export function parseLevel(text: string, options: ParseOptions = {}): ParseResult {
+  const gameRules = options.gameRules ?? true;
   // Cheap pre-check on string length (UTF-16 units ≤ UTF-8 bytes) before encoding.
   if (text.length > LIMITS.maxInputBytes || utf8.encode(text).length > LIMITS.maxInputBytes) {
     return fail("too-large", `input exceeds ${String(LIMITS.maxInputBytes)} bytes`);
@@ -80,6 +86,7 @@ export function parseLevel(text: string): ParseResult {
         grid,
         widthOk ? (width as number) : null,
         heightOk ? (height as number) : null,
+        gameRules,
         add,
       );
     }
@@ -117,6 +124,7 @@ function checkGrid(
   grid: readonly string[],
   width: number | null,
   height: number | null,
+  gameRules: boolean,
   add: (code: LevelErrorCode, detail: string) => void,
 ): void {
   if (height !== null && grid.length !== height) {
@@ -146,6 +154,7 @@ function checkGrid(
       .join(", ");
     add("unknown-tile", `unknown tile characters: ${shown}`);
   }
+  if (!gameRules) return;
   const runners = counts.get(TILE.runnerStart) ?? 0;
   if (runners !== 1) add("runner-count", `expected exactly 1 "P", found ${String(runners)}`);
   if ((counts.get(TILE.gold) ?? 0) === 0) add("no-gold", `level needs at least one "$"`);

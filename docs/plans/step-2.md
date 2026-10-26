@@ -16,8 +16,11 @@ need format v2), TLR-only tiles, 2 players, menus beyond what the editor needs.
 ## Key design decisions
 
 1. **No format change.** The editor reads and writes level format v1 as it is. Every
-   level it produces goes through `parseLevel` before it is saved, tested, exported or
-   shared, so the editor can never produce a level the game would reject.
+   level it produces goes through `parseLevel` before it is tested, exported or
+   shared, so the editor can never produce a level the game would reject. Saving in
+   the browser accepts drafts: a level checked for its shape only (size, tiles, name),
+   not the game rules (runner start, gold, exit, monk cap), so a level can be saved
+   half-built (decided 2026-10-26).
 2. **Pure editor model.** The editing logic (`src/editor/model.ts`) is plain data and
    pure functions (paint, fill a line, resize, undo/redo), like the simulation. The DOM
    layer only turns mouse and keyboard events into model operations, so the editor is
@@ -47,15 +50,15 @@ need format v2), TLR-only tiles, 2 players, menus beyond what the editor needs.
 
 ## Delivery: one PR per backlog item
 
-| Order | PR           | Backlog | Visible result                                         |
-| ----- | ------------ | ------- | ------------------------------------------------------ |
-| 1     | Screens      | B-011   | a Play / Editor switch; the editor shows a blank grid  |
-| 2     | Editor model | B-012   | none (pure model and its tests)                        |
-| 3     | Painting     | B-013   | **paint a level with the mouse**                       |
-| 4     | Test play    | B-014   | **play the level being edited, then go back to it**    |
-| 5     | My levels    | B-015   | levels kept in the browser: save, open, rename, delete |
-| 6     | Files        | B-016   | export and import `.json` files                        |
-| 7     | Share links  | B-017   | **send a link that opens the level**                   |
+| Order | PR           | Backlog | Visible result                                        |
+| ----- | ------------ | ------- | ----------------------------------------------------- |
+| 1     | Screens      | B-011   | a Play / Editor switch; the editor shows a blank grid |
+| 2     | Editor model | B-012   | none (pure model and its tests)                       |
+| 3     | Painting     | B-013   | **paint a level with the mouse**                      |
+| 4     | Test play    | B-014   | **play the level being edited, then go back to it**   |
+| 5     | My levels    | B-015   | levels kept in the browser: save, open, delete        |
+| 6     | Files        | B-016   | export and import `.json` files                       |
+| 7     | Share links  | B-017   | **send a link that opens the level**                  |
 
 Every UI string lands in EN and FR in the same PR, and every visible change comes with
 a screenshot in its PR.
@@ -176,19 +179,46 @@ a screenshot in its PR.
 
 ### B-015 — My levels (browser storage)
 
-- `src/storage/levels.ts`: `listLevels`, `saveLevel`, `deleteLevel`, `renameLevel`,
-  over a `Storage`-like interface (the real `localStorage` in the app, an in-memory fake
-  in tests). One key, versioned: `rotr.levels.v1`.
+- `src/storage/levels.ts`: `listLevels`, `saveLevel`, `deleteLevel`, over a
+  `Storage`-like interface (the real `localStorage` in the app, an in-memory fake in
+  tests). One key, versioned: `rotr.levels.v1`. Renaming is the name field plus "Save".
+- `src/editor/library.ts` (pure): unsaved-changes and status decisions;
+  `src/editor/library-view.ts`: Save, New, and the list (Open, Delete); leaving unsaved
+  changes and deleting take a second click; Open reads the level as stored now, and the
+  list follows saves from other tabs.
 
 `tests/storage/levels.test.ts`
 
-- save then list returns the level; saving under an existing id replaces it;
-- delete and rename work and keep the other levels untouched;
+- save then list returns the level, last saved first; saving under an existing id
+  replaces it; an unknown id is refused;
+- delete works and keeps the other levels untouched;
+- a draft (no runner, gold or exit) can be saved; a stored draft must still have a
+  valid shape;
 - the stored document is validated on read: a corrupt entry is skipped and reported,
   the others still load; a corrupt whole document (not JSON, wrong version) returns an
-  empty list and an error, and is not overwritten until the next save;
-- a full storage (`QuotaExceededError`) returns an error instead of throwing;
-- ids are unique (a counter in the document, never `Math.random` or the clock).
+  empty list and an error, and is not overwritten until the next save, which keeps a
+  copy aside; random mutations of a stored document never throw;
+- a full storage (`QuotaExceededError`) or a disabled one returns an error instead of
+  throwing;
+- ids are unique (a counter in the document, never `Math.random` or the clock), even
+  after deletes or a counter edited by hand, and stay readable at the id limit;
+- damaged entries are kept as they are when the list is rewritten (never erased); a
+  corrupt document too large to back up does not block saving; when the read itself
+  fails, nothing is written; `getLevel` reads the level as stored now.
+
+`tests/editor/library.test.ts`
+
+- a level never saved is "not saved yet"; a saved one is "saved" until it changes (and
+  again after an undo back to it);
+- after a language switch, the default name of a never-saved level follows, a saved
+  level's does not.
+
+`tests/level/parse.test.ts`: `gameRules: false` accepts a level with no runner, gold or
+exit (or too many monks), and still rejects a broken shape.
+
+`tests/editor/model.test.ts`: `toDraft` accepts an unplayable level (only an empty name
+fails); `editorFrom` opens a level with an empty undo history; `sameContent` compares
+grid and trimmed name only.
 
 ### B-016 — Export and import files
 

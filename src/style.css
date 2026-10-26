@@ -150,3 +150,50 @@ button.primary {
 .errors ul {
   margin: 4px 0;
 }
+
+.hint.problem {
+  color: #f0a0a0;
+}
+
+.library {
+  width: min(100%, 672px);
+}
+
+.library h2 {
+  margin: 8px 0 4px;
+  color: #f2c94c;
+  font-size: 18px;
+  text-align: center;
+}
+
+.library ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.library li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-bottom: 1px solid #222;
+}
+
+.library li[aria-current="true"] {
+  background: #1a1a1a;
+}
+
+.library li[aria-current="true"] .level-name {
+  color: #f2c94c;
+}
+
+.level-name {
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+
+.level-size {
+  color: #888;
+  font-size: 0.9em;
+}

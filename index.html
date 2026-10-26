@@ -36,10 +36,13 @@
             <label
               ><span id="editor-height-label"></span> <input id="editor-height" type="number"
             /></label>
+            <button id="editor-new" type="button"></button>
+            <button id="editor-save" type="button"></button>
             <button id="editor-undo" type="button"></button>
             <button id="editor-redo" type="button"></button>
             <button id="editor-test" type="button" class="primary"></button>
           </div>
+          <p id="editor-status" class="hint" role="status"></p>
           <div id="editor-errors" class="errors" role="alert" hidden>
             <p id="editor-errors-label"></p>
             <ul id="editor-error-list"></ul>
@@ -47,6 +50,11 @@
           <div id="editor-palette" class="palette" role="toolbar"></div>
           <canvas id="editor-grid" width="672" height="384"></canvas>
           <p id="editor-hint" class="hint"></p>
+          <section class="library">
+            <h2 id="my-levels-title"></h2>
+            <p id="my-levels-empty" class="hint"></p>
+            <ul id="my-levels-list"></ul>
+          </section>
         </div>
         <div id="test-screen" class="screen" hidden>
           <canvas id="test-canvas" width="672" height="384"></canvas>

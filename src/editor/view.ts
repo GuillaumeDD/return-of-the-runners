@@ -35,6 +35,15 @@ export interface EditorElements {
 /** A test that may start: the level passed the validator. */
 export type ValidTest = Extract<TestStart, { ok: true }>;
 
+export interface EditorOptions {
+  readonly initial: EditorState;
+  readonly locale: Locale;
+  /** "Test" was pressed on a valid level. */
+  readonly onTest: (test: ValidTest) => void;
+  /** The level (grid or name) changed. */
+  readonly onChange: () => void;
+}
+
 export interface EditorView {
   /** Starts listening to the keyboard and draws the level. */
   readonly show: () => void;
@@ -42,6 +51,10 @@ export interface EditorView {
   readonly setLocale: (locale: Locale) => void;
   /** Puts the keyboard focus on "Test", where it was before a test started. */
   readonly focusTest: () => void;
+  /** The level being edited. */
+  readonly current: () => EditorState;
+  /** Replaces the level being edited (a new or opened level). */
+  readonly load: (state: EditorState) => void;
 }
 
 /**
@@ -49,16 +62,12 @@ export interface EditorView {
  * operations (`model.ts`, `pointer.ts`, `keys.ts`) and draws the result. Every text
  * goes through `textContent`, never `innerHTML`.
  */
-export function createEditorView(
-  els: EditorElements,
-  initial: EditorState,
-  initialLocale: Locale,
-  onTest: (test: ValidTest) => void,
-): EditorView {
+export function createEditorView(els: EditorElements, options: EditorOptions): EditorView {
+  const { initial, onTest, onChange } = options;
   const ctx = context2d(els.canvas);
   let editor = initial;
   let drag: Drag | null = null;
-  let locale = initialLocale;
+  let locale = options.locale;
   /** The errors of the last refused test, refreshed on every change; null when hidden. */
   let errors: readonly LevelErrorCode[] | null = null;
 
@@ -107,6 +116,7 @@ export function createEditorView(
     editor = next;
     if (redraw) draw();
     if (revalidate && errors !== null) showErrors(testErrors(editor));
+    if (revalidate) onChange();
     syncFields();
   }
 
@@ -239,6 +249,14 @@ export function createEditorView(
     setLocale,
     focusTest() {
       els.test.focus();
+    },
+    current: () => editor,
+    load(state) {
+      if (drag !== null) pointer({ kind: "end", pointer: drag.pointer });
+      showErrors(null);
+      update(state);
+      els.name.value = editor.name;
+      draw();
     },
   };
 }

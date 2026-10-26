@@ -116,3 +116,39 @@ describe("parseLevel: limits and robustness", () => {
     expect(parseLevel(text).ok).toBe(false);
   });
 });
+
+describe("parseLevel: drafts (gameRules: false)", () => {
+  const draft = (grid: string[]): string =>
+    JSON.stringify({
+      format: "return-of-the-runners/level",
+      version: 1,
+      name: "WIP",
+      width: 8,
+      height: 8,
+      grid,
+    });
+  const empty = Array<string>(8).fill("........");
+
+  it("accepts a level with no runner, no gold, no exit, or too many monks", () => {
+    expect(parseLevel(draft(empty), { gameRules: false }).ok).toBe(true);
+    const monks = [...empty.slice(0, 5), "MMMMMMMM", "MMMMMMMM", "MMMMMMMM"];
+    expect(parseLevel(draft(monks), { gameRules: false }).ok).toBe(true);
+    // The same levels fail the full check.
+    const full = parseLevel(draft(empty));
+    expect(full.ok ? [] : full.errors.map((e) => e.code)).toEqual([
+      "runner-count",
+      "no-gold",
+      "no-exit",
+    ]);
+  });
+
+  it("still rejects a broken shape: unknown tiles, wrong row count or length", () => {
+    const codes = (grid: string[]): string[] => {
+      const r = parseLevel(draft(grid), { gameRules: false });
+      return r.ok ? [] : r.errors.map((e) => e.code);
+    };
+    expect(codes([...empty.slice(1), "...x...."])).toEqual(["unknown-tile"]);
+    expect(codes(empty.slice(1))).toEqual(["row-count"]);
+    expect(codes([...empty.slice(1), "..."])).toEqual(["row-length"]);
+  });
+});

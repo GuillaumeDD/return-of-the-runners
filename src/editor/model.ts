@@ -1,13 +1,13 @@
 import {
-  LEVEL_FORMAT_ID,
-  LEVEL_FORMAT_VERSION,
   LIMITS,
   TILE,
   codePoints,
+  type LevelDraft,
   type ParseResult,
   type TileChar,
 } from "../level/format";
 import { parseLevel } from "../level/parse";
+import { levelDocument } from "../level/serialize";
 import { blankGrid, clampSize } from "./blank";
 
 /**
@@ -44,6 +44,23 @@ export function newEditor(name: string): EditorState {
     redo: [],
     stroke: "none",
   };
+}
+
+/**
+ * Whether two states hold the same level (grid and name as saved, so trailing spaces in
+ * the name field do not count): what "unsaved changes" compares.
+ */
+export function sameContent(a: EditorState, b: EditorState): boolean {
+  return (
+    a.name.trim() === b.name.trim() &&
+    a.grid.length === b.grid.length &&
+    a.grid.every((row, y) => row === b.grid[y])
+  );
+}
+
+/** Opens a saved level (or draft) for editing, with an empty undo history. */
+export function editorFrom(level: LevelDraft): EditorState {
+  return { ...newEditor(level.name), grid: [...level.grid] };
 }
 
 export function selectTile(s: EditorState, tile: TileChar): EditorState {
@@ -182,20 +199,27 @@ export function redo(s: EditorState): EditorState {
   };
 }
 
+/**
+ * The edited level as a draft, for saving: checked for its shape only, so a level can be
+ * saved before it is playable. The editor always produces a valid shape; only an empty
+ * name fails, and returns the validator's errors.
+ */
+export function toDraft(s: EditorState): ParseResult {
+  return parseLevel(JSON.stringify(toDocument(s)), { gameRules: false });
+}
+
 /** The edited level as a v1 document, through the same validator as any imported level. */
 export function toLevel(s: EditorState): ParseResult {
   return parseLevel(JSON.stringify(toDocument(s)));
 }
 
 export function toDocument(s: EditorState): Record<string, unknown> {
-  return {
-    format: LEVEL_FORMAT_ID,
-    version: LEVEL_FORMAT_VERSION,
+  return levelDocument({
     name: s.name.trim(),
     width: s.grid[0]?.length ?? 0,
     height: s.grid.length,
     grid: s.grid,
-  };
+  });
 }
 
 function change(s: EditorState, grid: readonly string[]): EditorState {

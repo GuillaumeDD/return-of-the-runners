@@ -45,5 +45,19 @@
   "errRunnerCount": "Place the runner start (exactly one).",
   "errNoGold": "Place at least one gold.",
   "errNoExit": "Place at least one exit.",
-  "errTooManyMonks": "Too many monks: {maxMonks} at most."
+  "errTooManyMonks": "Too many monks: {maxMonks} at most.",
+  "editorNew": "New",
+  "editorSave": "Save",
+  "myLevels": "My levels",
+  "myLevelsEmpty": "No saved level yet: “Save” keeps the level in this browser.",
+  "libraryOpen": "Open",
+  "libraryDelete": "Delete",
+  "confirmDelete": "Delete for good?",
+  "confirmDiscard": "Lose unsaved changes?",
+  "statusSaved": "Saved in this browser.",
+  "statusUnsaved": "Not saved yet.",
+  "storageQuota": "This browser refused to store the level (storage full or disabled).",
+  "storageCorruptDocument": "Your saved levels could not be read. They are kept aside, and the next save starts a new list.",
+  "storageCorruptEntry": "Some saved levels are damaged and are not shown.",
+  "storageNotFound": "This level is no longer saved (deleted in another tab?)."
 }

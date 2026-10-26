@@ -1,6 +1,8 @@
 import { parseRoute, type Route } from "./app/route";
 import { newEditor } from "./editor/model";
+import { createLibraryView } from "./editor/library-view";
 import { createEditorView } from "./editor/view";
+import type { StorageLike } from "./storage/levels";
 import { advance, type Accumulator } from "./game/loop";
 import { PLAY_SEED, createSession, tickSession, type Session } from "./game/session";
 import { detectLocale, translate, type Locale, type MessageKey } from "./i18n";
@@ -53,6 +55,7 @@ function renderText(): void {
   testMessage.textContent = translate(locale, testMessageKey);
   testBack.textContent = translate(locale, "testBack");
   editor.setLocale(locale);
+  library.setLocale(locale);
 }
 
 langButton.addEventListener("click", () => {
@@ -155,9 +158,40 @@ const editor = createEditorView(
       errors: byId("editor-errors-label", HTMLParagraphElement),
     },
   },
-  newEditor(translate(locale, "defaultLevelName")),
+  {
+    initial: newEditor(translate(locale, "defaultLevelName")),
+    locale,
+    onTest: startTestPlay,
+    onChange: () => {
+      library.changed();
+    },
+  },
+);
+
+/** The browser's storage; reading `localStorage` itself throws when site data is blocked. */
+function browserStorage(): StorageLike {
+  try {
+    return window.localStorage;
+  } catch {
+    const refuse = (): never => {
+      throw new DOMException("Storage is disabled", "SecurityError");
+    };
+    return { getItem: refuse, setItem: refuse };
+  }
+}
+
+const library = createLibraryView(
+  {
+    save: byId("editor-save", HTMLButtonElement),
+    newLevel: byId("editor-new", HTMLButtonElement),
+    status: byId("editor-status", HTMLParagraphElement),
+    title: byId("my-levels-title", HTMLHeadingElement),
+    list: byId("my-levels-list", HTMLUListElement),
+    empty: byId("my-levels-empty", HTMLParagraphElement),
+  },
+  browserStorage(),
+  editor,
   locale,
-  startTestPlay,
 );
 
 /** The level being tested, while "Test" runs; null in the editor itself. */

@@ -42,6 +42,19 @@ export interface Level {
   readonly grid: readonly string[];
 }
 
+/**
+ * A level that may not be playable yet: the shape of a level (size, tiles, name) without
+ * the game rules (one runner start, gold, an exit, the monk cap). What "My levels" keeps,
+ * so a level can be saved half-built. It has no `version`, so it cannot be passed where
+ * a `Level` is expected: playing it takes a full `parseLevel` first.
+ */
+export interface LevelDraft {
+  readonly name: string;
+  readonly width: number;
+  readonly height: number;
+  readonly grid: readonly string[];
+}
+
 export type LevelErrorCode =
   | "too-large"
   | "not-json"
