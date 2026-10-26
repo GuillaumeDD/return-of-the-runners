@@ -134,3 +134,19 @@ button:disabled {
   opacity: 0.4;
   cursor: default;
 }
+
+button.primary {
+  border-color: #f2c94c;
+  color: #f2c94c;
+}
+
+.errors {
+  border: 1px solid #d64545;
+  padding: 4px 16px;
+  color: #f0a0a0;
+}
+
+.errors p,
+.errors ul {
+  margin: 4px 0;
+}

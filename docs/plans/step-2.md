@@ -166,12 +166,13 @@ a screenshot in its PR.
 `tests/editor/test-play.test.ts`
 
 - a valid level starts a session whose start state equals `createState(level, seed)`;
-- an invalid one returns its error codes and starts nothing;
+- an invalid one returns its error codes, each once, and starts nothing;
 - returning keeps the editor state unchanged (same grid, same undo stack).
 
 `tests/i18n.test.ts`
 
-- every `LevelErrorCode` has an EN and a FR message.
+- every `LevelErrorCode` has its own EN and FR message (completeness is also checked
+  by the compiler).
 
 ### B-015 — My levels (browser storage)
 

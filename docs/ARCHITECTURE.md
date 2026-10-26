@@ -180,6 +180,13 @@ Code: `src/sim/`. Entry points: `createState(level, seed)` and
   one pointer: a second finger is ignored. Ctrl+Z / Ctrl+Y go
   by `KeyboardEvent.key`, as in other applications; keys typed in a field are left to
   the field.
+- **Test play** (`editor/test-play.ts`): "Test" runs the edited level through the
+  validator and, when it passes, plays it in the editor screen with `PLAY_SEED`, the
+  play screen's seed (`game/session.ts`); `Esc` or "Back to editor" returns to the editor as it was (the test never
+  touches the editor state). A refused test lists the validator's errors, translated
+  from their codes (`i18n/level-errors.ts`, a `Record` over every code, so a new code
+  without a message fails the build; limits such as the monk cap are filled in from
+  `LIMITS`); the list refreshes on every edit until the level is valid.
 
 ## Level format
 

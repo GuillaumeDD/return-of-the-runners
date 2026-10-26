@@ -25,20 +25,34 @@
         <p id="message" class="hint"></p>
       </section>
       <section id="edit-screen" class="screen" hidden>
-        <div class="editor-bar">
-          <label><span id="editor-name-label"></span> <input id="editor-name" type="text" /></label>
-          <label
-            ><span id="editor-width-label"></span> <input id="editor-width" type="number"
-          /></label>
-          <label
-            ><span id="editor-height-label"></span> <input id="editor-height" type="number"
-          /></label>
-          <button id="editor-undo" type="button"></button>
-          <button id="editor-redo" type="button"></button>
+        <div id="editor-main" class="screen">
+          <div class="editor-bar">
+            <label
+              ><span id="editor-name-label"></span> <input id="editor-name" type="text"
+            /></label>
+            <label
+              ><span id="editor-width-label"></span> <input id="editor-width" type="number"
+            /></label>
+            <label
+              ><span id="editor-height-label"></span> <input id="editor-height" type="number"
+            /></label>
+            <button id="editor-undo" type="button"></button>
+            <button id="editor-redo" type="button"></button>
+            <button id="editor-test" type="button" class="primary"></button>
+          </div>
+          <div id="editor-errors" class="errors" role="alert" hidden>
+            <p id="editor-errors-label"></p>
+            <ul id="editor-error-list"></ul>
+          </div>
+          <div id="editor-palette" class="palette" role="toolbar"></div>
+          <canvas id="editor-grid" width="672" height="384"></canvas>
+          <p id="editor-hint" class="hint"></p>
         </div>
-        <div id="editor-palette" class="palette" role="toolbar"></div>
-        <canvas id="editor-grid" width="672" height="384"></canvas>
-        <p id="editor-hint" class="hint"></p>
+        <div id="test-screen" class="screen" hidden>
+          <canvas id="test-canvas" width="672" height="384"></canvas>
+          <p id="test-message" class="hint"></p>
+          <button id="test-back" type="button"></button>
+        </div>
       </section>
       <p><button id="lang" type="button"></button></p>
     </main>

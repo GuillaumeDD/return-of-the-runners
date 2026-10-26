@@ -2,13 +2,14 @@ import { parseRoute, type Route } from "./app/route";
 import { newEditor } from "./editor/model";
 import { createEditorView } from "./editor/view";
 import { advance, type Accumulator } from "./game/loop";
-import { createSession, tickSession, type Session } from "./game/session";
+import { PLAY_SEED, createSession, tickSession, type Session } from "./game/session";
 import { detectLocale, translate, type Locale, type MessageKey } from "./i18n";
 import { inputFrom, isBound, keyDown, keyUp, type HeldKeys } from "./input/keyboard";
 import { parseLevel } from "./level/parse";
 import firstSteps from "./levels/first-steps.json?raw";
 import { canvasSize, context2d, render } from "./render/canvas";
-import { createState, type GameState, type Status } from "./sim/state";
+import type { ValidTest } from "./editor/view";
+import { createState, type Status } from "./sim/state";
 
 function byId<T extends HTMLElement>(id: string, type: new () => T): T {
   const el = document.getElementById(id);
@@ -25,7 +26,11 @@ const navPlay = byId("nav-play", HTMLAnchorElement);
 const navEdit = byId("nav-edit", HTMLAnchorElement);
 const playScreen = byId("play-screen", HTMLElement);
 const editScreen = byId("edit-screen", HTMLElement);
-const ctx = context2d(canvas);
+const editorMain = byId("editor-main", HTMLDivElement);
+const testScreen = byId("test-screen", HTMLDivElement);
+const testCanvas = byId("test-canvas", HTMLCanvasElement);
+const testMessage = byId("test-message", HTMLParagraphElement);
+const testBack = byId("test-back", HTMLButtonElement);
 
 let locale: Locale = detectLocale(navigator.languages);
 let messageKey: MessageKey = "controls";
@@ -45,6 +50,8 @@ function renderText(): void {
   langButton.textContent = translate(locale, "switchLanguage");
   navPlay.textContent = translate(locale, "navPlay");
   navEdit.textContent = translate(locale, "navEdit");
+  testMessage.textContent = translate(locale, testMessageKey);
+  testBack.textContent = translate(locale, "testBack");
   editor.setLocale(locale);
 }
 
@@ -59,16 +66,26 @@ interface Game {
   readonly pause: () => void;
 }
 
-function createGame(context: CanvasRenderingContext2D, initial: GameState): Game {
-  let session: Session = createSession(initial);
+/**
+ * A game of `initial` on `target`; `onStatus` gets the message to show whenever the
+ * game's status changes.
+ */
+function createGame(
+  target: HTMLCanvasElement,
+  initial: Session,
+  onStatus: (key: MessageKey) => void,
+): Game {
+  const context = context2d(target);
+  let session = initial;
+  let status: Status | null = null;
   let held: HeldKeys = new Set();
   let acc: Accumulator = { carry: 0 };
   let last: number | null = null;
   let frameId: number | null = null;
 
-  const size = canvasSize(initial);
-  canvas.width = size.width;
-  canvas.height = size.height;
+  const size = canvasSize(session.state);
+  target.width = size.width;
+  target.height = size.height;
 
   const onKeyDown = (e: KeyboardEvent): void => {
     if (isBound(e.code)) e.preventDefault(); // arrows must not scroll the page
@@ -88,10 +105,9 @@ function createGame(context: CanvasRenderingContext2D, initial: GameState): Game
     acc = result.acc;
     const input = inputFrom(held);
     for (let i = 0; i < result.ticks; i++) session = tickSession(session, input);
-    const key = STATUS_MESSAGE[session.state.status];
-    if (key !== messageKey) {
-      messageKey = key;
-      renderText();
+    if (session.state.status !== status) {
+      status = session.state.status;
+      onStatus(STATUS_MESSAGE[status]);
     }
     render(context, session.state);
     frameId = requestAnimationFrame(frame);
@@ -128,21 +144,67 @@ const editor = createEditorView(
     height: byId("editor-height", HTMLInputElement),
     undo: byId("editor-undo", HTMLButtonElement),
     redo: byId("editor-redo", HTMLButtonElement),
+    test: byId("editor-test", HTMLButtonElement),
+    errors: byId("editor-errors", HTMLDivElement),
+    errorList: byId("editor-error-list", HTMLUListElement),
     labels: {
       name: byId("editor-name-label", HTMLSpanElement),
       width: byId("editor-width-label", HTMLSpanElement),
       height: byId("editor-height-label", HTMLSpanElement),
       hint: byId("editor-hint", HTMLParagraphElement),
+      errors: byId("editor-errors-label", HTMLParagraphElement),
     },
   },
   newEditor(translate(locale, "defaultLevelName")),
   locale,
+  startTestPlay,
 );
+
+/** The level being tested, while "Test" runs; null in the editor itself. */
+let testGame: Game | null = null;
+let testMessageKey: MessageKey = "testHint";
+
+function startTestPlay(test: ValidTest): void {
+  editor.hide();
+  editorMain.hidden = true;
+  testScreen.hidden = false;
+  const showStatus = (key: MessageKey): void => {
+    testMessageKey = key === "controls" ? "testHint" : key;
+    testMessage.textContent = translate(locale, testMessageKey);
+  };
+  showStatus("controls"); // not the last test's "Caught!"
+  testGame = createGame(testCanvas, test.session, showStatus);
+  testGame.resume();
+  window.addEventListener("keydown", onTestKey);
+}
+
+/** Back to the editor, which kept its state (undo history included) during the test. */
+function stopTestPlay(): void {
+  if (testGame === null) return;
+  testGame.pause();
+  testGame = null;
+  window.removeEventListener("keydown", onTestKey);
+  testScreen.hidden = true;
+  editorMain.hidden = false;
+  editor.show();
+  editor.focusTest();
+}
+
+function onTestKey(e: KeyboardEvent): void {
+  if (e.code === "Escape") stopTestPlay();
+}
+testBack.addEventListener("click", stopTestPlay);
+// The Editor tab during a test goes back to the editor (the hash is already #edit, so
+// no hashchange fires).
+navEdit.addEventListener("click", stopTestPlay);
 
 let game: Game | null = null;
 const parsed = parseLevel(firstSteps);
 if (parsed.ok) {
-  game = createGame(ctx, createState(parsed.level, 1));
+  game = createGame(canvas, createSession(createState(parsed.level, PLAY_SEED)), (key) => {
+    messageKey = key;
+    message.textContent = translate(locale, key);
+  });
 } else {
   messageKey = "levelError";
   console.error("Bundled level is invalid", parsed.errors);
@@ -167,6 +229,7 @@ function show(route: Route): void {
     game?.pause();
     editor.show();
   } else {
+    stopTestPlay();
     editor.hide();
     game?.resume();
   }
