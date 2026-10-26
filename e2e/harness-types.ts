@@ -13,3 +13,15 @@ declare global {
     replayError?: string;
   }
 }
+
+/** What `e2e/share.ts` returns for a payload. */
+export type SharedResult =
+  | { readonly ok: true; readonly level: unknown }
+  | { readonly ok: false; readonly codes: readonly string[] };
+
+declare global {
+  interface Window {
+    shareDecode?: (payload: string) => Promise<SharedResult>;
+    shareEncode?: (levelText: string) => Promise<string>;
+  }
+}

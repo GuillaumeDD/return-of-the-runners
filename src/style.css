@@ -197,3 +197,34 @@ button.primary {
   color: #888;
   font-size: 0.9em;
 }
+
+.shared-bar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 4px 16px;
+}
+
+.shared-bar[hidden],
+.share-link[hidden] {
+  display: none;
+}
+
+.shared-bar p,
+.shared-bar ul {
+  margin: 0;
+}
+
+.shared-bar ul {
+  color: #f0a0a0;
+}
+
+.share-link {
+  font: inherit;
+  width: min(100%, 672px);
+  background: #111;
+  color: #ddd;
+  border: 1px solid #444;
+  padding: 2px 6px;
+}

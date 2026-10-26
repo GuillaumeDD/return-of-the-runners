@@ -12,7 +12,7 @@ in [`../CLAUDE.md`](../CLAUDE.md).
 | Rendering     | Canvas 2D, 640×480 logical resolution  | Scaled with `image-rendering: pixelated`                                                         |
 | Audio         | WebAudio                               | (step 4)                                                                                         |
 | Unit tests    | Vitest                                 | `tests/**/*.test.ts`; tests have their own `tsconfig` with Node types, which `src/` does not get |
-| Browser tests | Playwright                             | `e2e/`: replay determinism in Chromium, Firefox and WebKit                                       |
+| Browser tests | Playwright                             | `e2e/`: replay determinism and share links in Chromium, Firefox and WebKit                       |
 | Lint / format | ESLint (`strictTypeChecked`), Prettier | Lint bans `Math.random`, `innerHTML`, `eval`, `new Function`                                     |
 | Runtime       | Node 22 (`.nvmrc`)                     | Dev and CI only; the game has **no runtime dependencies**                                        |
 
@@ -32,10 +32,11 @@ index.html ── src/main.ts        entry point: wires DOM, screens, input, loo
               src/levels/        bundled levels (JSON, validated at load like any import)
               src/level/         level format: types, validator (migrations from v2 on)
               src/storage/       "My levels" in the browser (localStorage, validated)
+              src/share/         share links: a level in the URL fragment
 tests/                           Vitest tests, mirroring src/
 tests/fixtures/levels/           one fixture set per level format version
 tests/fixtures/replays/          committed replays and the result each must reach
-e2e/                             Playwright: the replays in real browser engines
+e2e/                             Playwright: replays and share links in real browser engines
 ```
 
 ## Simulation
@@ -63,7 +64,9 @@ Code: `src/sim/`. Entry points: `createState(level, seed)` and
   in Chromium, Firefox and WebKit (`e2e/replay.spec.ts`, run in CI). Node and Chromium
   share V8, so Firefox (SpiderMonkey) and WebKit (JavaScriptCore) are the real
   cross-engine evidence. The browsers run a harness (`e2e/harness.html`) built by the
-  same Vite pipeline as the game, never deployed.
+  same Vite pipeline as the game, never deployed. `e2e/share.spec.ts` checks share
+  links both ways (made in Node, opened in each browser, and the reverse) with
+  `e2e/share.html`, since each engine brings its own `CompressionStream`.
 - **When a replay's hash changes, gameplay changed.** Update `expected` only together
   with an intentional rules change, and say so in the PR (the failing test prints the
   new values).
@@ -160,8 +163,8 @@ Code: `src/sim/`. Entry points: `createState(level, seed)` and
   (3 per sub-unit); the canvas is sized to the level and scaled by CSS.
 - Bundled levels go through `parseLevel` like any imported level.
 - **Screens** (`app/route.ts`): the URL hash picks the screen, so the back button works
-  without a server. `#edit` is the editor, `#level=<payload>` a shared level (payloads
-  over `MAX_SHARE_PAYLOAD` are never decoded; until B-017 it plays the bundled level),
+  without a server. `#edit` is the editor, `#level=<payload>` a shared level (of any
+  length: the decoder refuses one over `MAX_SHARE_PAYLOAD` with a message),
   anything else is play. The game loop and its key listeners run only while the play
   screen is shown; coming back resumes the same game without catch-up ticks.
 - The editor draws the level grid with `renderGrid`: tiles as in the game, start
@@ -266,6 +269,22 @@ is why width and height are per-level properties.
   `unreadable-file` error. The file name is plain ASCII (headless Chromium names a
   non-ASCII `download` "download"), and Windows device names get a `-level` suffix. A
   slow read is dropped if the editor changed or another import started meanwhile.
+- **Share links** (`share/link.ts`): `#level=<payload>`, where the payload is the
+  level's compact v1 JSON, compressed with raw DEFLATE (`CompressionStream
+("deflate-raw")`, built into the browsers and Node, so no dependency) and written in
+  base64url. The fragment never reaches a server. Decoding is untrusted input, capped
+  at each step: at most `MAX_SHARE_PAYLOAD` (16 K) characters, base64url only, and the
+  inflated output is read until it passes 64 KB, then dropped (`too-large`); the input
+  is fed in 256-byte slices, and DEFLATE expands at most ~1,032:1, so a "zip bomb"
+  costs at most ~12 MB of work. Then `parseLevel` with the game rules. "Share" needs a
+  playable level; it copies the link and also shows it in a read-only field, since the
+  clipboard can be refused (the write starts within the click, with a promise of the
+  link, because Safari only allows it during a user gesture). Base64url is canonical:
+  spare bits must be zero. A link opens on the play screen; "Edit a copy" saves it as
+  a new level in "My levels" and opens it, unless the editor has unsaved changes, which
+  are kept (the copy then waits in the list). If the browser refuses to store the copy
+  while the editor has unsaved changes, the link stays on screen with a message. The bundled level is about 300
+  characters of link; the largest level fits well under the cap.
 
 ## Internationalization
 
