@@ -74,7 +74,11 @@ export type LevelErrorCode =
   | "no-exit"
   | "too-many-monks"
   /** Import only: the file could not be read (moved, deleted, no permission). */
-  | "unreadable-file";
+  | "unreadable-file"
+  /** Share links only: the payload is over its cap, not base64url, or not DEFLATE data. */
+  | "too-long"
+  | "not-base64"
+  | "not-deflate";
 
 export interface LevelError {
   readonly code: LevelErrorCode;

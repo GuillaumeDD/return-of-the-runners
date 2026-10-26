@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { TILE } from "../../src/level/format";
 import {
   afterEdit,
+  copyOutcome,
   isDirty,
   isProblem,
   relabelTracking,
@@ -99,5 +100,16 @@ describe("status line", () => {
     expect(afterEdit(level)).toBeNull();
     expect(afterEdit(info)).toBeNull();
     expect(afterEdit(null)).toBeNull();
+  });
+});
+
+describe("edit a copy of a shared level", () => {
+  // Regression (self-review): with unsaved changes and storage refused, the shared level
+  // ended up nowhere; with a clean editor, it was opened as if saved.
+  it("opens it unless that would replace unsaved changes; refused only when it fits nowhere", () => {
+    expect(copyOutcome(false, true)).toBe("open-saved");
+    expect(copyOutcome(false, false)).toBe("open-unsaved");
+    expect(copyOutcome(true, true)).toBe("in-list");
+    expect(copyOutcome(true, false)).toBe("refused");
   });
 });

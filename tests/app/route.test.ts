@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { MAX_SHARE_PAYLOAD, parseRoute, routeHash, type Route } from "../../src/app/route";
+import { parseRoute, routeHash, shareUrl, type Route } from "../../src/app/route";
+import { MAX_SHARE_PAYLOAD } from "../../src/share/link";
 
 describe("parseRoute", () => {
   it("defaults to play", () => {
@@ -27,12 +28,11 @@ describe("parseRoute", () => {
     }
   });
 
-  it("rejects a payload longer than the share-link cap, without keeping it", () => {
-    expect(parseRoute("#level=" + "a".repeat(MAX_SHARE_PAYLOAD))).toEqual({
-      screen: "shared",
-      payload: "a".repeat(MAX_SHARE_PAYLOAD),
-    });
-    expect(parseRoute("#level=" + "a".repeat(MAX_SHARE_PAYLOAD + 1))).toEqual({ screen: "play" });
+  // Regression (self-review): a payload over the cap fell back to the bundled level, so
+  // the decoder's "link too long" message could never show.
+  it("keeps a payload over the share-link cap, for the decoder to refuse with a message", () => {
+    const long = "a".repeat(MAX_SHARE_PAYLOAD + 1);
+    expect(parseRoute("#level=" + long)).toEqual({ screen: "shared", payload: long });
   });
 });
 
@@ -44,5 +44,14 @@ describe("routeHash", () => {
       { screen: "shared", payload: "eJyrVkrLz1-_" },
     ];
     for (const r of routes) expect(parseRoute(routeHash(r))).toEqual(r);
+  });
+});
+
+describe("shareUrl", () => {
+  it("is this page's address with the hash replaced by the payload", () => {
+    const base = "https://guillaumedd.github.io/return-of-the-runners/";
+    expect(shareUrl(base, "abc")).toBe(`${base}#level=abc`);
+    expect(shareUrl(`${base}#edit`, "abc")).toBe(`${base}#level=abc`);
+    expect(shareUrl(`${base}?x=1#level=old`, "abc")).toBe(`${base}?x=1#level=abc`);
   });
 });

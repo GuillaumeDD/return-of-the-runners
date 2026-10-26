@@ -21,6 +21,11 @@
         <a id="nav-edit" href="#edit"></a>
       </nav>
       <section id="play-screen" class="screen">
+        <div id="shared-bar" class="shared-bar" hidden>
+          <p id="shared-text"></p>
+          <ul id="shared-errors"></ul>
+          <button id="shared-edit" type="button" class="primary"></button>
+        </div>
         <canvas id="screen" width="672" height="384"></canvas>
         <p id="message" class="hint"></p>
       </section>
@@ -41,11 +46,13 @@
             <button id="editor-export" type="button"></button>
             <button id="editor-import" type="button"></button>
             <input id="editor-file" type="file" accept=".json,application/json" hidden />
+            <button id="editor-share" type="button"></button>
             <button id="editor-undo" type="button"></button>
             <button id="editor-redo" type="button"></button>
             <button id="editor-test" type="button" class="primary"></button>
           </div>
           <p id="editor-status" class="hint" role="status"></p>
+          <input id="editor-share-link" class="share-link" type="text" readonly hidden />
           <div id="editor-errors" class="errors" role="alert" hidden>
             <p id="editor-errors-label"></p>
             <ul id="editor-error-list"></ul>

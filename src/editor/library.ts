@@ -93,3 +93,16 @@ export function isProblem(notice: Notice | null): boolean {
 export function afterEdit(notice: Notice | null): Notice | null {
   return notice?.kind === "storage" ? notice : null;
 }
+
+/**
+ * What "Edit a copy" of a shared level does. The copy is saved as a new level; it is
+ * opened unless the editor has unsaved changes, which are never replaced. `open-unsaved`:
+ * opened, but the browser refused to store it (so it counts as a change). `in-list`:
+ * saved, waiting in "My levels". `refused`: neither, so the caller keeps the link shown.
+ */
+export type CopyOutcome = "open-saved" | "open-unsaved" | "in-list" | "refused";
+
+export function copyOutcome(editorDirty: boolean, saved: boolean): CopyOutcome {
+  if (editorDirty) return saved ? "in-list" : "refused";
+  return saved ? "open-saved" : "open-unsaved";
+}

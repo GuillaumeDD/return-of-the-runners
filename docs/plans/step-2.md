@@ -256,18 +256,41 @@ grid and trimmed name only.
 
 `tests/share/link.test.ts`
 
-- round trip: `decodeLevel(encodeLevel(l))` equals `l` for every level fixture and for
-  2,000 random valid levels;
-- the bundled level's link is under 1,000 characters;
-- rejects: payloads past the length cap, non-base64url characters, data that is not
-  deflate, and a "zip bomb" (a small payload that inflates past 64 KB: decoding stops
-  at the cap, it does not inflate it all);
-- never throws on 2,000 random strings and 2,000 mutations of a valid payload.
+- round trip: `decodeLevel(encodeLevel(l))` equals `l` for the bundled level, every
+  valid fixture and 2,000 random valid levels (any size, Unicode names);
+- the bundled level's link is under 1,000 characters, and the largest level (64 × 48,
+  a 64-emoji name) fits under the payload cap; payloads are URL-safe, unpadded;
+- base64url matches Node's encoder for random bytes and decodes back; `+`, `/`, `=`,
+  spaces, non-ASCII and a lone final character are rejected;
+- rejects: payloads past the length cap (`too-long`), non-base64url characters
+  (`not-base64`), bytes that are not DEFLATE or a cut payload (`not-deflate`), DEFLATE
+  data that is not a level (the validator's codes, invalid UTF-8 included), and a
+  "zip bomb" (10 MB of output from a payload under the cap: `too-large`); output
+  exactly at the cap still inflates;
+- never throws on 2,000 random strings and 2,000 mutations of a valid payload, and
+  anything accepted satisfies the level invariants.
+
+`tests/app/route.test.ts`
+
+- `shareUrl` replaces the page's hash with `#level=<payload>`, keeping the path and
+  query;
+- a payload over the cap still routes to the shared screen, so the decoder can say the
+  link is too long.
+
+`tests/editor/library.test.ts` (Edit a copy)
+
+- `copyOutcome`: opened and saved; opened but not stored (counts as a change); saved
+  but waiting in the list (unsaved edits are never replaced); refused when it fits
+  nowhere.
 
 `e2e/share.spec.ts` (Playwright, Chromium, Firefox and WebKit)
 
-- a link made in Node opens in each browser and shows the right level (its name and
-  grid), so `CompressionStream` behaves the same in all three engines.
+- links made in Node decode in each browser to the same level (name and grid), and
+  links made in each browser decode in Node, so every engine's `CompressionStream`
+  agrees; the browsers reject a cut link and a zip bomb with the same codes as Node.
+  It runs the decoder in a harness page (`e2e/share.html`), like the replays; the
+  screens (Share, the shared level, "Edit a copy") are checked by hand with
+  screenshots in the PR.
 
 `/security-review` runs on B-016 and B-017 (file loading, share links).
 

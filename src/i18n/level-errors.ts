@@ -24,6 +24,9 @@ export const LEVEL_ERROR_MESSAGE: Readonly<Record<LevelErrorCode, MessageKey>> =
   "no-exit": "errNoExit",
   "too-many-monks": "errTooManyMonks",
   "unreadable-file": "errUnreadableFile",
+  "too-long": "errTooLong",
+  "not-base64": "errNotBase64",
+  "not-deflate": "errNotDeflate",
 };
 
 /**
@@ -38,4 +41,11 @@ export function levelErrorMessage(locale: Locale, code: LevelErrorCode): string 
     .replaceAll("{minHeight}", String(LIMITS.minHeight))
     .replaceAll("{maxHeight}", String(LIMITS.maxHeight))
     .replaceAll("{maxMonks}", String(LIMITS.maxMonks));
+}
+
+/** The distinct error codes of a refused level, in order: what the UI lists. */
+export function uniqueCodes(
+  errors: readonly { readonly code: LevelErrorCode }[],
+): LevelErrorCode[] {
+  return [...new Set(errors.map((e) => e.code))];
 }

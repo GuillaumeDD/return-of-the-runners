@@ -9,18 +9,14 @@ export type Route =
   | { readonly screen: "edit" }
   | { readonly screen: "shared"; readonly payload: string };
 
-/** Longest share-link payload accepted; longer ones are never decoded. */
-export const MAX_SHARE_PAYLOAD = 16 * 1024;
-
 const SHARED_PREFIX = "#level=";
 
 export function parseRoute(hash: string): Route {
   if (hash === "#edit") return { screen: "edit" };
   if (hash.startsWith(SHARED_PREFIX)) {
     const payload = hash.slice(SHARED_PREFIX.length);
-    if (payload.length > 0 && payload.length <= MAX_SHARE_PAYLOAD) {
-      return { screen: "shared", payload };
-    }
+    // Any length: a payload over the cap is refused by the decoder, with a message.
+    if (payload.length > 0) return { screen: "shared", payload };
   }
   return { screen: "play" };
 }
@@ -34,4 +30,10 @@ export function routeHash(route: Route): string {
     case "shared":
       return SHARED_PREFIX + route.payload;
   }
+}
+
+/** The share link of a payload: this page's address (`href`), its hash replaced. */
+export function shareUrl(href: string, payload: string): string {
+  const hash = href.indexOf("#");
+  return (hash === -1 ? href : href.slice(0, hash)) + routeHash({ screen: "shared", payload });
 }

@@ -1,5 +1,9 @@
 import { translate, type Locale, type MessageKey } from "../i18n";
-import type { LevelErrorCode } from "../level/format";
+import { uniqueCodes } from "../i18n/level-errors";
+import { shareUrl } from "../app/route";
+import type { Level, LevelErrorCode } from "../level/format";
+import { draftOf } from "../level/serialize";
+import { encodeLevel } from "../share/link";
 import {
   STORAGE_KEY,
   deleteLevel,
@@ -12,6 +16,7 @@ import {
 } from "../storage/levels";
 import {
   afterEdit,
+  copyOutcome,
   isDirty,
   isProblem,
   relabelTracking,
@@ -31,6 +36,9 @@ export interface LibraryElements {
   readonly importFile: HTMLButtonElement;
   /** A hidden `<input type="file">`, opened by the Import button. */
   readonly fileInput: HTMLInputElement;
+  readonly share: HTMLButtonElement;
+  /** Read-only field showing the last share link, until the next edit. */
+  readonly shareLink: HTMLInputElement;
   /** One line: saved, not saved yet, or a storage problem. */
   readonly status: HTMLElement;
   readonly title: HTMLElement;
@@ -42,6 +50,13 @@ export interface LibraryView {
   readonly setLocale: (locale: Locale) => void;
   /** The edited level changed: refreshes "not saved yet". */
   readonly changed: () => void;
+  /**
+   * "Edit a copy" of a shared level: saves it as a new level in "My levels" and opens
+   * it, unless the editor has unsaved changes (then it waits in the list, and the
+   * status line says so). False when it is in neither place: the editor had unsaved
+   * changes and the browser refused to store the copy.
+   */
+  readonly editCopy: (level: Level) => boolean;
 }
 
 /**
@@ -66,7 +81,7 @@ export function createLibraryView(
     prefix: MessageKey | null,
     errors: readonly { code: LevelErrorCode }[],
   ): void {
-    notice = { kind: "level", prefix, codes: [...new Set(errors.map((e) => e.code))] };
+    notice = { kind: "level", prefix, codes: uniqueCodes(errors) };
     renderStatus();
   }
 
@@ -81,6 +96,8 @@ export function createLibraryView(
     els.empty.hidden = levels.length > 0;
     els.save.textContent = translate(locale, "editorSave");
     els.exportFile.textContent = translate(locale, "editorExport");
+    els.share.textContent = translate(locale, "editorShare");
+    els.shareLink.setAttribute("aria-label", translate(locale, "shareLinkLabel"));
     resetConfirm(els.importFile, "editorImport");
     resetConfirm(els.newLevel, "editorNew");
     els.list.replaceChildren(...levels.map(row));
@@ -239,6 +256,54 @@ export function createLibraryView(
     });
   });
 
+  // Share: a link holding the whole level, for a playable level only. Also shown in a
+  // field, since the clipboard can be refused.
+  let shareTicket = 0;
+  els.share.addEventListener("click", () => {
+    const result = toLevel(editor.current());
+    hideShareLink();
+    if (!result.ok) {
+      levelNotice("shareRefused", result.errors);
+      return;
+    }
+    const ticket = ++shareTicket;
+    const before = editor.current();
+    const url = encodeLevel(result.level).then((payload) => shareUrl(location.href, payload));
+    // Refused (permissions, no secure context): the field still has the link.
+    const copied = copyText(url).then(
+      () => true,
+      () => false,
+    );
+    void Promise.all([url, copied]).then(([link, ok]) => {
+      // An edit meanwhile: that link would not be the level on screen.
+      if (ticket !== shareTicket || editor.current() !== before) return;
+      els.shareLink.value = link;
+      els.shareLink.hidden = false;
+      els.shareLink.select();
+      notice = { kind: "info", key: ok ? "statusLinkCopied" : "statusLinkReady" };
+      renderStatus();
+    });
+  });
+
+  /**
+   * Copies text that is still being made. Called within the click: Safari lets a page
+   * write the clipboard only during a user gesture, so the write starts now with a
+   * promise of the text (`ClipboardItem`), not once the link is ready.
+   */
+  async function copyText(text: Promise<string>): Promise<void> {
+    if (typeof ClipboardItem !== "undefined") {
+      const blob = text.then((t) => new Blob([t], { type: "text/plain" }));
+      await navigator.clipboard.write([new ClipboardItem({ "text/plain": blob })]);
+      return;
+    }
+    await navigator.clipboard.writeText(await text);
+  }
+
+  function hideShareLink(): void {
+    els.shareLink.hidden = true;
+    els.shareLink.value = "";
+  }
+
   // Another tab saved or deleted a level: show the list as it is now.
   window.addEventListener("storage", (e) => {
     if (e.key === STORAGE_KEY || e.key === null) refresh();
@@ -254,7 +319,25 @@ export function createLibraryView(
     },
     changed() {
       notice = afterEdit(notice);
+      shareTicket++; // a link being made is for the level before this edit
+      hideShareLink();
       renderStatus();
+    },
+    editCopy(level) {
+      const r = saveLevel(store, draftOf(level));
+      const outcome = copyOutcome(dirty(), r.ok);
+      if (outcome === "refused") return false;
+      const before = editor.current();
+      if (outcome !== "in-list") editor.load(editorFrom(level));
+      if (outcome === "open-saved" && r.ok) tracking = { id: r.id, saved: editor.current() };
+      // Not stored: compared with the level it replaced, so New or Open asks first.
+      if (outcome === "open-unsaved") tracking = { id: null, saved: before };
+      refresh(r.ok ? [] : [r.problem]);
+      if (outcome === "in-list") {
+        notice = { kind: "info", key: "statusCopiedShared" };
+        renderStatus();
+      }
+      return true;
     },
   };
 }

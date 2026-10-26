@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { catalog, detectLocale, LOCALES, translate } from "../src/i18n";
-import { LEVEL_ERROR_MESSAGE, levelErrorMessage } from "../src/i18n/level-errors";
+import { LEVEL_ERROR_MESSAGE, levelErrorMessage, uniqueCodes } from "../src/i18n/level-errors";
 import { LIMITS, type LevelErrorCode } from "../src/level/format";
 
 describe("i18n catalogs", () => {
@@ -58,5 +58,12 @@ describe("detectLocale", () => {
   it("falls back to English", () => {
     expect(detectLocale([])).toBe("en");
     expect(detectLocale(["de", "ja"])).toBe("en");
+  });
+});
+
+describe("uniqueCodes", () => {
+  it("lists each error code once, in order of first appearance", () => {
+    const errors = [{ code: "no-gold" }, { code: "no-exit" }, { code: "no-gold" }] as const;
+    expect(uniqueCodes(errors)).toEqual(["no-gold", "no-exit"]);
   });
 });
