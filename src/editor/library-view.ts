@@ -1,5 +1,4 @@
 import { translate, type Locale, type MessageKey } from "../i18n";
-import { levelErrorMessage } from "../i18n/level-errors";
 import type { LevelErrorCode } from "../level/format";
 import {
   STORAGE_KEY,
@@ -11,14 +10,27 @@ import {
   type StorageLike,
   type StorageProblem,
 } from "../storage/levels";
-import { isDirty, relabelTracking, statusKey, type Tracking } from "./library";
-import { editorFrom, newEditor, toDraft } from "./model";
+import {
+  afterEdit,
+  isDirty,
+  isProblem,
+  relabelTracking,
+  statusText,
+  type Notice,
+  type Tracking,
+} from "./library";
+import { exportLevel, importLevel } from "../level/file";
+import { editorFrom, newEditor, toDraft, toLevel } from "./model";
 import type { EditorView } from "./view";
 
 /** "My levels" elements, from index.html. */
 export interface LibraryElements {
   readonly save: HTMLButtonElement;
   readonly newLevel: HTMLButtonElement;
+  readonly exportFile: HTMLButtonElement;
+  readonly importFile: HTMLButtonElement;
+  /** A hidden `<input type="file">`, opened by the Import button. */
+  readonly fileInput: HTMLInputElement;
   /** One line: saved, not saved yet, or a storage problem. */
   readonly status: HTMLElement;
   readonly title: HTMLElement;
@@ -31,13 +43,6 @@ export interface LibraryView {
   /** The edited level changed: refreshes "not saved yet". */
   readonly changed: () => void;
 }
-
-const PROBLEM_MESSAGE: Readonly<Record<StorageProblem, MessageKey>> = {
-  "corrupt-document": "storageCorruptDocument",
-  "corrupt-entry": "storageCorruptEntry",
-  quota: "storageQuota",
-  "not-found": "storageNotFound",
-};
 
 /**
  * "My levels": save the edited level in the browser, start a new one, open or delete a
@@ -53,29 +58,21 @@ export function createLibraryView(
   let locale = initialLocale;
   /** Which saved level is in the editor, and as it was saved. */
   let tracking: Tracking = { id: null, saved: editor.current() };
-  /**
-   * The status line, when it is not "saved" / "not saved yet": storage problems (kept
-   * until the next list refresh) or why Save refused the level (cleared on the next edit).
-   */
-  let notice:
-    | { readonly kind: "storage"; readonly problems: readonly StorageProblem[] }
-    | { readonly kind: "level"; readonly codes: readonly LevelErrorCode[] }
-    | null = null;
+  let notice: Notice | null = null;
 
   const dirty = (): boolean => isDirty(editor.current(), tracking);
 
-  /** Translated when shown, so a language switch translates a pending notice too. */
-  function noticeText(): string | null {
-    if (notice === null) return null;
-    return notice.kind === "storage"
-      ? notice.problems.map((p) => translate(locale, PROBLEM_MESSAGE[p])).join(" ")
-      : notice.codes.map((c) => levelErrorMessage(locale, c)).join(" ");
+  function levelNotice(
+    prefix: MessageKey | null,
+    errors: readonly { code: LevelErrorCode }[],
+  ): void {
+    notice = { kind: "level", prefix, codes: [...new Set(errors.map((e) => e.code))] };
+    renderStatus();
   }
 
   function renderStatus(): void {
-    els.status.textContent =
-      noticeText() ?? translate(locale, statusKey(editor.current(), tracking));
-    els.status.classList.toggle("problem", notice !== null);
+    els.status.textContent = statusText(locale, notice, editor.current(), tracking);
+    els.status.classList.toggle("problem", isProblem(notice));
   }
 
   function render(levels: readonly SavedLevel[]): void {
@@ -83,6 +80,8 @@ export function createLibraryView(
     els.empty.textContent = translate(locale, "myLevelsEmpty");
     els.empty.hidden = levels.length > 0;
     els.save.textContent = translate(locale, "editorSave");
+    els.exportFile.textContent = translate(locale, "editorExport");
+    resetConfirm(els.importFile, "editorImport");
     resetConfirm(els.newLevel, "editorNew");
     els.list.replaceChildren(...levels.map(row));
     renderStatus();
@@ -175,8 +174,7 @@ export function createLibraryView(
   els.save.addEventListener("click", () => {
     const draft = toDraft(editor.current());
     if (!draft.ok) {
-      notice = { kind: "level", codes: [...new Set(draft.errors.map((e) => e.code))] };
-      renderStatus();
+      levelNotice(null, draft.errors);
       return;
     }
     let r = saveLevel(store, draft.level, tracking.id ?? undefined);
@@ -190,6 +188,55 @@ export function createLibraryView(
     editor.load(newEditor(translate(locale, "defaultLevelName")));
     tracking = { id: null, saved: editor.current() };
     refresh();
+  });
+
+  // Export: the exact v1 document as a file, for a playable level only.
+  els.exportFile.addEventListener("click", () => {
+    const result = toLevel(editor.current());
+    if (!result.ok) {
+      levelNotice("exportRefused", result.errors);
+      return;
+    }
+    const { fileName, text } = exportLevel(result.level);
+    const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName;
+    link.hidden = true;
+    document.body.append(link); // Firefox ignores a click on a detached link
+    link.click();
+    link.remove();
+    // Revoked a moment later: the download has started by then.
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 1000);
+    notice = { kind: "info", key: "statusExported" };
+    renderStatus();
+  });
+
+  // Import: opens a file as a new, unsaved level (Save keeps it in "My levels").
+  confirmable(els.importFile, "editorImport", "confirmDiscard", dirty, () => {
+    els.fileInput.value = ""; // the same file twice still fires "change"
+    els.fileInput.click();
+  });
+  /** Counts imports, so only the latest one, on an unchanged editor, is applied. */
+  let importTicket = 0;
+  els.fileInput.addEventListener("change", () => {
+    const file = els.fileInput.files?.[0];
+    if (file === undefined) return;
+    const ticket = ++importTicket;
+    const before = editor.current();
+    void importLevel(file).then((result) => {
+      // The file took a while: a later import, an edit or an opened level wins.
+      if (ticket !== importTicket || editor.current() !== before) return;
+      if (!result.ok) {
+        levelNotice("importRefused", result.errors);
+        return;
+      }
+      editor.load(editorFrom(result.level));
+      tracking = { id: null, saved: editor.current() };
+      refresh();
+    });
   });
 
   // Another tab saved or deleted a level: show the list as it is now.
@@ -206,7 +253,7 @@ export function createLibraryView(
       render(listLevels(store).levels); // keeps a pending notice, now translated
     },
     changed() {
-      if (notice?.kind === "level") notice = null;
+      notice = afterEdit(notice);
       renderStatus();
     },
   };

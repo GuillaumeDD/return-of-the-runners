@@ -222,14 +222,29 @@ grid and trimmed name only.
 
 ### B-016 — Export and import files
 
-- Export downloads `<name>.rotr.json`, the exact v1 document. Import uses a file
-  picker; files over 64 KB are rejected before they are read.
+- `src/level/file.ts`: `exportLevel(level)` → `<name>.rotr.json` and the exact v1
+  document (pretty-printed); `importLevel(file)` → the validator's result; files over
+  64 KB are rejected before they are read. Export needs a playable level; an import
+  opens as a new, unsaved level.
 
-`tests/level/export.test.ts`
+`tests/level/file.test.ts`
 
-- export then import gives back the same level (byte-identical JSON);
-- an oversized file is rejected without reading it; an invalid one returns the
-  validator's errors.
+- export then import gives back the same level, and exporting it again gives
+  byte-identical JSON (bundled level and every valid fixture);
+- the file is the v1 document with its fields in order, one grid row per line;
+- an oversized file is rejected without reading it (one at the cap is read); an invalid
+  one returns the validator's errors, game rules included; a file that cannot be read
+  returns an error instead of a rejection;
+- file names are plain ASCII (accents dropped, path separators and reserved characters
+  replaced), never empty or hidden, capped at 60 characters; a Windows device name
+  (`CON`, `nul`, `COM1`…) gets a `-level` suffix.
+
+`tests/editor/library.test.ts` (status line)
+
+- "export started" is followed by the save status ("not saved yet" stays visible);
+- a refused export or import shows its prefix, then each translated error;
+- storage problems are translated; only refusals and storage problems are problems,
+  and an edit clears everything but storage problems.
 
 ### B-017 — Share links
 

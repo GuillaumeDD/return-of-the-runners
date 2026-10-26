@@ -23,6 +23,7 @@ export const LEVEL_ERROR_MESSAGE: Readonly<Record<LevelErrorCode, MessageKey>> =
   "no-gold": "errNoGold",
   "no-exit": "errNoExit",
   "too-many-monks": "errTooManyMonks",
+  "unreadable-file": "errUnreadableFile",
 };
 
 /**

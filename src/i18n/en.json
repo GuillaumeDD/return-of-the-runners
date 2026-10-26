@@ -28,7 +28,7 @@
   "editorTest": "Test",
   "testBack": "Back to editor",
   "testHint": "Arrow keys: run and climb. Z / X: dig left / right. Esc: back to the editor.",
-  "editorErrors": "The level cannot be tested yet:",
+  "editorErrors": "The level is not playable yet:",
   "errTooLarge": "The file is too large.",
   "errNotJson": "This is not a level file (not JSON).",
   "errNotObject": "This is not a level file.",
@@ -59,5 +59,11 @@
   "storageQuota": "This browser refused to store the level (storage full or disabled).",
   "storageCorruptDocument": "Your saved levels could not be read. They are kept aside, and the next save starts a new list.",
   "storageCorruptEntry": "Some saved levels are damaged and are not shown.",
-  "storageNotFound": "This level is no longer saved (deleted in another tab?)."
+  "storageNotFound": "This level is no longer saved (deleted in another tab?).",
+  "editorExport": "Export",
+  "editorImport": "Import",
+  "exportRefused": "Not exported, the level is not playable yet:",
+  "importRefused": "Not imported:",
+  "statusExported": "Export started: open the file with “Import” on any computer.",
+  "errUnreadableFile": "The file could not be read (moved, deleted, or not allowed)."
 }

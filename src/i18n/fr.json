@@ -28,7 +28,7 @@
   "editorTest": "Tester",
   "testBack": "Retour à l’éditeur",
   "testHint": "Flèches : courir et grimper. W / X (clavier AZERTY) : creuser à gauche / à droite. Échap : retour à l’éditeur.",
-  "editorErrors": "Le niveau ne peut pas encore être testé :",
+  "editorErrors": "Le niveau n’est pas encore jouable :",
   "errTooLarge": "Le fichier est trop gros.",
   "errNotJson": "Ce n’est pas un fichier de niveau (pas du JSON).",
   "errNotObject": "Ce n’est pas un fichier de niveau.",
@@ -59,5 +59,11 @@
   "storageQuota": "Ce navigateur a refusé d’enregistrer le niveau (stockage plein ou désactivé).",
   "storageCorruptDocument": "Vos niveaux enregistrés sont illisibles. Ils sont mis de côté, et le prochain enregistrement commence une nouvelle liste.",
   "storageCorruptEntry": "Certains niveaux enregistrés sont abîmés et ne sont pas affichés.",
-  "storageNotFound": "Ce niveau n’est plus enregistré (supprimé dans un autre onglet ?)."
+  "storageNotFound": "Ce niveau n’est plus enregistré (supprimé dans un autre onglet ?).",
+  "editorExport": "Exporter",
+  "editorImport": "Importer",
+  "exportRefused": "Pas exporté, le niveau n’est pas encore jouable :",
+  "importRefused": "Pas importé :",
+  "statusExported": "Export lancé : ouvrez le fichier avec « Importer » sur n’importe quel ordinateur.",
+  "errUnreadableFile": "Impossible de lire le fichier (déplacé, supprimé ou non autorisé)."
 }

@@ -1,4 +1,7 @@
-import type { Locale, MessageKey } from "../i18n";
+import { translate, type Locale, type MessageKey } from "../i18n";
+import { levelErrorMessage } from "../i18n/level-errors";
+import type { LevelErrorCode } from "../level/format";
+import type { StorageProblem } from "../storage/levels";
 import { relabelName } from "./fields";
 import { rename, sameContent, type EditorState } from "./model";
 
@@ -31,4 +34,62 @@ export function statusKey(current: EditorState, tracking: Tracking): MessageKey 
 export function relabelTracking(tracking: Tracking, from: Locale, to: Locale): Tracking {
   if (tracking.id !== null) return tracking;
   return { ...tracking, saved: rename(tracking.saved, relabelName(tracking.saved.name, from, to)) };
+}
+
+/**
+ * What the status line says when it is not just "saved" / "not saved yet": storage
+ * problems (kept until the list is read again), why Save, Export or Import refused a
+ * level, or that an export started (both cleared on the next edit).
+ */
+export type Notice =
+  | { readonly kind: "storage"; readonly problems: readonly StorageProblem[] }
+  | {
+      readonly kind: "level";
+      readonly prefix: MessageKey | null;
+      readonly codes: readonly LevelErrorCode[];
+    }
+  | { readonly kind: "info"; readonly key: MessageKey };
+
+const PROBLEM_MESSAGE: Readonly<Record<StorageProblem, MessageKey>> = {
+  "corrupt-document": "storageCorruptDocument",
+  "corrupt-entry": "storageCorruptEntry",
+  quota: "storageQuota",
+  "not-found": "storageNotFound",
+};
+
+/**
+ * The status line, translated when shown (so a pending notice follows a language
+ * switch). An info notice is followed by the save status, so "exported" never hides
+ * "not saved yet".
+ */
+export function statusText(
+  locale: Locale,
+  notice: Notice | null,
+  current: EditorState,
+  tracking: Tracking,
+): string {
+  const status = translate(locale, statusKey(current, tracking));
+  switch (notice?.kind) {
+    case undefined:
+      return status;
+    case "storage":
+      return notice.problems.map((p) => translate(locale, PROBLEM_MESSAGE[p])).join(" ");
+    case "level":
+      return [
+        ...(notice.prefix === null ? [] : [translate(locale, notice.prefix)]),
+        ...notice.codes.map((c) => levelErrorMessage(locale, c)),
+      ].join(" ");
+    case "info":
+      return `${translate(locale, notice.key)} ${status}`;
+  }
+}
+
+/** Whether a notice is a problem (shown in the problem color). */
+export function isProblem(notice: Notice | null): boolean {
+  return notice !== null && notice.kind !== "info";
+}
+
+/** After an edit: the save status replaces a refusal or an info notice. */
+export function afterEdit(notice: Notice | null): Notice | null {
+  return notice?.kind === "storage" ? notice : null;
 }

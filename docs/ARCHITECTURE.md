@@ -258,7 +258,14 @@ is why width and height are per-level properties.
   is in later rewrites (never erased), an
   unreadable document gives an empty list and is copied to `rotr.levels.v1.corrupt`
   before the next save replaces it; storage errors (quota, disabled) are returned, never
-  thrown. Levels can always be exported/imported as files.
+  thrown.
+- Levels are exported and imported as files (`level/file.ts`): `<name>.rotr.json`, the
+  exact v1 document, pretty-printed. Export needs a playable level. An import is
+  untrusted input: over 64 KB it is rejected from `File.size` before a byte is read,
+  then it goes through `parseLevel` with the game rules; a read failure is the
+  `unreadable-file` error. The file name is plain ASCII (headless Chromium names a
+  non-ASCII `download` "download"), and Windows device names get a `-level` suffix. A
+  slow read is dropped if the editor changed or another import started meanwhile.
 
 ## Internationalization
 

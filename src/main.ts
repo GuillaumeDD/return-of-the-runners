@@ -184,6 +184,9 @@ const library = createLibraryView(
   {
     save: byId("editor-save", HTMLButtonElement),
     newLevel: byId("editor-new", HTMLButtonElement),
+    exportFile: byId("editor-export", HTMLButtonElement),
+    importFile: byId("editor-import", HTMLButtonElement),
+    fileInput: byId("editor-file", HTMLInputElement),
     status: byId("editor-status", HTMLParagraphElement),
     title: byId("my-levels-title", HTMLHeadingElement),
     list: byId("my-levels-list", HTMLUListElement),
