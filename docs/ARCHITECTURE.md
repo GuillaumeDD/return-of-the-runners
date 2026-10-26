@@ -31,6 +31,7 @@ index.html ── src/main.ts        entry point: wires DOM, screens, input, loo
               src/render/        Canvas 2D rendering of a simulation state
               src/levels/        bundled levels (JSON, validated at load like any import)
               src/level/         level format: types, validator (migrations from v2 on)
+              src/storage/       "My levels" in the browser (localStorage, validated)
 tests/                           Vitest tests, mirroring src/
 tests/fixtures/levels/           one fixture set per level format version
 tests/fixtures/replays/          committed replays and the result each must reach
@@ -247,8 +248,17 @@ is why width and height are per-level properties.
   `invalid/`; an invalid fixture is named after its expected error code, with an
   optional `--variant` suffix). Fixtures are excluded from Prettier so they stay
   byte-for-byte as written.
-- Editor levels are stored in the browser (IndexedDB/localStorage) and can always be
-  exported/imported as files.
+- Editor levels are stored in the browser (`storage/levels.ts`): one `localStorage` key,
+  `rotr.levels.v1`, holding a versioned document (`return-of-the-runners/my-levels`)
+  with an id counter and the levels as v1 documents. They are **drafts**
+  (`LevelDraft`, parsed with `parseLevel(text, { gameRules: false })`): the shape is
+  checked, the game rules are not, so a level can be saved half-built. A draft has no
+  `version` field, so the type system refuses to play one without a full `parseLevel`.
+  Everything read back is untrusted: a broken entry is skipped, reported and kept as it
+  is in later rewrites (never erased), an
+  unreadable document gives an empty list and is copied to `rotr.levels.v1.corrupt`
+  before the next save replaces it; storage errors (quota, disabled) are returned, never
+  thrown. Levels can always be exported/imported as files.
 
 ## Internationalization
 

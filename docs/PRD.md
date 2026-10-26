@@ -68,7 +68,8 @@ their own levels.
 
 ### 4.5 Player data
 
-- Levels created in the editor are stored in the browser (IndexedDB/localStorage).
+- Levels created in the editor are stored in the browser (localStorage), even when
+  not playable yet (drafts); testing, exporting and sharing need a playable level.
 - Since clearing browser data wipes them, export/import as files (backup) is always
   available.
 

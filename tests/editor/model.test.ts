@@ -4,6 +4,7 @@ import {
   UNDO_LIMIT,
   beginStroke,
   endStroke,
+  editorFrom,
   erase,
   lineCells,
   newEditor,
@@ -11,9 +12,11 @@ import {
   paintLine,
   redo,
   rename,
+  sameContent,
   resize,
   selectTile,
   toDocument,
+  toDraft,
   toLevel,
   undo,
   type EditorState,
@@ -299,5 +302,35 @@ describe("randomized edits", () => {
       expect(count(s, TILE.runnerStart)).toBeLessThanOrEqual(1);
       expect(s.undo.length).toBeLessThanOrEqual(UNDO_LIMIT);
     }
+  });
+});
+
+describe("drafts", () => {
+  it("toDraft accepts a level that is not playable yet; only an empty name fails", () => {
+    const s = paint(newEditor("WIP"), 3, 3, TILE.brick);
+    const r = toDraft(s);
+    expect(r.ok && r.level.grid).toEqual(s.grid);
+    const bad = toDraft(rename(s, "  "));
+    expect(bad.ok ? [] : bad.errors.map((e) => e.code)).toEqual(["invalid-name"]);
+  });
+
+  it("editorFrom opens a saved level as it was, with an empty undo history", () => {
+    const s = paint(paint(newEditor("Saved"), 3, 3, TILE.brick), 4, 4, TILE.gold);
+    const opened = editorFrom({ name: "Saved", width: 28, height: 16, grid: s.grid });
+    expect(opened.grid).toEqual(s.grid);
+    expect(opened.name).toBe("Saved");
+    expect(opened.undo).toEqual([]);
+    expect(opened.redo).toEqual([]);
+  });
+});
+
+describe("sameContent", () => {
+  it("compares the grid and the trimmed name, not the undo history or the tile", () => {
+    const a = newEditor("Level");
+    expect(sameContent(a, selectTile(rename(a, " Level  "), TILE.gold))).toBe(true);
+    expect(sameContent(a, paint(a, 1, 1, TILE.gold))).toBe(false);
+    expect(sameContent(a, undo(paint(a, 1, 1, TILE.gold)))).toBe(true);
+    expect(sameContent(a, rename(a, "Other"))).toBe(false);
+    expect(sameContent(a, resize(a, 30, 16))).toBe(false);
   });
 });

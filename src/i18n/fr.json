@@ -45,5 +45,19 @@
   "errRunnerCount": "Placez le départ du joueur (un seul).",
   "errNoGold": "Placez au moins un or.",
   "errNoExit": "Placez au moins une sortie.",
-  "errTooManyMonks": "Trop de moines : {maxMonks} au maximum."
+  "errTooManyMonks": "Trop de moines : {maxMonks} au maximum.",
+  "editorNew": "Nouveau",
+  "editorSave": "Enregistrer",
+  "myLevels": "Mes niveaux",
+  "myLevelsEmpty": "Aucun niveau enregistré : « Enregistrer » garde le niveau dans ce navigateur.",
+  "libraryOpen": "Ouvrir",
+  "libraryDelete": "Supprimer",
+  "confirmDelete": "Supprimer pour de bon ?",
+  "confirmDiscard": "Perdre les modifications ?",
+  "statusSaved": "Enregistré dans ce navigateur.",
+  "statusUnsaved": "Pas encore enregistré.",
+  "storageQuota": "Ce navigateur a refusé d’enregistrer le niveau (stockage plein ou désactivé).",
+  "storageCorruptDocument": "Vos niveaux enregistrés sont illisibles. Ils sont mis de côté, et le prochain enregistrement commence une nouvelle liste.",
+  "storageCorruptEntry": "Certains niveaux enregistrés sont abîmés et ne sont pas affichés.",
+  "storageNotFound": "Ce niveau n’est plus enregistré (supprimé dans un autre onglet ?)."
 }
