@@ -81,3 +81,56 @@ button {
   color: #f2c94c;
   border-bottom-color: #f2c94c;
 }
+
+.editor-bar,
+.palette {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+
+.editor-bar input {
+  font: inherit;
+  background: #111;
+  color: #ddd;
+  border: 1px solid #444;
+  padding: 2px 6px;
+}
+
+.editor-bar input[type="number"] {
+  width: 4em;
+}
+
+.palette button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.palette button[aria-pressed="true"] {
+  border-color: #f2c94c;
+  color: #f2c94c;
+}
+
+.palette canvas {
+  width: 24px;
+  height: 24px;
+}
+
+.palette kbd {
+  color: #888;
+  font-size: 0.8em;
+}
+
+#editor-grid {
+  /* Drags paint instead of scrolling on touch screens. */
+  touch-action: none;
+  cursor: crosshair;
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}

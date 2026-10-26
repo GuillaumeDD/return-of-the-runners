@@ -122,15 +122,37 @@ a screenshot in its PR.
 
 - `src/editor/view.ts`: palette (one button per tile, with its translated name and
   number key), name and size fields, the grid drawn with the game's renderer.
-- `src/editor/pointer.ts`: canvas pixel → cell, button → paint or erase.
+- `src/editor/pointer.ts`: canvas pixel → cell, button → paint or erase, and pointer
+  inputs (down, move, end) → model operations.
+- `src/editor/keys.ts`: palette order, number keys, undo/redo shortcuts.
+- `src/editor/fields.ts`: size fields and the default name across a language switch.
 
 `tests/editor/pointer.test.ts`
 
 - pixel → cell at the corners and edges of each cell, at any CSS scale of the canvas;
 - outside the grid → no cell;
 - left button paints, right button erases, other buttons do nothing.
+- a drag paints every cell on its path as one undo step; a right-button drag erases;
+  leaving the grid and coming back draws no line across the outside; moves with no
+  button pressed paint nothing; a second button during a drag is ignored, and letting
+  go of the drag's button while it is held ends the stroke; another pointer's moves
+  and release (a second finger) are ignored;
 - a stroke ends on pointer release, cancel or lost capture (releasing outside the
   window must not merge later edits into one undo step).
+
+`tests/editor/fields.test.ts`
+
+- a size field reads whole numbers only; an empty or invalid field keeps the current
+  size (it is not read as 0);
+- the default level name follows a language switch; a typed name stays.
+
+`tests/editor/keys.test.ts`
+
+- the palette holds every tile once, each with an EN and FR name;
+- number keys 1–9 (top row or numpad) pick the palette entries in order; other keys
+  pick nothing;
+- Ctrl+Z undoes, Ctrl+Y and Ctrl+Shift+Z redo, Cmd works like Ctrl; no shortcut
+  without Ctrl/Cmd, with Alt, or for other letters.
 
 `tests/i18n.test.ts` (existing): still checks that EN and FR have the same keys.
 

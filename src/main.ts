@@ -1,12 +1,13 @@
 import { parseRoute, type Route } from "./app/route";
-import { blankGrid } from "./editor/blank";
+import { newEditor } from "./editor/model";
+import { createEditorView } from "./editor/view";
 import { advance, type Accumulator } from "./game/loop";
 import { createSession, tickSession, type Session } from "./game/session";
 import { detectLocale, translate, type Locale, type MessageKey } from "./i18n";
 import { inputFrom, isBound, keyDown, keyUp, type HeldKeys } from "./input/keyboard";
 import { parseLevel } from "./level/parse";
 import firstSteps from "./levels/first-steps.json?raw";
-import { canvasSize, gridCanvasSize, render, renderGrid } from "./render/canvas";
+import { canvasSize, context2d, render } from "./render/canvas";
 import { createState, type GameState, type Status } from "./sim/state";
 
 function byId<T extends HTMLElement>(id: string, type: new () => T): T {
@@ -24,15 +25,7 @@ const navPlay = byId("nav-play", HTMLAnchorElement);
 const navEdit = byId("nav-edit", HTMLAnchorElement);
 const playScreen = byId("play-screen", HTMLElement);
 const editScreen = byId("edit-screen", HTMLElement);
-const editorCanvas = byId("editor-grid", HTMLCanvasElement);
-const editorHint = byId("editor-hint", HTMLParagraphElement);
-function context2d(c: HTMLCanvasElement): CanvasRenderingContext2D {
-  const context = c.getContext("2d");
-  if (!context) throw new Error("Canvas 2D is not available");
-  return context;
-}
 const ctx = context2d(canvas);
-const editorCtx = context2d(editorCanvas);
 
 let locale: Locale = detectLocale(navigator.languages);
 let messageKey: MessageKey = "controls";
@@ -52,7 +45,7 @@ function renderText(): void {
   langButton.textContent = translate(locale, "switchLanguage");
   navPlay.textContent = translate(locale, "navPlay");
   navEdit.textContent = translate(locale, "navEdit");
-  editorHint.textContent = translate(locale, "editorHint");
+  editor.setLocale(locale);
 }
 
 langButton.addEventListener("click", () => {
@@ -126,14 +119,25 @@ function createGame(context: CanvasRenderingContext2D, initial: GameState): Game
 }
 
 // The level being edited lives as long as the page, across visits to other screens.
-const editorGrid = blankGrid();
-
-function showEditor(): void {
-  const size = gridCanvasSize(editorGrid);
-  editorCanvas.width = size.width;
-  editorCanvas.height = size.height;
-  renderGrid(editorCtx, editorGrid);
-}
+const editor = createEditorView(
+  {
+    canvas: byId("editor-grid", HTMLCanvasElement),
+    palette: byId("editor-palette", HTMLDivElement),
+    name: byId("editor-name", HTMLInputElement),
+    width: byId("editor-width", HTMLInputElement),
+    height: byId("editor-height", HTMLInputElement),
+    undo: byId("editor-undo", HTMLButtonElement),
+    redo: byId("editor-redo", HTMLButtonElement),
+    labels: {
+      name: byId("editor-name-label", HTMLSpanElement),
+      width: byId("editor-width-label", HTMLSpanElement),
+      height: byId("editor-height-label", HTMLSpanElement),
+      hint: byId("editor-hint", HTMLParagraphElement),
+    },
+  },
+  newEditor(translate(locale, "defaultLevelName")),
+  locale,
+);
 
 let game: Game | null = null;
 const parsed = parseLevel(firstSteps);
@@ -161,8 +165,9 @@ function show(route: Route): void {
   }
   if (editing) {
     game?.pause();
-    showEditor();
+    editor.show();
   } else {
+    editor.hide();
     game?.resume();
   }
 }

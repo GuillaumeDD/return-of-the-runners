@@ -8,5 +8,21 @@
   "switchLanguage": "Français",
   "navPlay": "Play",
   "navEdit": "Editor",
-  "editorHint": "Level editor: painting with the mouse arrives in the next update."
+  "editorHint": "Left button: paint the selected tile. Right button: erase. Keys 1–9: pick a tile. Ctrl+Z / Ctrl+Y: undo / redo.",
+  "editorName": "Name",
+  "editorWidth": "Width",
+  "editorHeight": "Height",
+  "editorUndo": "Undo",
+  "editorRedo": "Redo",
+  "editorPalette": "Tiles",
+  "defaultLevelName": "My level",
+  "tileBrick": "Brick",
+  "tileBedrock": "Bedrock",
+  "tileLadder": "Ladder",
+  "tileBar": "Bar",
+  "tileGold": "Gold",
+  "tileExit": "Exit",
+  "tileRunner": "Runner start",
+  "tileMonk": "Monk",
+  "tileEmpty": "Empty"
 }
