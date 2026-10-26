@@ -26,6 +26,13 @@ const COLOR = {
   gridLine: "#222",
 } as const;
 
+/** The 2D context of a canvas; throws when the browser has none. */
+export function context2d(c: HTMLCanvasElement): CanvasRenderingContext2D {
+  const context = c.getContext("2d");
+  if (!context) throw new Error("Canvas 2D is not available");
+  return context;
+}
+
 export function canvasSize(state: Pick<GameState, "width" | "height">): {
   width: number;
   height: number;

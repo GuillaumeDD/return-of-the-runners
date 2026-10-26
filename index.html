@@ -25,6 +25,18 @@
         <p id="message" class="hint"></p>
       </section>
       <section id="edit-screen" class="screen" hidden>
+        <div class="editor-bar">
+          <label><span id="editor-name-label"></span> <input id="editor-name" type="text" /></label>
+          <label
+            ><span id="editor-width-label"></span> <input id="editor-width" type="number"
+          /></label>
+          <label
+            ><span id="editor-height-label"></span> <input id="editor-height" type="number"
+          /></label>
+          <button id="editor-undo" type="button"></button>
+          <button id="editor-redo" type="button"></button>
+        </div>
+        <div id="editor-palette" class="palette" role="toolbar"></div>
         <canvas id="editor-grid" width="672" height="384"></canvas>
         <p id="editor-hint" class="hint"></p>
       </section>

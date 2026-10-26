@@ -171,6 +171,15 @@ Code: `src/sim/`. Entry points: `createState(level, seed)` and
   the grid only (at most 100 steps); one mouse stroke (`beginStroke` … `endStroke`) is
   one step. `toLevel` runs the edited document through `parseLevel`, so the editor
   never hands the game a level an import would reject.
+- **Editor screen** (`editor/view.ts`, the only editor file that touches the DOM): a
+  palette (number keys 1–9 by `KeyboardEvent.code`, like the game keys), name and size
+  fields, undo and redo. `editor/pointer.ts` maps canvas pixels to cells at any CSS
+  scale and turns pointer events into model operations: the left button paints, the
+  right one erases, and release, cancel and lost capture all end the stroke, so letting
+  go outside the window cannot merge later edits into one undo step. A drag follows
+  one pointer: a second finger is ignored. Ctrl+Z / Ctrl+Y go
+  by `KeyboardEvent.key`, as in other applications; keys typed in a field are left to
+  the field.
 
 ## Level format
 

@@ -8,5 +8,21 @@
   "switchLanguage": "English",
   "navPlay": "Jouer",
   "navEdit": "Éditeur",
-  "editorHint": "Éditeur de niveaux : la peinture à la souris arrive dans la prochaine mise à jour."
+  "editorHint": "Clic gauche : peindre la case choisie. Clic droit : effacer. Touches 1 à 9 : choisir une case. Ctrl+Z / Ctrl+Y : annuler / rétablir.",
+  "editorName": "Nom",
+  "editorWidth": "Largeur",
+  "editorHeight": "Hauteur",
+  "editorUndo": "Annuler",
+  "editorRedo": "Rétablir",
+  "editorPalette": "Cases",
+  "defaultLevelName": "Mon niveau",
+  "tileBrick": "Brique",
+  "tileBedrock": "Roc",
+  "tileLadder": "Échelle",
+  "tileBar": "Barre",
+  "tileGold": "Or",
+  "tileExit": "Sortie",
+  "tileRunner": "Départ du joueur",
+  "tileMonk": "Moine",
+  "tileEmpty": "Vide"
 }

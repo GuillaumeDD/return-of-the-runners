@@ -1,0 +1,47 @@
+import type { MessageKey } from "../i18n";
+import { TILE, type TileChar } from "../level/format";
+
+/** The palette, in order: number key N picks entry N. */
+export const PALETTE: readonly { readonly tile: TileChar; readonly name: MessageKey }[] = [
+  { tile: TILE.brick, name: "tileBrick" },
+  { tile: TILE.bedrock, name: "tileBedrock" },
+  { tile: TILE.ladder, name: "tileLadder" },
+  { tile: TILE.bar, name: "tileBar" },
+  { tile: TILE.gold, name: "tileGold" },
+  { tile: TILE.exit, name: "tileExit" },
+  { tile: TILE.runnerStart, name: "tileRunner" },
+  { tile: TILE.monkStart, name: "tileMonk" },
+  { tile: TILE.empty, name: "tileEmpty" },
+];
+
+/**
+ * The palette tile for a key, by `KeyboardEvent.code` (physical key), so the top row
+ * works without Shift on AZERTY keyboards. Digit or numpad 1–9; anything else: null.
+ */
+export function tileForKey(code: string): TileChar | null {
+  const match = /^(?:Digit|Numpad)([1-9])$/.exec(code);
+  if (match === null) return null;
+  return PALETTE[Number(match[1]) - 1]?.tile ?? null;
+}
+
+export type Shortcut = "undo" | "redo";
+
+export interface ShortcutKey {
+  readonly key: string;
+  readonly ctrlKey: boolean;
+  readonly metaKey: boolean;
+  readonly shiftKey: boolean;
+  readonly altKey: boolean;
+}
+
+/**
+ * Ctrl+Z undoes; Ctrl+Y and Ctrl+Shift+Z redo (Cmd on a Mac). By `KeyboardEvent.key`,
+ * the letter printed on the key, as in every other application.
+ */
+export function shortcutFor(e: ShortcutKey): Shortcut | null {
+  if (!(e.ctrlKey || e.metaKey) || e.altKey) return null;
+  const key = e.key.toLowerCase();
+  if (key === "z") return e.shiftKey ? "redo" : "undo";
+  if (key === "y" && !e.shiftKey) return "redo";
+  return null;
+}
