@@ -165,6 +165,12 @@ Code: `src/sim/`. Entry points: `createState(level, seed)` and
   screen is shown; coming back resumes the same game without catch-up ticks.
 - The editor draws the level grid with `renderGrid`: tiles as in the game, start
   markers as the actors, and faint cell lines.
+- **Editor model** (`editor/model.ts`): plain data and pure functions, like the
+  simulation. `paint` moves the runner start instead of adding a second one;
+  `paintLine` fills a segment (Bresenham) so a fast drag leaves no gaps. Undo covers
+  the grid only (at most 100 steps); one mouse stroke (`beginStroke` … `endStroke`) is
+  one step. `toLevel` runs the edited document through `parseLevel`, so the editor
+  never hands the game a level an import would reject.
 
 ## Level format
 
