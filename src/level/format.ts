@@ -72,7 +72,9 @@ export type LevelErrorCode =
   | "runner-count"
   | "no-gold"
   | "no-exit"
-  | "too-many-monks";
+  | "too-many-monks"
+  /** Import only: the file could not be read (moved, deleted, no permission). */
+  | "unreadable-file";
 
 export interface LevelError {
   readonly code: LevelErrorCode;
