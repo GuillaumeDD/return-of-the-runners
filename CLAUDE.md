@@ -18,12 +18,13 @@ Returns_ (Presage/Sierra, 1994), with an integrated level editor.
 
 ### Read before you start
 
-| When you…                                    | Read first                                          |
-| -------------------------------------------- | --------------------------------------------------- |
-| start or scope a feature                     | `docs/PRD.md`, `docs/BACKLOG.md`                    |
-| touch code, dependencies, CI or the build    | `docs/ARCHITECTURE.md`                              |
-| implement or change gameplay                 | `docs/ARCHITECTURE.md` § Observed original behavior |
-| add or change an asset (image, sound, level) | `ASSETS.md`, `docs/PRD.md` § Content and licensing  |
+| When you…                                     | Read first                                          |
+| --------------------------------------------- | --------------------------------------------------- |
+| start or scope a feature                      | `docs/PRD.md`, `docs/BACKLOG.md`                    |
+| touch code, dependencies, CI or the build     | `docs/ARCHITECTURE.md`                              |
+| implement or change gameplay                  | `docs/ARCHITECTURE.md` § Observed original behavior |
+| add or change an asset (image, sound, level)  | `ASSETS.md`, `docs/PRD.md` § Content and licensing  |
+| rely on a web API (clipboard, files, streams) | `docs/ARCHITECTURE.md` § Browser quirks             |
 
 ### Non-negotiables
 
@@ -124,8 +125,10 @@ Format:
 ### Code review
 
 - Every change goes through a **pull request**; nothing is pushed directly to `main`.
+  A pushed branch is not done: open its PR in the same step and share the link.
 - Before opening or updating a PR, run a self-review of the diff (`/code-review`)
-  and fix confirmed findings first.
+  and fix confirmed findings first. Always ask: can an async result (file read,
+  compression, clipboard, decoding) land after the state it was started for changed?
 - Run `/security-review` on any PR that touches untrusted input (level import,
   share links, file loading), dependencies, or CI/deployment config.
 - CI must be green (typecheck, lint, tests, build) before merge.
@@ -134,7 +137,8 @@ Format:
   2. tested (enumerated unit tests, plus a replay test for gameplay changes);
   3. documented (PRD/ARCHITECTURE/BACKLOG statuses updated);
   4. strings translated (EN + FR);
-  5. the PR shows a screenshot or GIF for any visible change.
+  5. the PR shows a screenshot or GIF for any visible change, linked by commit SHA
+     (a permalink), so it survives the branch's deletion.
 
 ### Security
 
@@ -191,6 +195,9 @@ specific. Focus on it:
 - Cross-platform parity needs cross-engine evidence: run the replay tests in
   **at least two engines** (Node in CI + a headless browser via Playwright) before
   claiming it.
+- The same holds for web platform APIs (streams, clipboard, downloads, storage): a
+  claim about browser behavior is measured in Chromium, Firefox and WebKit, or stated
+  as unverified.
 
 ### Faithfulness to the original
 
@@ -225,4 +232,4 @@ specific. Focus on it:
   - the current tree alone isn't enough — **history ships too**.
 - Verify a published artifact in a **clean room**: test the deployed GitHub Pages
   build, or `vite preview` of a fresh `npm ci && npm run build` in a clean checkout,
-  never the dev server.
+  never the dev server. Say which one was checked.

@@ -300,4 +300,5 @@ grid and trimmed name only.
    test button, keyboard shortcuts) can shape this one.
 2. Grid size of TLR levels (still open from step 1): the editor defaults to 28×16 and
    lets you change it, so nothing is blocked.
-3. Should a shared link open the level in play mode (current plan) or in the editor?
+3. ~~Should a shared link open the level in play mode or in the editor?~~ Play mode,
+   with "Edit a copy" (B-017). Questions 1 and 2 moved to PRD § Open questions.

@@ -59,6 +59,8 @@ their own levels.
   level can be finished is checked by the maker with "Test", not by the validator
   (decided 2026-10-25: a path search cannot foresee every dug route).
 - Sharing: export/import as a file, or as a link with the level compressed in the URL.
+  A link opens the level in play mode, with "Edit a copy", which puts it in "My levels"
+  and never replaces unsaved edits (decided with B-017, 2026-10-26).
 
 ### 4.4 Controls
 
@@ -99,13 +101,13 @@ their own levels.
 
 ## 7. Roadmap
 
-| Step | Content                                                                              | Outcome                   |
-| ---- | ------------------------------------------------------------------------------------ | ------------------------- |
-| 0    | Repo, TS/Vite skeleton, CI, GitHub Pages deploy                                      | A link that opens         |
-| 1    | Core engine: grid, movement, ladders, bars, falling, digging, gold, monks + AI, exit | First playable level      |
-| 2    | Editor v1: paint, test, save, export, share by link                                  | We can create levels      |
-| 3    | TLR specifics: terrain, tools, 2-player co-op and versus                             | The "real" Legend Returns |
-| 4    | World tile sets, day/night, music, packs, menus, scores, EN/FR                       | Complete game             |
+| Step | Content                                                                              | Outcome                   | Status            |
+| ---- | ------------------------------------------------------------------------------------ | ------------------------- | ----------------- |
+| 0    | Repo, TS/Vite skeleton, CI, GitHub Pages deploy                                      | A link that opens         | done              |
+| 1    | Core engine: grid, movement, ladders, bars, falling, digging, gold, monks + AI, exit | First playable level      | done (2026-10-25) |
+| 2    | Editor v1: paint, test, save, export, share by link                                  | We can create levels      | done (2026-10-26) |
+| 3    | TLR specifics: terrain, tools, 2-player co-op and versus                             | The "real" Legend Returns | next              |
+| 4    | World tile sets, day/night, music, packs, menus, scores, EN/FR                       | Complete game             | later             |
 
 ## 8. Growth
 
@@ -119,6 +121,8 @@ rejects the feature.
 | Local importer for files from one's own copy of the original    | proposed | Reverse-engineering track; nothing redistributed |
 | Replays (record/playback from input log)                        | proposed | Format and player exist (B-010); needs the UI    |
 | Editor warning for gold or exit unreachable without digging     | proposed | Only if makers ask for it; never blocking        |
+| "Edit a copy" twice opens the existing copy, not a duplicate    | proposed | B-017 review; duplicates are visible, deletable  |
+| A pack of several levels in one file or link                    | proposed | Trading levels one by one is tedious             |
 | Recreated art in the style of TLR (1994): sprites, tile sets    | planned  | Placeholders until then; never extracted assets  |
 | Online multiplayer                                              | rejected | Same keyboard is enough (2026-10-24)             |
 | Decoding the original 150 levels                                | rejected | No public source found (2026-10-24)              |
@@ -128,3 +132,6 @@ rejects the feature.
 
 - Names of the two heroes (and of the monks?).
 - Full list of TLR tools and items, and their exact behavior (to be confirmed by playtests/videos).
+- Grid size of TLR levels: the editor defaults to 28×16 and allows 8–64 × 8–48.
+  Step 3 builds on the answer.
+- What TLR's own editor looked like (palette layout, test button, shortcuts).
