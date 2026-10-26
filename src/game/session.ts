@@ -2,6 +2,9 @@ import type { PlayerInput } from "../sim/input";
 import type { GameState } from "../sim/state";
 import { step } from "../sim/step";
 
+/** The seed of every play session (the play screen and the editor's test play). */
+export const PLAY_SEED = 1;
+
 /** Ticks the end screen (caught or level complete) stays up before the level restarts (1.5 s). */
 export const RESTART_DELAY_TICKS = 90;
 

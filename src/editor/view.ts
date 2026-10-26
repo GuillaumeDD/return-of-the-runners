@@ -1,9 +1,12 @@
 import { translate, type Locale } from "../i18n";
+import { levelErrorMessage } from "../i18n/level-errors";
+import type { LevelErrorCode } from "../level/format";
 import { LIMITS } from "../level/format";
 import { context2d, gridCanvasSize, renderGrid } from "../render/canvas";
 import { parseSize, relabelName } from "./fields";
 import { PALETTE, shortcutFor, tileForKey } from "./keys";
 import { redo, rename, resize, selectTile, undo, type EditorState } from "./model";
+import { startTest, testErrors, type TestStart } from "./test-play";
 import { cellAt, onPointer, startsDrag, type Drag, type PointerInput } from "./pointer";
 
 /** The editor screen's elements, from index.html. */
@@ -15,20 +18,30 @@ export interface EditorElements {
   readonly height: HTMLInputElement;
   readonly undo: HTMLButtonElement;
   readonly redo: HTMLButtonElement;
+  readonly test: HTMLButtonElement;
+  /** Shown after a "Test" refused by the validator, until the level is valid. */
+  readonly errors: HTMLElement;
+  readonly errorList: HTMLUListElement;
   /** Translated labels: each element's text is set from its message key. */
   readonly labels: {
     readonly name: HTMLElement;
     readonly width: HTMLElement;
     readonly height: HTMLElement;
     readonly hint: HTMLElement;
+    readonly errors: HTMLElement;
   };
 }
+
+/** A test that may start: the level passed the validator. */
+export type ValidTest = Extract<TestStart, { ok: true }>;
 
 export interface EditorView {
   /** Starts listening to the keyboard and draws the level. */
   readonly show: () => void;
   readonly hide: () => void;
   readonly setLocale: (locale: Locale) => void;
+  /** Puts the keyboard focus on "Test", where it was before a test started. */
+  readonly focusTest: () => void;
 }
 
 /**
@@ -40,11 +53,14 @@ export function createEditorView(
   els: EditorElements,
   initial: EditorState,
   initialLocale: Locale,
+  onTest: (test: ValidTest) => void,
 ): EditorView {
   const ctx = context2d(els.canvas);
   let editor = initial;
   let drag: Drag | null = null;
   let locale = initialLocale;
+  /** The errors of the last refused test, refreshed on every change; null when hidden. */
+  let errors: readonly LevelErrorCode[] | null = null;
 
   const swatches = PALETTE.map(({ tile }, i) => {
     const button = document.createElement("button");
@@ -87,9 +103,23 @@ export function createEditorView(
 
   function update(next: EditorState): void {
     const redraw = next.grid !== editor.grid;
+    const revalidate = redraw || next.name !== editor.name;
     editor = next;
     if (redraw) draw();
+    if (revalidate && errors !== null) showErrors(testErrors(editor));
     syncFields();
+  }
+
+  function showErrors(codes: readonly LevelErrorCode[] | null): void {
+    errors = codes;
+    els.errors.hidden = codes === null;
+    els.errorList.replaceChildren(
+      ...(codes ?? []).map((code) => {
+        const item = document.createElement("li");
+        item.textContent = levelErrorMessage(locale, code);
+        return item;
+      }),
+    );
   }
 
   function setLocale(next: Locale): void {
@@ -102,6 +132,9 @@ export function createEditorView(
     els.labels.hint.textContent = translate(locale, "editorHint");
     els.undo.textContent = translate(locale, "editorUndo");
     els.redo.textContent = translate(locale, "editorRedo");
+    els.test.textContent = translate(locale, "editorTest");
+    els.labels.errors.textContent = translate(locale, "editorErrors");
+    showErrors(errors);
     els.palette.setAttribute("aria-label", translate(locale, "editorPalette"));
     PALETTE.forEach(({ name }, i) => {
       const s = swatches[i];
@@ -170,6 +203,11 @@ export function createEditorView(
   els.redo.addEventListener("click", () => {
     update(redo(editor));
   });
+  els.test.addEventListener("click", () => {
+    const result = startTest(editor);
+    showErrors(result.ok ? null : result.errors);
+    if (result.ok) onTest(result);
+  });
 
   // Keyboard: number keys pick a tile, Ctrl+Z / Ctrl+Y undo and redo. Not while typing
   // in a field, where the keys belong to the field.
@@ -199,5 +237,8 @@ export function createEditorView(
       if (drag !== null) pointer({ kind: "end", pointer: drag.pointer });
     },
     setLocale,
+    focusTest() {
+      els.test.focus();
+    },
   };
 }
