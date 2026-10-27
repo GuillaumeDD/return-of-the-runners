@@ -381,7 +381,7 @@ as gameplay is implemented.
 | Goo bucket                      | goo 2–3 cells in front, rest of the level; one use; stops monks                           | S-022 @ 3:16, @ 3:36       |
 | Teleporter                      | step in, reappear at the linked spot ≈ 0.5–1 s later                                      | S-025 @ 0:04–0:05          |
 | Big bomb                        | same counter; round blast ≈ 5 cells, permanent; chain reactions                           | S-025 @ 1:04–1:15          |
-| Snare                           | holds the first monk that walks in, > 22 s; others walk past                              | S-018 @ 0:23–0:48          |
+| Snare                           | holds the first monk that walks in for good; others walk past                             | S-018 @ 0:23–0:48          |
 | Alcove                          | hiding place: a player inside cannot be caught                                            | S-018 @ 0:02–0:19, S-100   |
 | Monk speed                      | 2/3 of the runner's                                                                       | **Provisional**, 1982 feel |
 | Monk chase AI                   | classic floor scan (see Monks)                                                            | 1982 rule [^lrtr]          |

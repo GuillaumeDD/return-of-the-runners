@@ -329,15 +329,16 @@ bombs on one tick resolve in creation order.
 
 ### B-027 — Snare and gas
 
-- Snare: laid in the player's cell; the first monk to walk into it hangs there for
-  `SNARE_TICKS` (more than 22 s seen, S-018 @ 0:26–0:48; maybe until the level ends),
-  harmless; other monks walk past it. A player can be caught too (S-007, to confirm).
+- Snare: laid in the player's cell; the first monk to walk into it hangs there,
+  harmless, for the rest of the level (S-018 @ 0:26–0:48, S-100); other monks walk past
+  it. Only a blast that destroys its cell frees or kills it (to confirm: S-100 guess). A player can be caught too (S-007, to confirm).
 - Gas: each use puts a cloud about 2 tiles wide in front of the player for `GAS_TICKS`
   (about 6 s); monks inside are stuck, then dazed for a moment (S-021 @ 0:54–1:04). The
   gun stays in the slot and can be used again right away. Monks on ladders or bars are
   immune (S-005, to confirm).
 
-`tests/sim/snare-gas.test.ts`: a snared monk does not move or catch; a player can snare
+`tests/sim/snare-gas.test.ts`: a snared monk does not move or catch, and is still held
+any number of ticks later; a player can snare
 itself; a cloud covers its cells for `GAS_TICKS` and every monk inside stops, not one on
 a ladder or bar; two clouds can exist at once; a stuck monk does not catch a player
 walking into it (to confirm); using the gun never empties the slot.
@@ -370,5 +371,6 @@ For Guillaume (S-100 wins over every source), most important first:
    (S-018 @ 0:02–0:19, S-100). Still open: can a player act (dig, use a tool) from it?
 7. **Monk respawn points:** do monks also spawn from them over time, or only after
    dying?
-8. **Snare:** does a snared monk ever get free, or does it hang until the level ends?
+8. ~~**Snare:** does a snared monk get free?~~ No, it stays caught (S-100); a bomb
+   blast is the guessed exception.
 9. Every TLR element listed by S-001 has now been seen in a video.
