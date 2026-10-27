@@ -4,6 +4,7 @@ import {
   codePoints,
   type LevelDraft,
   type ParseResult,
+  type Teleport,
   type TileChar,
 } from "../level/format";
 import { parseLevel } from "../level/parse";
@@ -21,6 +22,11 @@ import { blankGrid, clampSize } from "./blank";
 export interface EditorState {
   readonly grid: readonly string[];
   readonly name: string;
+  /**
+   * The level's teleporter links, kept as they were opened: the editor does not place
+   * teleporters yet (B-023), it only carries their links through to the saved level.
+   */
+  readonly teleports: readonly Teleport[];
   /** The tile the left button paints. */
   readonly tile: TileChar;
   /** Earlier grids, oldest first, at most `UNDO_LIMIT`. */
@@ -39,6 +45,7 @@ export function newEditor(name: string): EditorState {
   return {
     grid: blankGrid(),
     name: cleanName(name),
+    teleports: [],
     tile: TILE.brick,
     undo: [],
     redo: [],
@@ -47,12 +54,13 @@ export function newEditor(name: string): EditorState {
 }
 
 /**
- * Whether two states hold the same level (grid and name as saved, so trailing spaces in
+ * Whether two states hold the same level (grid, teleporter links, and name as saved, so trailing spaces in
  * the name field do not count): what "unsaved changes" compares.
  */
 export function sameContent(a: EditorState, b: EditorState): boolean {
   return (
     a.name.trim() === b.name.trim() &&
+    JSON.stringify(a.teleports) === JSON.stringify(b.teleports) &&
     a.grid.length === b.grid.length &&
     a.grid.every((row, y) => row === b.grid[y])
   );
@@ -60,7 +68,7 @@ export function sameContent(a: EditorState, b: EditorState): boolean {
 
 /** Opens a saved level (or draft) for editing, with an empty undo history. */
 export function editorFrom(level: LevelDraft): EditorState {
-  return { ...newEditor(level.name), grid: [...level.grid] };
+  return { ...newEditor(level.name), grid: [...level.grid], teleports: level.teleports };
 }
 
 export function selectTile(s: EditorState, tile: TileChar): EditorState {
@@ -208,7 +216,7 @@ export function toDraft(s: EditorState): ParseResult {
   return parseLevel(JSON.stringify(toDocument(s)), { gameRules: false });
 }
 
-/** The edited level as a v1 document, through the same validator as any imported level. */
+/** The edited level as a v2 document, through the same validator as any imported level. */
 export function toLevel(s: EditorState): ParseResult {
   return parseLevel(JSON.stringify(toDocument(s)));
 }
@@ -219,6 +227,7 @@ export function toDocument(s: EditorState): Record<string, unknown> {
     width: s.grid[0]?.length ?? 0,
     height: s.grid.length,
     grid: s.grid,
+    teleports: s.teleports,
   });
 }
 

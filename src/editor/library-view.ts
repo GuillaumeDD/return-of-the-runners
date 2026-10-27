@@ -207,7 +207,7 @@ export function createLibraryView(
     refresh();
   });
 
-  // Export: the exact v1 document as a file, for a playable level only.
+  // Export: the exact v2 document as a file, for a playable level only.
   els.exportFile.addEventListener("click", () => {
     const result = toLevel(editor.current());
     if (!result.ok) {

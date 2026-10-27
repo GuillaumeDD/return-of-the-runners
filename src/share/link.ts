@@ -4,9 +4,9 @@ import { levelDocument } from "../level/serialize";
 
 /**
  * Share links: a level in the URL fragment (`#level=<payload>`), so sharing needs no
- * server. The payload is the level's compact v1 JSON, compressed with raw DEFLATE
- * (`CompressionStream("deflate-raw")`, built into every browser and Node) and written
- * in base64url. Decoding is untrusted input: each step has a cap, and the result goes
+ * server. The payload is the level's compact v2 JSON (a v1 payload still opens,
+ * migrated), compressed with raw DEFLATE (`CompressionStream("deflate-raw")`, built
+ * into every browser and Node) and written in base64url. Decoding is untrusted input: each step has a cap, and the result goes
  * through the full validator, like an imported file.
  */
 

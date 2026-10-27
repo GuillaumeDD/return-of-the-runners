@@ -60,7 +60,7 @@ function randomLevel(rng: () => number, size?: { width: number; height: number }
   return parsed(
     JSON.stringify({
       format: "return-of-the-runners/level",
-      version: 1,
+      version: 2,
       name,
       width,
       height,
@@ -92,6 +92,26 @@ describe("round trip", () => {
     const largest = randomLevel(rng, { width: LIMITS.maxWidth, height: LIMITS.maxHeight });
     const big = { ...largest, name: "💰".repeat(LIMITS.maxNameLength) };
     expect((await encodeLevel(big)).length).toBeLessThan(MAX_SHARE_PAYLOAD);
+  });
+
+  it("a v2 payload decodes and encodes back to the same payload, teleporters included", async () => {
+    for (const f of loadFixtures("valid", "v2")) {
+      const payload = await encodeLevel(parsed(f.text));
+      const back = await decodeLevel(payload);
+      if (!back.ok) throw new Error(f.file);
+      expect(await encodeLevel(back.level), f.file).toBe(payload);
+    }
+  });
+
+  it("a v1 link opens as the level's v2 migration", async () => {
+    for (const f of loadFixtures("valid", "v1")) {
+      const v1Payload = toBase64url(deflateRawSync(JSON.stringify(JSON.parse(f.text))));
+      const back = await decodeLevel(v1Payload);
+      expect(back.ok && back.level, f.file).toEqual(parsed(f.text));
+      expect(back.ok && back.level.version).toBe(2);
+      // Shared again, it is a v2 link.
+      if (back.ok) expect(await encodeLevel(back.level)).not.toBe(v1Payload);
+    }
   });
 
   it("payloads use only URL-safe characters, with no padding", async () => {

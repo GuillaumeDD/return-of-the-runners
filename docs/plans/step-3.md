@@ -1,6 +1,6 @@
 # Step 3 plan: TLR specifics (terrain, tools, two players)
 
-Status: **draft**, to be approved. Roadmap: `docs/PRD.md` §7, step 3.
+Status: **approved** (PR #28). Roadmap: `docs/PRD.md` §7, step 3.
 Backlog items: B-019 to B-028. Source ids (`S-…`) refer to [`../SOURCES.md`](../SOURCES.md).
 
 ## Goal

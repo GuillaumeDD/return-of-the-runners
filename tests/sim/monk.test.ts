@@ -34,6 +34,13 @@ describe("monks: setup and movement", () => {
     expect(s.monks.every((m) => m.mode === "free" && m.carry === 0)).toBe(true);
   });
 
+  // Regression (B-019 self-review): the player 2 start stayed in the terrain.
+  it("a player 2 start marker is an empty cell, like the other start markers", () => {
+    const s = stateFrom(["M..Q....", "P.......", "########"]);
+    expect(s.tiles[0]).toBe("........");
+    expect(s.tiles[0]?.includes(TILE.player2Start)).toBe(false);
+  });
+
   it("walk at MONK_PERIOD.walk: one sub-unit every walk period", () => {
     // Runner far left on the same floor: the monk walks straight at it.
     let s = stateFrom(["P..............M", "################"]);

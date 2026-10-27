@@ -233,13 +233,36 @@ describe("toLevel", () => {
     return s;
   };
 
-  it("returns a v1 level for a valid grid", () => {
+  it("returns a v2 level for a valid grid", () => {
     const r = toLevel(valid());
     expect(r.ok).toBe(true);
     if (r.ok) {
+      expect(r.level.version).toBe(2);
       expect(r.level.name).toBe("Test");
       expect(r.level.grid).toEqual(valid().grid);
+      expect(r.level.teleports).toEqual([]);
     }
+  });
+
+  it("keeps the teleporter links of an opened level, and reports a link left dangling", () => {
+    let grid = valid().grid;
+    grid = grid.map((row, y) => (y === 2 ? `.T....t${row.slice(7)}` : row));
+    const opened = editorFrom({
+      name: "Links",
+      width: 28,
+      height: 16,
+      grid,
+      teleports: [[1, 2, 6, 2]],
+    });
+    const r = toLevel(paint(opened, 20, 2, TILE.brick));
+    expect(r.ok && r.level.teleports).toEqual([[1, 2, 6, 2]]);
+    expect(toDocument(opened).teleports).toEqual([[1, 2, 6, 2]]);
+    // Painting over the entrance leaves its link pointing at a brick.
+    const broken = toLevel(paint(opened, 1, 2, TILE.brick));
+    expect(broken.ok ? [] : broken.errors.map((e) => e.code)).toEqual(["teleport-not-entrance"]);
+    // Still a draft that can be saved.
+    expect(toDraft(paint(opened, 1, 2, TILE.brick)).ok).toBe(true);
+    expect(sameContent(opened, { ...opened, teleports: [] })).toBe(false);
   });
 
   it("returns the validator's error codes for an invalid grid", () => {
@@ -316,7 +339,13 @@ describe("drafts", () => {
 
   it("editorFrom opens a saved level as it was, with an empty undo history", () => {
     const s = paint(paint(newEditor("Saved"), 3, 3, TILE.brick), 4, 4, TILE.gold);
-    const opened = editorFrom({ name: "Saved", width: 28, height: 16, grid: s.grid });
+    const opened = editorFrom({
+      name: "Saved",
+      width: 28,
+      height: 16,
+      grid: s.grid,
+      teleports: [],
+    });
     expect(opened.grid).toEqual(s.grid);
     expect(opened.name).toBe("Saved");
     expect(opened.undo).toEqual([]);

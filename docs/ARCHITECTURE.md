@@ -30,7 +30,7 @@ index.html ── src/main.ts        entry point: wires DOM, screens, input, loo
               src/input/         keyboard → per-tick PlayerInput, via a bindings table
               src/render/        Canvas 2D rendering of a simulation state
               src/levels/        bundled levels (JSON, validated at load like any import)
-              src/level/         level format: types, validator (migrations from v2 on)
+              src/level/         level format: types, validator, v1 → v2 migration
               src/storage/       "My levels" in the browser (localStorage, validated)
               src/share/         share links: a level in the URL fragment
 tests/                           Vitest tests, mirroring src/
@@ -174,51 +174,87 @@ Code: `src/level/format.ts` (types, tile alphabet, limits) and `src/level/parse.
 (`parseLevel(text)`: validates untrusted input and never throws; errors are values with
 a stable `code`, translated in the UI).
 
-### Version 1
+### Version 2
+
+The current version, written by the game since B-019. Version 1 is still read: a v1
+document is checked against the v1 rules (its six fields, its nine tiles), then
+migrated (`level/migrate.ts`, `migrateV1`: the same grid with `version: 2` and no
+teleporters). Every v1 tile means the same in v2.
 
 ```json
 {
   "format": "return-of-the-runners/level",
-  "version": 1,
+  "version": 2,
   "name": "First steps",
   "width": 28,
   "height": 16,
-  "grid": ["............................", "..."]
+  "grid": ["............................", "..."],
+  "teleports": [[2, 3, 8, 3]]
 }
 ```
 
-All six fields are required; any other field is rejected. `grid` has `height` rows of
-exactly `width` tiles, top row first.
+The six fields of v1 are required; `teleports` is optional (written only when the
+level has a teleporter); any other field is rejected. `grid` has `height` rows of
+exactly `width` tiles, top row first. Each `teleports` entry is a one-way link
+`[fromX, fromY, toX, toY]`, in cells, from an entrance `T` to an exit `t`: one grid
+cell cannot hold a link, so links live beside the grid.
 
-| Char | Tile                                   |
-| ---- | -------------------------------------- |
-| `.`  | empty                                  |
-| `#`  | brick (diggable)                       |
-| `@`  | bedrock (not diggable)                 |
-| `H`  | ladder                                 |
-| `-`  | bar (hand-over-hand)                   |
-| `$`  | gold                                   |
-| `E`  | exit (locked until all gold collected) |
-| `P`  | runner start                           |
-| `M`  | monk start                             |
+| Char | Tile                                   | Char        | Tile                       |
+| ---- | -------------------------------------- | ----------- | -------------------------- |
+| `.`  | empty                                  | `Q`         | player 2 start             |
+| `#`  | brick (diggable)                       | `%`         | trapdoor turf (fake brick) |
+| `@`  | bedrock (not diggable)                 | `~`         | gooey turf                 |
+| `H`  | ladder                                 | `h`         | hidden ladder              |
+| `-`  | bar (hand-over-hand)                   | `R`         | monk respawn point         |
+| `$`  | gold                                   | `n`         | alcove (hiding place)      |
+| `E`  | exit (locked until all gold collected) | `T`         | teleporter entrance        |
+| `P`  | runner start (player 1)                | `t`         | teleporter exit            |
+| `M`  | monk start                             | `a` `b` `c` | key: red, green, blue      |
+|      |                                        | `A` `B` `C` | door: red, green, blue     |
+|      |                                        | `j`         | jackhammer                 |
+|      |                                        | `k`         | pickaxe                    |
+|      |                                        | `o`         | small bomb                 |
+|      |                                        | `O`         | big bomb                   |
+|      |                                        | `s`         | snare                      |
+|      |                                        | `g`         | gas spray                  |
+|      |                                        | `u`         | goo bucket                 |
 
-| Rule              | Limit                                   | Error code                                |
-| ----------------- | --------------------------------------- | ----------------------------------------- |
-| Input size        | ≤ 64 KB (UTF-8 bytes)                   | `too-large`                               |
-| `format`          | exactly `"return-of-the-runners/level"` | `wrong-format`                            |
-| `version`         | the number `1`                          | `unsupported-version`                     |
-| Fields            | exactly the six above                   | `missing-field`, `unknown-field`          |
-| `name`            | 1–64 code points, not blank             | `invalid-name`                            |
-| `width`, `height` | integers, 8–64 and 8–48                 | `invalid-dimension`                       |
-| `grid`            | array of strings, right shape           | `invalid-grid`, `row-count`, `row-length` |
-| Tiles             | only the characters above               | `unknown-tile`                            |
-| Runner            | exactly one `P`                         | `runner-count`                            |
-| Gold, exit        | at least one `$` and one `E`            | `no-gold`, `no-exit`                      |
-| Monks             | at most 16 `M`                          | `too-many-monks`                          |
+The left column is version 1. The right column is reserved by the format first: each
+tile gets its behavior, its drawing and its place in the editor palette with its own
+step 3 item (B-020 to B-028, see [`plans/step-3.md`](plans/step-3.md)). Until then the
+game does not draw it, and it is neither solid nor climbable: nothing in the editor
+palette places one, but an imported v2 file may hold some.
+
+| Rule              | Limit                                                             | Error code                                  |
+| ----------------- | ----------------------------------------------------------------- | ------------------------------------------- |
+| Input size        | ≤ 64 KB (UTF-8 bytes)                                             | `too-large`                                 |
+| `format`          | exactly `"return-of-the-runners/level"`                           | `wrong-format`                              |
+| `version`         | the number `1` or `2`                                             | `unsupported-version`                       |
+| Fields            | the six above, plus `teleports` in v2                             | `missing-field`, `unknown-field`            |
+| `name`            | 1–64 code points, not blank                                       | `invalid-name`                              |
+| `width`, `height` | integers, 8–64 and 8–48                                           | `invalid-dimension`                         |
+| `grid`            | array of strings, right shape                                     | `invalid-grid`, `row-count`, `row-length`   |
+| Tiles             | only the characters of the document's version                     | `unknown-tile`                              |
+| `teleports`       | array of 4-integer arrays                                         | `invalid-teleports`                         |
+| Runner            | exactly one `P`                                                   | `runner-count` ★                            |
+| Player 2          | at most one `Q`                                                   | `player2-count` ★                           |
+| Gold, exit        | at least one `$` and one `E`                                      | `no-gold`, `no-exit` ★                      |
+| Monks             | at most 16 `M`                                                    | `too-many-monks` ★                          |
+| Link ends         | both inside the grid                                              | `teleport-out-of-grid` ★                    |
+| Link start        | on an entrance `T`                                                | `teleport-not-entrance` ★                   |
+| Link end          | on an exit `t`                                                    | `teleport-not-exit` ★                       |
+| Entrances         | each `T` has exactly one link (an exit may have several, or none) | `teleport-duplicate`, `teleport-unlinked` ★ |
+
+★ Game rules: not checked for drafts (`parseLevel(text, { gameRules: false })`), so a
+level being built can be saved with a dangling link or a missing exit. Links are
+checked only against a well-formed grid (a broken grid is reported already), and each
+link problem is reported once. Keys and doors may exist without each other: the maker
+tests the level.
 
 Structural errors (size, JSON, format, version) stop validation; all other errors are
-reported together. TLR levels are 28 × 16 (S-001, S-015); width and height
-stay per-level properties so makers can build other sizes.
+reported together, and a v1 document with errors reports them as v1 (it is not
+migrated). TLR levels are 28 × 16 (S-001, S-015); width and height stay per-level
+properties so makers can build other sizes.
 
 ### Versioning
 
@@ -259,7 +295,8 @@ Code: `src/editor/` (pure modules, and `view.ts` / `library-view.ts` for the DOM
   `LIMITS`); the list refreshes on every edit until the level is valid.
 - Editor levels are stored in the browser (`storage/levels.ts`): one `localStorage` key,
   `rotr.levels.v1`, holding a versioned document (`return-of-the-runners/my-levels`)
-  with an id counter and the levels as v1 documents. They are **drafts**
+  with an id counter and the levels as v2 documents (a stored v1 level is migrated on
+  read and written back as v2 on the next save). They are **drafts**
   (`LevelDraft`, parsed with `parseLevel(text, { gameRules: false })`): the shape is
   checked, the game rules are not, so a level can be saved half-built. A draft has no
   `version` field, so the type system refuses to play one without a full `parseLevel`.
@@ -269,14 +306,15 @@ Code: `src/editor/` (pure modules, and `view.ts` / `library-view.ts` for the DOM
   before the next save replaces it; storage errors (quota, disabled) are returned, never
   thrown.
 - Levels are exported and imported as files (`level/file.ts`): `<name>.rotr.json`, the
-  exact v1 document, pretty-printed. Export needs a playable level. An import is
+  exact v2 document, pretty-printed (one grid row and one teleporter link per line).
+  Export needs a playable level; a v1 file still imports, migrated. An import is
   untrusted input: over 64 KB it is rejected from `File.size` before a byte is read,
   then it goes through `parseLevel` with the game rules; a read failure is the
   `unreadable-file` error. The file name is plain ASCII (headless Chromium names a
   non-ASCII `download` "download"), and Windows device names get a `-level` suffix. A
   slow read is dropped if the editor changed or another import started meanwhile.
 - **Share links** (`share/link.ts`): `#level=<payload>`, where the payload is the
-  level's compact v1 JSON, compressed with raw DEFLATE (`CompressionStream`, built
+  level's compact v2 JSON (a v1 link still opens, migrated), compressed with raw DEFLATE (`CompressionStream`, built
   into the browsers and Node, so no dependency) and written in base64url. The fragment
   never reaches a server. Decoding is untrusted input, capped at each step: at most
   `MAX_SHARE_PAYLOAD` (16 K) characters, canonical base64url (spare bits must be zero),
