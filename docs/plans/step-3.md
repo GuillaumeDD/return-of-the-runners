@@ -17,34 +17,51 @@ until checked against a video or Guillaume's playtest.
 
 ## What we know, and how sure we are
 
-Video research is blocked for now: the longplay playlist (S-010) can be listed from
-the cloud, but YouTube refuses to serve the videos themselves (HTTP 403 on its video
-servers, 2026-10-27). The web pages below were read through search-engine excerpts
-only (the pages themselves are outside the session's allowed domains), so each fact
-is marked **to confirm** until someone reads the page, watches the game, or Guillaume
-remembers it. Guillaume's memory (S-100) wins over every written source.
+YouTube refuses to serve the longplay videos to the cloud session (HTTP 403), so
+Guillaume sent three episodes of the S-010 longplay as files (S-014 to S-016, PC
+version, 640 × 480). What they show is in the second table, with timestamps. The web
+pages in the first table were read through search-engine excerpts only (the pages are
+outside the session's allowed domains), so those facts are **to confirm** unless a
+video or Guillaume backs them. Guillaume's memory (S-100) wins over every source.
 
 | Element                    | What the sources say                                                                                                          | Sources             |
 | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------------- |
-| Grid                       | 28 × 16 tiles (already our default)                                                                                           | S-001               |
+| Grid                       | 28 × 16 tiles (already our default); measured on the PC version too                                                           | S-001, S-015        |
 | Worlds                     | 10 worlds: Moss, Fungus, Ancient, Crystal, Ice, Fossil, Lava, Phosphorus, Dark, Industrial (art only, step 4)                 | S-010 titles        |
 | Bedrock (concrete)         | Cannot be dug or blasted by a small bomb; only the jackhammer or a big bomb gets through                                      | S-001, S-002        |
 | Trapdoor turf (fake brick) | Looks like brick but is empty: actors fall through it                                                                         | S-002, S-008        |
 | Gooey turf                 | Slows both the players and the monks                                                                                          | S-002               |
 | Hidden ladder              | Appears once all the gold is taken                                                                                            | S-001, S-005        |
 | Teleporter                 | One-way: an entrance and an exit, linked in the editor; several entrances may lead to one exit                                | S-001               |
-| Keys and doors             | Three colours; each key opens the door of its colour; some levels need a key to reach the exit                                | S-001               |
+| Keys and doors             | Three colours; each key opens the door of its colour; some levels need a key to reach the exit (seen: S-016)                  | S-001, S-016        |
 | Monk respawn point         | An editor element: where dead monks reappear                                                                                  | S-001               |
 | Tools                      | Picked up and used one at a time                                                                                              | S-002, S-003        |
 | Jackhammer (drill)         | Digs through bedrock                                                                                                          | S-001, S-002        |
 | Pickaxe                    | Brings a pile of rock down from the ceiling, which blocks monks; the rock falls faster than monks                             | S-002, S-005, S-006 |
-| Small bomb                 | Blows a temporary hole, bigger than a dug one; kills monks caught in it                                                       | S-002, S-007        |
+| Small bomb                 | Blows a temporary hole, bigger than a dug one (seen: S-015); kills monks caught in it                                         | S-002, S-007, S-015 |
 | Big bomb                   | Destroys terrain for good (bedrock too), everything except the exit                                                           | S-002, S-007        |
 | Snare                      | Dropped in a monk's path; the monk that walks on it hangs upside down for a while. A player can be caught by it too           | S-007               |
 | Gas spray                  | Leaves a monk in front of the player dazed for a few seconds; monks on ladders or bars are immune                             | S-005, S-007        |
 | Goo bucket                 | Covers a surface with goo (gooey turf), which slows whoever crosses it                                                        | S-002               |
 | Two players                | Same screen, at the same time; co-op, or competing for the gold; 30 two-player levels in the original                         | S-002, S-003, S-008 |
 | Controls                   | Per player: move, dig left, dig right, pick up/drop a tool, use the tool, small bomb (S-003); P1 on the keypad in DOS (S-008) | S-003, S-008        |
+
+### Seen in the longplay (S-014 to S-016)
+
+Timestamps are positions in each episode file. Times were read at 2 frames per second,
+so they are good to about half a second.
+
+| Behavior                     | What the video shows                                                                                                                                           | Where                          |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| Grid                         | The playfield is 28 tiles wide and 16 high (about 22 × 26 px per tile at 640 × 480), above a status bar                                                        | S-015 @ 0:30, S-014 @ 1:00     |
+| Exit appears with the gold   | No exit is drawn while gold is left; a green door appears the moment the last gold is taken                                                                    | S-015 @ 1:22–1:23, @ 3:05      |
+| Exit behind a key door       | Level 104: the exit is a red door marked with an X; the runner brings the red key, the door turns into the green exit and the runner leaves                    | S-016 @ 3:30–3:33              |
+| Keys use the tool slot       | Picking up the key swaps it with the tool held: the status bar shows the key, and the old tool lies where the key was                                          | S-016 @ 3:03–3:05              |
+| Bombs are a separate counter | Bombs lying in the level are collected into a counter shown in the status bar (up to 4 seen), apart from the tool slot. The counter starts empty on each level | S-015 @ 0:01–0:20, @ 1:36–1:40 |
+| Bomb fuse                    | A bomb laid by the runner burns for about 2.5 s, then explodes                                                                                                 | S-015 @ 1:05–1:07.5            |
+| Chain reaction               | The blast lights a bomb lying next to it, which explodes about 2.5 s later and lights the next one                                                             | S-015 @ 1:07.5–1:10.5          |
+| Blasted terrain comes back   | Blocks destroyed by these bombs reappear about 13 s later, one after the other                                                                                 | S-015 @ 1:07.5–1:24            |
+| Lives                        | One extra life for each finished level, shown up to 99 (step 4: lives and scores)                                                                              | S-015 @ 1:32–1:36, S-016       |
 
 ## Key design decisions
 
@@ -75,10 +92,11 @@ remembers it. Guillaume's memory (S-100) wins over every written source.
    each with its own input, tool slot and status; replays record one input stream per
    player. Single-player replays are migrated, and their hashes are expected to change
    once, in B-020, with the reason stated in the PR.
-4. **Tools are items on the grid until picked up.** A tool lies in a cell like gold; a
-   player holding nothing picks it up with the "pick up" key, drops it with the same key
-   (into an empty cell), and uses it with "use". Bombs are tools too (one slot), unless
-   Guillaume remembers a separate bomb count (S-003 lists a small-bomb key).
+4. **Tools are items on the grid until picked up.** A tool lies in a cell like gold;
+   the "pick up" key takes it, and a player already holding something leaves that item
+   in the cell (a swap, as seen in S-016 @ 3:03–3:05). "Use" uses it. Keys go in the
+   same slot. **Bombs do not**: they are collected into a per-player counter that starts
+   at 0 on each level, and laid with their own key (S-015, S-003).
 5. **Every effect is a timed, deterministic object** in the state, like holes: bomb
    craters, rubble piles, goo, snares, dazed monks. Each has an age and phases derived
    from it; the update order within a tick is written down in ARCHITECTURE. No new
@@ -101,9 +119,9 @@ remembers it. Guillaume's memory (S-100) wins over every written source.
 | 3     | Two players: versus | B-021   | **race for the gold**, winner shown                      |
 | 4     | Terrain             | B-022   | trapdoor, gooey turf, hidden ladder, monk respawn points |
 | 5     | Teleporters         | B-023   | teleporters, linked in the editor                        |
-| 6     | Keys and doors      | B-024   | three key/door colours                                   |
-| 7     | Tools, part 1       | B-025   | pick up / drop / use; **jackhammer** and **pickaxe**     |
-| 8     | Bombs               | B-026   | small and big bombs                                      |
+| 6     | Keys, doors, exit   | B-024   | the item slot; three key/door colours; exit appears      |
+| 7     | Tools, part 1       | B-025   | **jackhammer** and **pickaxe** in the slot               |
+| 8     | Bombs               | B-026   | bomb counter; small and big bombs, chain reactions       |
 | 9     | Snare and gas       | B-027   | ways to stop monks without digging                       |
 | 10    | Goo bucket          | B-028   | spread goo to slow monks down                            |
 
@@ -223,19 +241,31 @@ standing on it) delays the jump; a chain (exit on an entrance) jumps once per ti
 `tests/editor/model.test.ts`: links follow cell edits (erasing an end removes the link);
 undo restores links; `toLevel` output always validates.
 
-### B-024 — Keys and doors
+### B-024 — Item slot, keys, doors and exit
 
-- A door is solid until its key is collected by any player; then it opens for good (to
-  confirm: does the key stay with the player who took it?). Monks cannot take keys.
+- `src/sim/items.ts`: one item slot per player; "pick up" takes the item in the
+  player's cell and leaves the held one there (swap, S-016 @ 3:03–3:05); with nothing to
+  take, it drops the held item into an empty cell. Keys are the first items.
+- A door is solid until a player **carrying** its key touches it; then it opens for good
+  (S-016 @ 3:30–3:33). Whether the key is used up is to confirm (default: it is). Monks
+  cannot take keys.
+- The exit is not drawn and not there until the last gold is taken, then it appears
+  (S-015 @ 1:22–1:23). An exit placed behind a door (a door on the exit cell) opens
+  with its key once the gold is gone. This replaces step 1's always-visible locked door.
 
-`tests/sim/keys.test.ts`: each key opens only its colour; all doors of that colour open;
-a door is support while closed and empty once open; a level with no key for a door
-keeps it closed.
+`tests/sim/items.test.ts`: pick up into an empty slot; pick up while holding swaps
+the two items in place; drop needs an empty cell; items are never duplicated or lost
+(randomized: 1,000 random levels and inputs keep the item count constant, so the 1994
+duplication bug, S-005, is not reproduced).
+
+`tests/sim/keys.test.ts`: a key opens only its colour, and only when carried to the
+door; all doors of that colour stay closed until then; a door is support while closed
+and empty once open; the exit is absent while gold is left, appears on the tick the last
+gold is taken, and a door on the exit cell still needs its key.
 
 ### B-025 — Tools, part 1: slot, jackhammer, pickaxe
 
-- `src/sim/tools.ts`: one slot per player; pick up / drop on the "pick up" key; use on
-  "use". Dropping needs an empty cell under the player.
+- `src/sim/tools.ts`: tools use B-024's slot; "use" applies the held tool.
 - Jackhammer: digs the cell below (bedrock included); the hole behaves like a dug hole
   (to confirm: does it refill?). Usable a limited number of times? (to confirm).
 - Pickaxe: brings rubble down from the ceiling above the target cell; rubble falls
@@ -244,22 +274,26 @@ keeps it closed.
 
 `tests/sim/tools.test.ts`
 
-- pick up only with an empty slot; drop only into an empty cell; using an empty slot
-  does nothing; a tool is never duplicated (total tools constant: the 1994 duplication
-  bug, S-005, is not reproduced);
+- using an empty slot or a key does nothing;
 - jackhammer digs bedrock and brick, not a ladder or a door;
 - rubble falls to the first support, blocks runners and monks, then crumbles;
-- randomized: 1,000 random levels and inputs keep the tool count constant.
+- randomized: the B-024 item-count check also covers tools.
 
 ### B-026 — Bombs
 
-- Small bomb: placed at the player's feet, explodes after `FUSE_TICKS`, opens a
-  temporary hole wider than a dug one (shape to confirm), kills monks and players in
-  it; bedrock is unharmed.
+- Bombs lying in the level are collected by walking over them into a per-player
+  counter (starts at 0 each level, S-015), and laid at the player's feet with the bomb
+  key. A laid bomb burns for `FUSE_TICKS` (about 2.5 s, S-015 @ 1:05–1:07.5).
+- Small bomb: opens a crater wider than a dug hole (shape to confirm); the destroyed
+  blocks come back about 13 s later (S-015 @ 1:07.5–1:24); kills monks and players in
+  it; bedrock is unharmed. A blast lights the bombs lying in its area, which explode a
+  fuse later (chain reaction, S-015 @ 1:07.5–1:10.5).
 - Big bomb: destroys every cell in its radius for good, bedrock included, except the
   exit; kills actors in it.
 
-`tests/sim/bombs.test.ts`: fuse timing; small crater cells and refill; bedrock survives
+`tests/sim/bombs.test.ts`: collecting a bomb increments the counter, laying one
+decrements it, laying with 0 does nothing; fuse timing; small crater cells and their
+return; a blast lights the bombs in its area and each explodes one fuse later; bedrock survives
 a small bomb and not a big one; the exit survives both; a player in range dies; two
 bombs on one tick resolve in creation order.
 
@@ -290,14 +324,14 @@ For Guillaume (S-100 wins over every source), most important first:
    What happens when one dies (both restart, or only that one)?
 2. **Versus:** how is the winner decided (gold count, first out)? Can one player bury
    the other in a hole on purpose?
-3. **Bombs:** are they ordinary tools in the single slot, or counted separately (S-003
-   lists a "small bomb" key)? Do bombs lying in the level explode by themselves?
+3. ~~**Bombs:** tools or counted separately?~~ Counted separately, and set off by a
+   nearby blast (S-015). Still open: is the big bomb collected the same way?
 4. **Jackhammer:** limited uses? Does a jackhammer hole refill like a dug one?
-5. **Keys:** does a key open its door when collected, or does the player have to carry
-   it to the door?
+5. ~~**Keys:** opened when collected, or carried to the door?~~ Carried, in the item
+   slot (S-016). Still open: is the key used up at the door?
 6. **The "alcove"** element in the editor (S-001): what is it?
 7. **Monk respawn points:** do monks also spawn from them over time, or only after
    dying?
-8. **Videos:** can you send screenshots (or timestamps) of a few moments: a bomb going
-   off, the pickaxe, a snare, a two-player level? They become sources with a timestamp,
-   since the cloud session cannot download the videos.
+8. **More videos:** the three episodes show no pickaxe, jackhammer use, snare, gas,
+   goo, teleporter or two-player level. Episodes from later worlds (Phosphorus has the
+   gas gun) or a two-player level would settle the rest.

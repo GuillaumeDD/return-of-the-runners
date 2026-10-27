@@ -26,19 +26,21 @@ or a secondary write-up), **low** (a different game, used only as a fallback).
 
 ## Videos (longplays)
 
-Not watched yet. From the "Site web" cloud environment (2026-10-27), the playlist and
-its titles can be listed, but YouTube answers HTTP 403 to the video downloads, so frames
-cannot be extracted there; screenshots taken by Guillaume are the fallback. When one is
-used, record the facts with a timestamp, e.g. `S-010 @ 12:34`. The S-010 titles give the
-10 world names: Moss, Fungus, Ancient, Crystal, Ice, Fossil, Lava, Phosphorus, Dark,
-Industrial.
+YouTube answers HTTP 403 to video downloads from the cloud sessions (2026-10-27; the
+playlist and its titles can still be listed), so episodes are watched from files
+Guillaume sends: each file gets its own id (S-014 onwards) and facts cite it with a
+timestamp in that file, e.g. `S-015 @ 1:07`. The S-010 titles give the 10 world names:
+Moss, Fungus, Ancient, Crystal, Ice, Fossil, Lava, Phosphorus, Dark, Industrial.
 
-| Id    | Source                                                                                                                  | What it shows                                                      | Reliability | Consulted |
-| ----- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ | ----------- | --------- |
-| S-010 | [Sierra Chest, longplay playlist (39 videos)](https://www.youtube.com/playlist?list=PLgIVjvSpYdFIfj4QIMJjBfCzqn8p3xjGb) | The 150 levels, chapter by chapter (e.g. chapter 7, levels 97–103) | high        | not yet   |
-| S-011 | [Longplay pt. 13, levels 46–54 (PC)](https://www.youtube.com/watch?v=_uDPImGl0GY)                                       | Levels 46–54 on PC                                                 | high        | not yet   |
-| S-012 | [Longplay](https://www.youtube.com/watch?v=dRQFtXXsZWk)                                                                 | Full playthrough                                                   | high        | not yet   |
-| S-013 | [DOS Game: Lode Runner – The Legend Returns](https://www.youtube.com/watch?v=BqnLuGRIAZw)                               | DOS version                                                        | high        | not yet   |
+| Id    | Source                                                                                                                  | What it shows                                                                                                                                                           | Reliability | Consulted  |
+| ----- | ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| S-010 | [Sierra Chest, longplay playlist (39 videos)](https://www.youtube.com/playlist?list=PLgIVjvSpYdFIfj4QIMJjBfCzqn8p3xjGb) | The 150 levels, chapter by chapter (e.g. chapter 7, levels 97–103); episodes 3, 4 and 26 watched as S-014 to S-016                                                      | high        | 2026-10-27 |
+| S-011 | [Longplay pt. 13, levels 46–54 (PC)](https://www.youtube.com/watch?v=_uDPImGl0GY)                                       | Levels 46–54 on PC                                                                                                                                                      | high        | not yet    |
+| S-012 | [Longplay](https://www.youtube.com/watch?v=dRQFtXXsZWk)                                                                 | Full playthrough                                                                                                                                                        | high        | not yet    |
+| S-013 | [DOS Game: Lode Runner – The Legend Returns](https://www.youtube.com/watch?v=BqnLuGRIAZw)                               | DOS version                                                                                                                                                             | high        | not yet    |
+| S-014 | S-010 episode 3, _Moss World (3/3)_, levels 13–15 (file sent by Guillaume, 10:51)                                       | Moss tile set, monks; a key held in the item slot at level 15                                                                                                           | high        | 2026-10-27 |
+| S-015 | S-010 episode 4, _Fungus World (1/3)_, levels 16–21 (file sent by Guillaume, 9:26)                                      | Grid 28 × 16 on PC; the exit appears with the last gold; bombs collected into a counter, fuse, chain reactions, blasted blocks coming back; one life per finished level | high        | 2026-10-27 |
+| S-016 | S-010 episode 26, _Lava World (5/5)_, levels 104–105 and a cut scene (file sent by Guillaume, 6:18)                     | A key swapped into the item slot and carried to a red door that holds the exit; lives shown up to 99                                                                    | high        | 2026-10-27 |
 
 ## People
 
