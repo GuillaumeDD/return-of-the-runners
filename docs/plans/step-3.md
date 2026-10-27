@@ -18,8 +18,8 @@ until checked against a video or Guillaume's playtest.
 ## What we know, and how sure we are
 
 YouTube refuses to serve the longplay videos to the cloud session (HTTP 403), so
-Guillaume sent three episodes of the S-010 longplay as files (S-014 to S-016, PC
-version, 640 × 480). What they show is in the second table, with timestamps. The web
+Guillaume sent eleven episodes of the S-010 longplay and a two-player clip as files
+(S-014 to S-025, PC version, 640 × 480). What they show is in the second table, with timestamps. The web
 pages in the first table were read through search-engine excerpts only (the pages are
 outside the session's allowed domains), so those facts are **to confirm** unless a
 video or Guillaume backs them. Guillaume's memory (S-100) wins over every source.
@@ -46,22 +46,29 @@ video or Guillaume backs them. Guillaume's memory (S-100) wins over every source
 | Two players                | Same screen, at the same time; co-op, or competing for the gold; 30 two-player levels in the original                         | S-002, S-003, S-008 |
 | Controls                   | Per player: move, dig left, dig right, pick up/drop a tool, use the tool, small bomb (S-003); P1 on the keypad in DOS (S-008) | S-003, S-008        |
 
-### Seen in the longplay (S-014 to S-016)
+### Seen in the videos (S-014 to S-025)
 
 Timestamps are positions in each episode file. Times were read at 2 frames per second,
 so they are good to about half a second.
 
-| Behavior                     | What the video shows                                                                                                                                           | Where                          |
-| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| Grid                         | The playfield is 28 tiles wide and 16 high (about 22 × 26 px per tile at 640 × 480), above a status bar                                                        | S-015 @ 0:30, S-014 @ 1:00     |
-| Exit appears with the gold   | No exit is drawn while gold is left; a green door appears the moment the last gold is taken                                                                    | S-015 @ 1:22–1:23, @ 3:05      |
-| Exit behind a key door       | Level 104: the exit is a red door marked with an X; the runner brings the red key, the door turns into the green exit and the runner leaves                    | S-016 @ 3:30–3:33              |
-| Keys use the tool slot       | Picking up the key swaps it with the tool held: the status bar shows the key, and the old tool lies where the key was                                          | S-016 @ 3:03–3:05              |
-| Bombs are a separate counter | Bombs lying in the level are collected into a counter shown in the status bar (up to 4 seen), apart from the tool slot. The counter starts empty on each level | S-015 @ 0:01–0:20, @ 1:36–1:40 |
-| Bomb fuse                    | A bomb laid by the runner burns for about 2.5 s, then explodes                                                                                                 | S-015 @ 1:05–1:07.5            |
-| Chain reaction               | The blast lights a bomb lying next to it, which explodes about 2.5 s later and lights the next one                                                             | S-015 @ 1:07.5–1:10.5          |
-| Blasted terrain comes back   | Blocks destroyed by these bombs reappear about 13 s later, one after the other                                                                                 | S-015 @ 1:07.5–1:24            |
-| Lives                        | One extra life for each finished level, shown up to 99 (step 4: lives and scores)                                                                              | S-015 @ 1:32–1:36, S-016       |
+| Behavior                      | What the video shows                                                                                                                                           | Where                           |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| Grid                          | The playfield is 28 tiles wide and 16 high (about 22 × 26 px per tile at 640 × 480), above a status bar                                                        | S-015 @ 0:30, S-014 @ 1:00      |
+| Exit appears with the gold    | No exit is drawn while gold is left; a green door appears the moment the last gold is taken                                                                    | S-015 @ 1:22–1:23, @ 3:05       |
+| Exit behind a key door        | Level 104: the exit is a red door marked with an X; the runner brings the red key, the door turns into the green exit and the runner leaves                    | S-016 @ 3:30–3:33               |
+| Keys use the tool slot        | Picking up the key swaps it with the tool held: the status bar shows the key, and the old tool lies where the key was                                          | S-016 @ 3:03–3:05               |
+| Bombs are a separate counter  | Bombs lying in the level are collected into a counter shown in the status bar (up to 4 seen), apart from the tool slot. The counter starts empty on each level | S-015 @ 0:01–0:20, @ 1:36–1:40  |
+| Bomb fuse                     | A bomb laid by the runner burns for about 2.5 s, then explodes                                                                                                 | S-015 @ 1:05–1:07.5             |
+| Chain reaction                | The blast lights a bomb lying next to it, which explodes about 2.5 s later and lights the next one                                                             | S-015 @ 1:07.5–1:10.5           |
+| Blasted terrain comes back    | Blocks destroyed by these bombs reappear about 13 s later, one after the other                                                                                 | S-015 @ 1:07.5–1:24             |
+| Lives                         | One extra life for each finished level, shown up to 99 (step 4: lives and scores)                                                                              | S-015 @ 1:32–1:36, S-016        |
+| Hidden ladders and exits      | In the two-player level, two ladders and two exit doors appear in the middle the moment the gold is gone                                                       | S-025 @ 0:00–0:04               |
+| Several exits                 | Level 91 shows two exit doors at once                                                                                                                          | S-020 @ 1:36                    |
+| Held item kept between levels | The item in the slot is still there at the start of the next level                                                                                             | S-020 @ 1:36–1:39, @ 5:49–5:51  |
+| Jackhammer                    | The runner rides it straight down through brick, about 5 tiles in 9 s; the shaft stays open behind (a monk follows it down); the tool stays in the slot        | S-019 @ 2:33–2:43               |
+| Gas gun                       | Each use puts a green cloud about 2 tiles wide in front of the runner; it stays about 6 s and monks inside are stuck, then dazed; used twice in 3 s, kept      | S-021 @ 0:54–1:04, S-023 @ 4:23 |
+| Two players                   | One shared screen; a mirrored level with a wall in the middle, so each player has a half; no monks; separate scores, lives, tool slots and bomb counters       | S-025                           |
+| Two-player race               | Both collect their gold, then dig and bomb their way to their own exit; the first one there wins (P1 reaches it first, the clip ends)                          | S-025 @ 0:04–1:24               |
 
 ## Key design decisions
 
@@ -195,17 +202,19 @@ keys produce only that player's input.
 
 ### B-021 — Two players: versus
 
-- Versus mode chosen at start for levels with a `Q`. Rules (defaults, to confirm): each
-  player counts the gold they collect; the exit opens when all gold is taken; the
-  level ends when a player reaches it, and the player with more gold wins (ties go to
-  whoever reached the exit). A caught or buried player respawns at its start and drops
-  any carried tool.
+- Versus mode chosen at start for levels with a `Q`. Seen in S-025: a race on a
+  mirrored level, each player in their own half with their own gold and their own exit;
+  both exits appear when all the gold is taken, and the first player out wins. Each
+  player has their own score, lives, item slot and bomb counter. Defaults to confirm:
+  the level waits for both halves' gold before the exits appear; a caught or buried
+  player respawns at its start and drops any carried item.
 - `src/game/session.ts`: mode, per-player score, end-of-level banner (EN + FR).
 
 `tests/sim/versus.test.ts`
 
 - gold goes to the collecting player's count; the total never changes;
-- end of level: the higher score wins, a tie goes to the exit player;
+- the exits appear only when all gold is taken; the first player to reach an exit wins
+  and the level ends on that tick; both on the same tick is a draw;
 - a player can trap the other in a hole it digs (the hole kills like for monks).
 
 ### B-022 — Terrain
@@ -266,8 +275,10 @@ gold is taken, and a door on the exit cell still needs its key.
 ### B-025 — Tools, part 1: slot, jackhammer, pickaxe
 
 - `src/sim/tools.ts`: tools use B-024's slot; "use" applies the held tool.
-- Jackhammer: digs the cell below (bedrock included); the hole behaves like a dug hole
-  (to confirm: does it refill?). Usable a limited number of times? (to confirm).
+- Jackhammer: the player rides it straight down, cell after cell (bedrock included),
+  at about 5 tiles in 9 s (S-019 @ 2:33–2:43, to measure better); the shaft stays open
+  behind for a while (monks can follow) and the tool stays in the slot. When the shaft
+  refills is to confirm.
 - Pickaxe: brings rubble down from the ceiling above the target cell; rubble falls
   (faster than monks) to the first support and blocks movement until it crumbles
   (`RUBBLE_TICKS`, provisional). Rubble on a monk freezes it in place (S-005, S-006).
@@ -301,12 +312,15 @@ bombs on one tick resolve in creation order.
 
 - Snare: dropped in a cell; the first monk (or player) to step on it hangs for
   `SNARE_TICKS`, then goes free and the snare is spent (to confirm).
-- Gas: hits the first monk within `GAS_RANGE` in front of the player; dazed monks stop
-  for `DAZE_TICKS`; monks on ladders or bars are immune (S-005).
+- Gas: each use puts a cloud about 2 tiles wide in front of the player for `GAS_TICKS`
+  (about 6 s); monks inside are stuck, then dazed for a moment (S-021 @ 0:54–1:04). The
+  gun stays in the slot and can be used again right away. Monks on ladders or bars are
+  immune (S-005, to confirm).
 
 `tests/sim/snare-gas.test.ts`: a snared monk does not move or catch; a player can snare
-itself; gas reaches only the first monk in range and not one on a ladder or bar; a dazed
-monk does not catch a player walking into it (to confirm).
+itself; a cloud covers its cells for `GAS_TICKS` and every monk inside stops, not one on
+a ladder or bar; two clouds can exist at once; a stuck monk does not catch a player
+walking into it (to confirm); using the gun never empties the slot.
 
 ### B-028 — Goo bucket
 
@@ -321,17 +335,19 @@ like B-022's gooey turf; it does not block digging the cell under it (to confirm
 For Guillaume (S-100 wins over every source), most important first:
 
 1. **Two players, co-op:** does the level end when one player exits, or must both?
-   What happens when one dies (both restart, or only that one)?
-2. **Versus:** how is the winner decided (gold count, first out)? Can one player bury
-   the other in a hole on purpose?
+   What happens when one dies (both restart, or only that one)? The two-player clip
+   (S-025) is a race; a co-op level would settle this.
+2. ~~**Versus:** how is the winner decided?~~ First to their exit, after all the gold
+   (S-025). Still open: in levels where the players share space, can one bury the other?
 3. ~~**Bombs:** tools or counted separately?~~ Counted separately, and set off by a
    nearby blast (S-015). Still open: is the big bomb collected the same way?
-4. **Jackhammer:** limited uses? Does a jackhammer hole refill like a dug one?
+4. **Jackhammer:** it stays in the slot after use (S-019). Still open: when does the
+   shaft refill?
 5. ~~**Keys:** opened when collected, or carried to the door?~~ Carried, in the item
    slot (S-016). Still open: is the key used up at the door?
 6. **The "alcove"** element in the editor (S-001): what is it?
 7. **Monk respawn points:** do monks also spawn from them over time, or only after
    dying?
-8. **More videos:** the three episodes show no pickaxe, jackhammer use, snare, gas,
-   goo, teleporter or two-player level. Episodes from later worlds (Phosphorus has the
-   gas gun) or a two-player level would settle the rest.
+8. **Not seen yet:** pickaxe in use, snare, goo bucket, teleporters, big bomb, a co-op
+   level. These episodes were skimmed (tool-slot changes, 5-second contact sheets), not
+   watched end to end, so some of these may be in them.

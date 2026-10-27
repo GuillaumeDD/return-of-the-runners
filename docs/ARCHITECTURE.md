@@ -373,6 +373,9 @@ as gameplay is implemented.
 | Exit in TLR                     | absent until the last gold is taken, then appears (B-024)                                 | S-015 @ 1:22               |
 | Keys                            | carried in the item slot to the door of their colour                                      | S-016 @ 3:03–3:33          |
 | Bombs                           | collected into a counter, fuse ≈ 2.5 s, chain reactions, blasted blocks back after ≈ 13 s | S-015 @ 1:05–1:24          |
+| Jackhammer                      | rides straight down through brick, ≈ 5 tiles in 9 s; tool kept                            | S-019 @ 2:33–2:43          |
+| Gas gun                         | cloud ≈ 2 tiles for ≈ 6 s; monks inside stuck; gun kept                                   | S-021 @ 0:54–1:04          |
+| Two-player race                 | mirrored halves, exits appear with the gold, first out wins                               | S-025                      |
 | Monk speed                      | 2/3 of the runner's                                                                       | **Provisional**, 1982 feel |
 | Monk chase AI                   | classic floor scan (see Monks)                                                            | 1982 rule [^lrtr]          |
 | Monk stuck in a hole            | 120 ticks (2 s), then climbs out                                                          | **Provisional**            |
