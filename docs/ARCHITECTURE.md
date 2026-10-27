@@ -354,29 +354,31 @@ data and the supply chain.
 
 ## Observed behavior of the original game
 
-Each entry: the rule or timing, its value, and its provenance (video link +
-timestamp, or own playtest). Filled in as gameplay is implemented.
+Each entry: the rule or timing, its value, and its provenance (a source id from
+[`SOURCES.md`](SOURCES.md), with a timestamp for a video, or own playtest). Filled in
+as gameplay is implemented.
 
-| Behavior                        | Value                              | Provenance                 |
-| ------------------------------- | ---------------------------------- | -------------------------- |
-| Runner walk / climb / bar speed | 1 tile per 16 ticks (3.75 tiles/s) | **Provisional**, 1982 feel |
-| Fall speed                      | 1 tile per 8 ticks (7.5 tiles/s)   | **Provisional**, 1982 feel |
-| Hole digging time               | 15 ticks (0.25 s)                  | **Provisional**, 1982 feel |
-| Hole stays open                 | 240 ticks (4 s)                    | **Provisional**, 1982 feel |
-| Hole refill time                | 30 ticks (0.5 s)                   | **Provisional**, 1982 feel |
-| Digging from a ladder or bar    | allowed                            | 1982 rule [^lrtr]          |
-| Digging under gold              | allowed, the gold stays in place   | Guillaume's memory of TLR  |
-| Gold is collected               | when the runner's centre enters it | **Provisional**            |
-| Exit                            | door, opens once all gold is taken | **Provisional**, to check  |
-| Monk speed                      | 2/3 of the runner's                | **Provisional**, 1982 feel |
-| Monk chase AI                   | classic floor scan (see Monks)     | 1982 rule [^lrtr]          |
-| Monk stuck in a hole            | 120 ticks (2 s), then climbs out   | **Provisional**            |
-| Monk respawn                    | after 60 ticks, second row, random | 1982 rule [^lrtr]          |
-| Monk carries gold               | 12 to 37 cells, then drops it      | 1982 rule [^lrtr]          |
-| Caught by a monk                | same centre cell                   | **Provisional**            |
+| Behavior                        | Value                              | Provenance                  |
+| ------------------------------- | ---------------------------------- | --------------------------- |
+| Level grid                      | 28 × 16 tiles                      | S-001 (Saturn editor guide) |
+| Runner walk / climb / bar speed | 1 tile per 16 ticks (3.75 tiles/s) | **Provisional**, 1982 feel  |
+| Fall speed                      | 1 tile per 8 ticks (7.5 tiles/s)   | **Provisional**, 1982 feel  |
+| Hole digging time               | 15 ticks (0.25 s)                  | **Provisional**, 1982 feel  |
+| Hole stays open                 | 240 ticks (4 s)                    | **Provisional**, 1982 feel  |
+| Hole refill time                | 30 ticks (0.5 s)                   | **Provisional**, 1982 feel  |
+| Digging from a ladder or bar    | allowed                            | 1982 rule [^lrtr]           |
+| Digging under gold              | allowed, the gold stays in place   | S-100 (Guillaume's memory)  |
+| Gold is collected               | when the runner's centre enters it | **Provisional**             |
+| Exit                            | door, opens once all gold is taken | **Provisional**, to check   |
+| Monk speed                      | 2/3 of the runner's                | **Provisional**, 1982 feel  |
+| Monk chase AI                   | classic floor scan (see Monks)     | 1982 rule [^lrtr]           |
+| Monk stuck in a hole            | 120 ticks (2 s), then climbs out   | **Provisional**             |
+| Monk respawn                    | after 60 ticks, second row, random | 1982 rule [^lrtr]           |
+| Monk carries gold               | 12 to 37 cells, then drops it      | 1982 rule [^lrtr]           |
+| Caught by a monk                | same centre cell                   | **Provisional**             |
 
 [^lrtr]:
-    1982 rules as reimplemented by _Lode Runner Total Recall_, `ok2Dig()` in
+    1982 rules as reimplemented by _Lode Runner Total Recall_ (S-004), `ok2Dig()` in
     [`lodeRunner.runner.js`](https://github.com/SimonHung/LodeRunner_TotalRecall/blob/master/lodeRunner.runner.js):
     only the target and the cell above it are checked. The monk rules come from
     `lodeRunner.guard.js` in the same project. Still to check against TLR.

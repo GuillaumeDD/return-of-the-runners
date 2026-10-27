@@ -18,13 +18,13 @@ Returns_ (Presage/Sierra, 1994), with an integrated level editor.
 
 ### Read before you start
 
-| When you…                                     | Read first                                          |
-| --------------------------------------------- | --------------------------------------------------- |
-| start or scope a feature                      | `docs/PRD.md`, `docs/BACKLOG.md`                    |
-| touch code, dependencies, CI or the build     | `docs/ARCHITECTURE.md`                              |
-| implement or change gameplay                  | `docs/ARCHITECTURE.md` § Observed original behavior |
-| add or change an asset (image, sound, level)  | `ASSETS.md`, `docs/PRD.md` § Content and licensing  |
-| rely on a web API (clipboard, files, streams) | `docs/ARCHITECTURE.md` § Browser quirks             |
+| When you…                                     | Read first                                                             |
+| --------------------------------------------- | ---------------------------------------------------------------------- |
+| start or scope a feature                      | `docs/PRD.md`, `docs/BACKLOG.md`                                       |
+| touch code, dependencies, CI or the build     | `docs/ARCHITECTURE.md`                                                 |
+| implement or change gameplay                  | `docs/ARCHITECTURE.md` § Observed original behavior, `docs/SOURCES.md` |
+| add or change an asset (image, sound, level)  | `ASSETS.md`, `docs/PRD.md` § Content and licensing                     |
+| rely on a web API (clipboard, files, streams) | `docs/ARCHITECTURE.md` § Browser quirks                                |
 
 ### Non-negotiables
 
@@ -205,6 +205,9 @@ specific. Focus on it:
 - Record observed original behavior (timings, rules, edge cases) with provenance
   (video link + timestamp, or own playtest) in `docs/ARCHITECTURE.md`.
 - Record every **intentional deviation** there too.
+- Log every external source consulted (page, video, person) in `docs/SOURCES.md` the
+  day it is used, with what it gave; cite its id (`S-001`, `S-010 @ 12:34`) where a
+  fact is recorded.
 
 ### Planning & backlog
 
