@@ -183,11 +183,12 @@ Firefox, WebKit) and updates ARCHITECTURE § Observed behavior with its sources.
 - `src/sim/state.ts`: `players: Player[]` built from `P` then `Q`; `src/sim/input.ts`:
   `TickInput = PlayerInput[]`; `src/sim/replay.ts`: replay v2 with one log per player,
   v1 replays migrated; `src/input/keyboard.ts`: bindings per player.
-- Co-op rules: the level is won when **one** player reaches the exit (S-100,
-  Guillaume, 2026-10-27). Defaults to confirm: gold is shared; the exit appears when
-  all gold is taken; a player who dies
-  comes back at its start after `RESTART_DELAY_TICKS` while the other keeps playing;
-  players do not block each other. Monks chase the nearest player.
+- Co-op rules (S-100, Guillaume, 2026-10-27): the level is won when **one** player
+  reaches the exit; a player who dies loses one of **their own** lives (each player has
+  a count in the status bar, S-025, S-026) and only that player restarts at their start
+  after `RESTART_DELAY_TICKS`, while the other keeps playing; with no life left, that
+  player is out. Defaults to confirm: gold is shared; the exit appears when all gold is
+  taken; players do not block each other. Monks chase the nearest player.
 - A level with a `Q` is offered in 1-player or 2-player mode; with one player, `Q` is
   ignored.
 
@@ -196,7 +197,9 @@ Firefox, WebKit) and updates ARCHITECTURE § Observed behavior with its sources.
 - each player moves only with its own input; both can dig on the same tick;
 - gold taken by either lowers `goldLeft`; the exit opens for both;
 - one player reaching the open exit wins the level;
-- a dead player respawns at its start and the other's state is untouched;
+- a dead player loses one of their own lives and respawns at its start; the other's
+  state (position, lives, score) is untouched; a player with no life left is out and
+  the other plays on;
 - two players can share a cell (no blocking) and a hole.
 
 `tests/sim/ai.test.ts`: a monk picks the nearer player (cross-checked against the naive
@@ -347,8 +350,9 @@ like B-022's gooey turf; it does not block digging the cell under it (to confirm
 
 For Guillaume (S-100 wins over every source), most important first:
 
-1. ~~**Co-op:** does the level end when one player exits?~~ Yes (S-100). Still open:
-   when one dies, do both restart, or only that one?
+1. ~~**Co-op:** level end, and what happens on a death?~~ The level ends when one player
+   exits; a dead player alone restarts, using one of their own lives (S-100). Still
+   open: what happens when one player has no life left?
 2. ~~**Versus:** how is the winner decided?~~ First to their exit, after all the gold
    (S-025). Still open: in levels where the players share space, can one bury the other?
 3. ~~**Bombs:** tools or counted separately?~~ Counted separately, and set off by a
