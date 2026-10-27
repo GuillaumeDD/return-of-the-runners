@@ -132,6 +132,6 @@ rejects the feature.
 
 - Names of the two heroes (and of the monks?).
 - Full list of TLR tools and items, and their exact behavior (to be confirmed by playtests/videos).
-- Grid size of TLR levels: the editor defaults to 28×16 and allows 8–64 × 8–48.
-  Step 3 builds on the answer.
+- ~~Grid size of TLR levels~~: 28 × 16 (SOURCES S-001, Saturn guide; the PC version
+  still to confirm on a longplay). The editor's default already matches.
 - What TLR's own editor looked like (palette layout, test button, shortcuts).
