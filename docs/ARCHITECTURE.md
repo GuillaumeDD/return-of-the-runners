@@ -382,6 +382,7 @@ as gameplay is implemented.
 | Teleporter                      | step in, reappear at the linked spot ≈ 0.5–1 s later                                      | S-025 @ 0:04–0:05          |
 | Big bomb                        | same counter; round blast ≈ 5 cells, permanent; chain reactions                           | S-025 @ 1:04–1:15          |
 | Snare                           | holds the first monk that walks in, > 22 s; others walk past                              | S-018 @ 0:23–0:48          |
+| Alcove                          | hiding place: a player inside cannot be caught                                            | S-018 @ 0:02–0:19, S-100   |
 | Monk speed                      | 2/3 of the runner's                                                                       | **Provisional**, 1982 feel |
 | Monk chase AI                   | classic floor scan (see Monks)                                                            | 1982 rule [^lrtr]          |
 | Monk stuck in a hole            | 120 ticks (2 s), then climbs out                                                          | **Provisional**            |

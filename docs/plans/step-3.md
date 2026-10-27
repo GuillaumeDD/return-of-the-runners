@@ -75,7 +75,7 @@ so they are good to about half a second.
 | Teleporter                    | Each player steps into a teleporter in a bottom corner, vanishes, and appears next to their exit at the top about half a second to a second later                                                                                                        | S-025 @ 0:04–0:05               |
 | Big bomb                      | Red blast (small bombs are yellow), round, about 5 cells across; laid from the same bomb counter (2 → 1 → 0), fuse about 2 s; a big bomb lying nearby is set off and blasts in turn; the destroyed terrain does not come back                            | S-025 @ 1:04–1:15, @ 0:24       |
 | Snare                         | Laid on the floor (a golden arch); the first monk that walks in hangs in it, and is still held 22 s later; the monks behind walk past it; the runner later walks past the snared monk unharmed. A second snare taken from the level is laid the same way | S-018 @ 0:23–0:48               |
-| Alcove (guess)                | A dark arched niche in the floor row; the runner stands inside it while monks are near (@ 0:19, @ 0:45). It may be a hiding place: to confirm                                                                                                            | S-018 @ 0:19, @ 0:45            |
+| Alcove                        | A dark arched niche; the runner hides in it for 17 s while monks walk right past and over it (one even falls onto it) without catching him                                                                                                               | S-018 @ 0:02–0:19, S-100        |
 
 ## Key design decisions
 
@@ -99,8 +99,9 @@ so they are good to about half a second.
    | `k`  | pickaxe            | `o`     | small bomb               |
    | `O`  | big bomb           | `s`     | snare                    |
    | `g`  | gas spray          | `u`     | goo bucket               |
+   | `n`  | alcove             |         |                          |
 
-   The editor's "alcove" element (S-001) is not reserved until we know what it does.
+   The alcove (S-001) is a hiding place where monks cannot catch a player (S-018).
 
 3. **Players are a list.** `GameState.runner` becomes `players: Player[]` (one or two),
    each with its own input, tool slot and status; replays record one input stream per
@@ -126,18 +127,18 @@ so they are good to about half a second.
 
 ## Delivery: one PR per backlog item
 
-| Order | PR                  | Backlog | Visible result                                           |
-| ----- | ------------------- | ------- | -------------------------------------------------------- |
-| 1     | Format v2           | B-019   | none (old levels still open; the editor saves v2)        |
-| 2     | Two players: co-op  | B-020   | **two runners on one keyboard, same level**              |
-| 3     | Two players: versus | B-021   | **race for the gold**, winner shown                      |
-| 4     | Terrain             | B-022   | trapdoor, gooey turf, hidden ladder, monk respawn points |
-| 5     | Teleporters         | B-023   | teleporters, linked in the editor                        |
-| 6     | Keys, doors, exit   | B-024   | the item slot; three key/door colours; exit appears      |
-| 7     | Tools, part 1       | B-025   | **jackhammer** and **pickaxe** in the slot               |
-| 8     | Bombs               | B-026   | bomb counter; small and big bombs, chain reactions       |
-| 9     | Snare and gas       | B-027   | ways to stop monks without digging                       |
-| 10    | Goo bucket          | B-028   | spread goo to slow monks down                            |
+| Order | PR                  | Backlog | Visible result                                             |
+| ----- | ------------------- | ------- | ---------------------------------------------------------- |
+| 1     | Format v2           | B-019   | none (old levels still open; the editor saves v2)          |
+| 2     | Two players: co-op  | B-020   | **two runners on one keyboard, same level**                |
+| 3     | Two players: versus | B-021   | **race for the gold**, winner shown                        |
+| 4     | Terrain             | B-022   | trapdoor, gooey turf, hidden ladder, alcove, monk respawns |
+| 5     | Teleporters         | B-023   | teleporters, linked in the editor                          |
+| 6     | Keys, doors, exit   | B-024   | the item slot; three key/door colours; exit appears        |
+| 7     | Tools, part 1       | B-025   | **jackhammer** and **pickaxe** in the slot                 |
+| 8     | Bombs               | B-026   | bomb counter; small and big bombs, chain reactions         |
+| 9     | Snare and gas       | B-027   | ways to stop monks without digging                         |
+| 10    | Goo bucket          | B-028   | spread goo to slow monks down                              |
 
 Two players come early: playing together is the reason the project exists. B-018 (e2e
 tests of the screens) stays independent and can land at any point.
@@ -187,7 +188,7 @@ Firefox, WebKit) and updates ARCHITECTURE § Observed behavior with its sources.
   reaches the exit; a player who dies loses one of **their own** lives (each player has
   a count in the status bar, S-025, S-026) and only that player restarts at their start
   after `RESTART_DELAY_TICKS`, while the other keeps playing; with no life left, that
-  player is out. Defaults to confirm: gold is shared; the exit appears when all gold is
+  player is out and the other plays on alone (S-100). Defaults to confirm: gold is shared; the exit appears when all gold is
   taken; players do not block each other. Monks chase the nearest player.
 - A level with a `Q` is offered in 1-player or 2-player mode; with one player, `Q` is
   ignored.
@@ -235,6 +236,8 @@ keys produce only that player's input.
 - Gooey turf: solid floor that cannot be dug; whoever walks on it moves at
   `GOO_PERIOD` (slower, provisional).
 - Hidden ladder: invisible and absent until `goldLeft` reaches 0, then a ladder.
+- Alcove (`n`): passable, no support of its own; a player whose centre is in it cannot
+  be caught by monks (S-018 @ 0:02–0:19, S-100).
 - Monk respawn points: when a level has `R` cells, a dead monk reappears at one of them
   (PRNG choice among free ones); without any, the current 1982 rule applies.
 
@@ -244,6 +247,8 @@ keys produce only that player's input.
 - crossing gooey turf takes `GOO_PERIOD` ticks per sub-unit for runners and monks;
 - a hidden ladder is not climbable, not drawn, then climbable on the tick the last gold
   is taken;
+- a monk walking through or landing on an alcove does not catch the player hiding in
+  it; the same player one cell away is caught;
 - respawn uses an `R` cell, never an occupied one; with all occupied it waits; levels
   without `R` keep their replay hashes.
 
@@ -351,8 +356,8 @@ like B-022's gooey turf; it does not block digging the cell under it (to confirm
 For Guillaume (S-100 wins over every source), most important first:
 
 1. ~~**Co-op:** level end, and what happens on a death?~~ The level ends when one player
-   exits; a dead player alone restarts, using one of their own lives (S-100). Still
-   open: what happens when one player has no life left?
+   exits; a dead player alone restarts, using one of their own lives; with no life
+   left, that player is out and the other plays on (S-100).
 2. ~~**Versus:** how is the winner decided?~~ First to their exit, after all the gold
    (S-025). Still open: in levels where the players share space, can one bury the other?
 3. ~~**Bombs:** tools or counted separately?~~ Counted separately, and set off by a
@@ -361,10 +366,9 @@ For Guillaume (S-100 wins over every source), most important first:
    shaft refill?
 5. ~~**Keys:** opened when collected, or carried to the door?~~ Carried, in the item
    slot (S-016). Still open: is the key used up at the door?
-6. **The "alcove"** element in the editor (S-001): probably the dark arched niche the
-   runner stands in while monks pass (S-018 @ 0:19). Is it a hiding place?
+6. ~~**The "alcove"**: what is it?~~ A hiding place: a player inside cannot be caught
+   (S-018 @ 0:02–0:19, S-100). Still open: can a player act (dig, use a tool) from it?
 7. **Monk respawn points:** do monks also spawn from them over time, or only after
    dying?
 8. **Snare:** does a snared monk ever get free, or does it hang until the level ends?
-9. Every TLR element listed by S-001 has now been seen in a video, except the alcove's
-   exact rule.
+9. Every TLR element listed by S-001 has now been seen in a video.
