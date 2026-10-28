@@ -1,7 +1,7 @@
 import type { MessageKey } from "../i18n";
 import { TILE, type TileChar } from "../level/format";
 
-/** The palette, in order: number key N picks entry N. */
+/** The palette, in order: number key N picks entry N, and 0 picks entry 10. */
 export const PALETTE: readonly { readonly tile: TileChar; readonly name: MessageKey }[] = [
   { tile: TILE.brick, name: "tileBrick" },
   { tile: TILE.bedrock, name: "tileBedrock" },
@@ -12,16 +12,19 @@ export const PALETTE: readonly { readonly tile: TileChar; readonly name: Message
   { tile: TILE.runnerStart, name: "tileRunner" },
   { tile: TILE.monkStart, name: "tileMonk" },
   { tile: TILE.empty, name: "tileEmpty" },
+  { tile: TILE.player2Start, name: "tileRunner2" },
 ];
 
 /**
  * The palette tile for a key, by `KeyboardEvent.code` (physical key), so the top row
- * works without Shift on AZERTY keyboards. Digit or numpad 1–9; anything else: null.
+ * works without Shift on AZERTY keyboards. Digit or numpad 1–9 and 0; anything else:
+ * null.
  */
 export function tileForKey(code: string): TileChar | null {
-  const match = /^(?:Digit|Numpad)([1-9])$/.exec(code);
+  const match = /^(?:Digit|Numpad)([0-9])$/.exec(code);
   if (match === null) return null;
-  return PALETTE[Number(match[1]) - 1]?.tile ?? null;
+  const n = Number(match[1]);
+  return PALETTE[n === 0 ? 9 : n - 1]?.tile ?? null;
 }
 
 export type Shortcut = "undo" | "redo";

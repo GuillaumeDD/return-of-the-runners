@@ -5,8 +5,7 @@ import { NO_INPUT, type PlayerInput } from "../../src/sim/input";
 import { tileAt } from "../../src/sim/physics";
 import { HOLE_TICKS, SUB } from "../../src/sim/rules";
 import type { GameState } from "../../src/sim/state";
-import { step } from "../../src/sim/step";
-import { atCell, cell, placeRunner, press, run, stateFrom } from "./helpers";
+import { atCell, cell, p1, placeRunner, press, run, stateFrom, stepOne } from "./helpers";
 
 const digLeft: PlayerInput = { ...NO_INPUT, digLeft: true };
 const digRight: PlayerInput = { ...NO_INPUT, digRight: true };
@@ -21,19 +20,19 @@ function holes(s: GameState): { cx: number; cy: number }[] {
 
 describe("digging", () => {
   it("digging right opens the brick diagonally below on the right", () => {
-    const s = step(stateFrom(floor), digRight);
+    const s = stepOne(stateFrom(floor), digRight);
     expect(holes(s)).toEqual([{ cx: 4, cy: 2 }]);
-    expect(s.runner.facing).toBe(1);
+    expect(p1(s).facing).toBe(1);
   });
 
   it("digging left opens the brick diagonally below on the left, and turns the runner", () => {
-    const s = step(stateFrom(floor), digLeft);
+    const s = stepOne(stateFrom(floor), digLeft);
     expect(holes(s)).toEqual([{ cx: 2, cy: 2 }]);
-    expect(s.runner.facing).toBe(-1);
+    expect(p1(s).facing).toBe(-1);
   });
 
   it("pressing both dig keys digs nothing", () => {
-    expect(step(stateFrom(floor), digBoth).holes).toEqual([]);
+    expect(stepOne(stateFrom(floor), digBoth).holes).toEqual([]);
   });
 
   it.each([
@@ -42,7 +41,7 @@ describe("digging", () => {
     ["an empty cell", ["........", "...P....", "####.###"]],
     ["outside the level", ["........", ".......P", "########"]],
   ])("cannot dig %s", (_name, rows) => {
-    expect(step(stateFrom(rows), digRight).holes).toEqual([]);
+    expect(stepOne(stateFrom(rows), digRight).holes).toEqual([]);
   });
 
   it.each([
@@ -50,48 +49,48 @@ describe("digging", () => {
     ["a ladder", "...PH..."],
     ["a bar", "...P-..."],
   ])("cannot dig under %s in the cell above the target", (_name, row) => {
-    expect(step(stateFrom(["........", row, "########"]), digRight).holes).toEqual([]);
+    expect(stepOne(stateFrom(["........", row, "########"]), digRight).holes).toEqual([]);
   });
 
   // Regression: gold above the target used to block digging (a 1982 rule). Guillaume
   // remembers TLR allowing it; the gold stays in place above the hole.
   it("digs under gold, leaving the gold in place", () => {
-    const s = step(stateFrom(["........", "...P$...", "########"]), digRight);
+    const s = stepOne(stateFrom(["........", "...P$...", "########"]), digRight);
     expect(holes(s)).toEqual([{ cx: 4, cy: 2 }]);
     expect(s.tiles[1]?.charAt(4)).toBe(TILE.gold);
   });
 
   it("cannot dig while falling", () => {
     const s = stateFrom(["...P....", "........", "########"]);
-    expect(step(s, digRight).holes).toEqual([]);
+    expect(stepOne(s, digRight).holes).toEqual([]);
   });
 
   it("cannot dig while falling between two rows", () => {
     const s = placeRunner(stateFrom(["...P....", "........", "########"]), 3 * SUB, 4);
-    expect(step(s, digRight).holes).toEqual([]);
+    expect(stepOne(s, digRight).holes).toEqual([]);
   });
 
   // Regression: digging from a ladder or a bar used to be refused. The 1982 rules allow it
   // (the runner's own cell is not checked), see ARCHITECTURE.
   it("digs while standing on a ladder", () => {
     const s = atCell(stateFrom(["P..H....", "...H....", "########"]), 3, 1);
-    expect(holes(step(s, digRight))).toEqual([{ cx: 4, cy: 2 }]);
-    expect(holes(step(s, digLeft))).toEqual([{ cx: 2, cy: 2 }]);
+    expect(holes(stepOne(s, digRight))).toEqual([{ cx: 4, cy: 2 }]);
+    expect(holes(stepOne(s, digLeft))).toEqual([{ cx: 2, cy: 2 }]);
   });
 
   it("digs while hanging on a bar", () => {
     const s = atCell(stateFrom(["P..-....", "########"]), 3, 0);
-    expect(holes(step(s, digRight))).toEqual([{ cx: 4, cy: 1 }]);
+    expect(holes(stepOne(s, digRight))).toEqual([{ cx: 4, cy: 1 }]);
   });
 
   // Regression: walking stops between two tiles, and digging used to need exact alignment,
   // so it only worked where climbing had aligned the runner (the top of a ladder).
   it("digs after walking and stopping between two tiles", () => {
     let s = run(stateFrom(["........", "P.......", "########"]), press.right, 21);
-    expect(s.runner.x % SUB).not.toBe(0);
-    s = step(s, digRight);
+    expect(p1(s).x % SUB).not.toBe(0);
+    s = stepOne(s, digRight);
     expect(holes(s)).toEqual([{ cx: 2, cy: 2 }]);
-    expect(s.runner.x).toBe(SUB);
+    expect(p1(s).x).toBe(SUB);
   });
 
   it.each([0, 1, 2, 3, 4, 5, 6, 7])(
@@ -99,16 +98,16 @@ describe("digging", () => {
     (offset) => {
       const s = placeRunner(stateFrom(floor), 3 * SUB + offset, SUB);
       const near = offset < SUB / 2 ? 3 : 4;
-      const right = step(s, digRight);
+      const right = stepOne(s, digRight);
       expect(holes(right)).toEqual([{ cx: near + 1, cy: 2 }]);
-      expect(right.runner.x).toBe(near * SUB);
-      expect(holes(step(s, digLeft))).toEqual([{ cx: near - 1, cy: 2 }]);
+      expect(p1(right).x).toBe(near * SUB);
+      expect(holes(stepOne(s, digLeft))).toEqual([{ cx: near - 1, cy: 2 }]);
     },
   );
 
   it("cannot dig when the nearest column has no floor under it", () => {
     const s = placeRunner(stateFrom(["P.......", "###....."]), 2 * SUB + 5, 0);
-    expect(step(s, digLeft).holes).toEqual([]);
+    expect(stepOne(s, digLeft).holes).toEqual([]);
   });
 
   it.each([1, 2, 3, 4, 5, 6, 7])(
@@ -120,25 +119,25 @@ describe("digging", () => {
         y === near + 1 ? "...H####" : r,
       );
       const s = placeRunner(stateFrom(rows), 3 * SUB, SUB + offset);
-      const dug = step(s, digRight);
+      const dug = stepOne(s, digRight);
       expect(holes(dug)).toEqual([{ cx: 4, cy: near + 1 }]);
-      expect(dug.runner.y).toBe(near * SUB);
+      expect(p1(dug).y).toBe(near * SUB);
     },
   );
 
   it("digging freezes the runner for HOLE_TICKS.digging ticks", () => {
-    let s = step(stateFrom(floor), digRight);
-    expect(s.runner.busy).toBe(HOLE_TICKS.digging);
-    const x = s.runner.x;
+    let s = stepOne(stateFrom(floor), digRight);
+    expect(p1(s).busy).toBe(HOLE_TICKS.digging);
+    const x = p1(s).x;
     s = run(s, press.left, HOLE_TICKS.digging);
-    expect(s.runner.x).toBe(x);
-    expect(s.runner.busy).toBe(0);
+    expect(p1(s).x).toBe(x);
+    expect(p1(s).busy).toBe(0);
     s = run(s, press.left, 2);
-    expect(s.runner.x).toBeLessThan(x);
+    expect(p1(s).x).toBeLessThan(x);
   });
 
   it("cannot dig the same hole twice", () => {
-    let s = step(stateFrom(floor), digRight);
+    let s = stepOne(stateFrom(floor), digRight);
     s = run(s, digRight, HOLE_TICKS.digging + 5);
     expect(s.holes).toHaveLength(1);
   });
@@ -147,7 +146,7 @@ describe("digging", () => {
 describe("hole lifecycle", () => {
   // After the digging step, the hole is `steps` ticks old.
   function dugFor(steps: number): GameState {
-    return run(step(stateFrom(floor), digRight), press.none, steps - 1);
+    return run(stepOne(stateFrom(floor), digRight), press.none, steps - 1);
   }
 
   it("stays solid while being dug, then opens", () => {
@@ -178,7 +177,7 @@ describe("hole lifecycle", () => {
 describe("holes and the runner", () => {
   it("the runner falls into an open hole and stands in it", () => {
     const rows = ["...P....", "########", "########"];
-    let s = step(stateFrom(rows), digRight);
+    let s = stepOne(stateFrom(rows), digRight);
     s = run(s, press.none, HOLE_TICKS.digging);
     s = run(s, press.right, 40);
     expect(cell(s)).toEqual({ x: 4, y: 1 });
@@ -187,7 +186,7 @@ describe("holes and the runner", () => {
 
   it("the runner falls through an open hole to the floor below", () => {
     const rows = ["...P....", "########", "........", "########"];
-    let s = step(stateFrom(rows), digRight);
+    let s = stepOne(stateFrom(rows), digRight);
     s = run(s, press.none, HOLE_TICKS.digging);
     s = run(s, press.right, 16);
     s = run(s, press.none, 40);
@@ -196,7 +195,7 @@ describe("holes and the runner", () => {
 
   it("the runner walks out of a hole sideways into an open passage", () => {
     const rows = ["...P....", "#####...", "########"];
-    let s = step(stateFrom(rows), digRight);
+    let s = stepOne(stateFrom(rows), digRight);
     s = run(s, press.none, HOLE_TICKS.digging);
     s = run(s, press.right, 100);
     expect(cell(s)).toEqual({ x: 7, y: 1 });
@@ -204,19 +203,19 @@ describe("holes and the runner", () => {
 
   it("the runner dies when the hole refills around them", () => {
     const rows = ["...P....", "########", "########"];
-    let s = step(stateFrom(rows), digRight);
+    let s = stepOne(stateFrom(rows), digRight);
     s = run(s, press.none, HOLE_TICKS.digging);
     s = run(s, press.right, 40);
     expect(cell(s)).toEqual({ x: 4, y: 1 });
     const age = s.holes[0]?.age ?? 0;
     s = run(s, press.none, HOLE_LIFETIME - age - 1);
     expect(s.status).toBe("playing");
-    s = step(s, press.none);
+    s = stepOne(s, press.none);
     expect(s.status).toBe("dead");
   });
 
   it("a runner standing beside the hole survives the refill", () => {
-    let s = step(stateFrom(floor), digRight);
+    let s = stepOne(stateFrom(floor), digRight);
     s = run(s, press.none, HOLE_LIFETIME);
     expect(s.holes).toEqual([]);
     expect(s.status).toBe("playing");
@@ -224,7 +223,7 @@ describe("holes and the runner", () => {
 
   it("after death the state is frozen except for the tick", () => {
     const rows = ["...P....", "########", "########"];
-    let s = step(stateFrom(rows), digRight);
+    let s = stepOne(stateFrom(rows), digRight);
     s = run(s, press.right, HOLE_LIFETIME + 10);
     expect(s.status).toBe("dead");
     const later = run(s, digLeft, 50);

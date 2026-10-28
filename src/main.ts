@@ -6,7 +6,8 @@ import type { StorageLike } from "./storage/levels";
 import { advance, type Accumulator } from "./game/loop";
 import { PLAY_SEED, createSession, tickSession, type Session } from "./game/session";
 import { detectLocale, translate, type Locale, type MessageKey } from "./i18n";
-import { inputFrom, isBound, keyDown, keyUp, type HeldKeys } from "./input/keyboard";
+import { inputsFrom, isBound, keyDown, keyUp, type HeldKeys } from "./input/keyboard";
+import { playerStatusText, playersFor } from "./game/hud";
 import { levelErrorMessage, uniqueCodes } from "./i18n/level-errors";
 import type { Level, LevelErrorCode } from "./level/format";
 import { parseLevel } from "./level/parse";
@@ -14,7 +15,7 @@ import { decodeLevel } from "./share/link";
 import firstSteps from "./levels/first-steps.json?raw";
 import { canvasSize, context2d, render } from "./render/canvas";
 import type { ValidTest } from "./editor/view";
-import { createState, type Status } from "./sim/state";
+import { createState, maxPlayers, type PlayerCount, type Status } from "./sim/state";
 
 function byId<T extends HTMLElement>(id: string, type: new () => T): T {
   const el = document.getElementById(id);
@@ -41,14 +42,31 @@ const sharedText = byId("shared-text", HTMLParagraphElement);
 const sharedErrors = byId("shared-errors", HTMLUListElement);
 const sharedEdit = byId("shared-edit", HTMLButtonElement);
 
+/** The player count picked last (on any screen); a level without a player 2 start plays alone. */
+let picked: PlayerCount = 1;
+
+/** Where a game shows its player choice (for a level with a player 2 start) and its status line. */
+interface PlayerEls {
+  readonly group: HTMLElement;
+  readonly one: HTMLButtonElement;
+  readonly two: HTMLButtonElement;
+  readonly hud: HTMLElement;
+}
+
+function playerEls(prefix: string): PlayerEls {
+  return {
+    group: byId(`${prefix}-players`, HTMLDivElement),
+    one: byId(`${prefix}-players-1`, HTMLButtonElement),
+    two: byId(`${prefix}-players-2`, HTMLButtonElement),
+    hud: byId(`${prefix}-hud`, HTMLParagraphElement),
+  };
+}
+
+const playPlayers = playerEls("play");
+const testPlayers = playerEls("test");
+
 let locale: Locale = detectLocale(navigator.languages);
 let messageKey: MessageKey = "controls";
-
-const STATUS_MESSAGE: Readonly<Record<Status, MessageKey>> = {
-  playing: "controls",
-  dead: "caught",
-  won: "won",
-};
 
 function renderText(): void {
   document.documentElement.lang = locale;
@@ -62,6 +80,13 @@ function renderText(): void {
   testMessage.textContent = translate(locale, testMessageKey);
   testBack.textContent = translate(locale, "testBack");
   sharedEdit.textContent = translate(locale, "sharedEdit");
+  for (const els of [playPlayers, testPlayers]) {
+    els.group.setAttribute("aria-label", translate(locale, "playersLabel"));
+    els.one.textContent = translate(locale, "players1");
+    els.two.textContent = translate(locale, "players2");
+  }
+  playing?.relabel();
+  testGame?.relabel();
   editor.setLocale(locale);
   library.setLocale(locale);
   renderShared();
@@ -72,31 +97,54 @@ langButton.addEventListener("click", () => {
   renderText();
 });
 
-/** The play screen's game: runs only while that screen is shown. */
+/** A game: runs only while its screen is shown. */
 interface Game {
   readonly resume: () => void;
   readonly pause: () => void;
+  /** Redraws its texts in the current locale. */
+  readonly relabel: () => void;
+}
+
+/** The message for a game's status, by player count. */
+function statusMessage(status: Status, count: PlayerCount): MessageKey {
+  switch (status) {
+    case "playing":
+      return count === 2 ? "controls2" : "controls";
+    case "dead":
+      return count === 2 ? "allOut" : "caught";
+    case "won":
+      return "won";
+  }
 }
 
 /**
- * A game of `initial` on `target`; `onStatus` gets the message to show whenever the
- * game's status changes.
+ * A game of `level` on `target`, with one or two players (`picked`, if the level
+ * allows two); `onStatus` gets the message to show whenever the game's status or player
+ * count changes.
  */
 function createGame(
   target: HTMLCanvasElement,
-  initial: Session,
+  els: PlayerEls,
+  level: Level,
   onStatus: (key: MessageKey) => void,
 ): Game {
   const context = context2d(target);
-  let session = initial;
-  let status: Status | null = null;
+  let count = playersFor(level, picked);
+  let session = newSession();
+  let shown: MessageKey | null = null;
+  let hudText: string | null = null;
   let held: HeldKeys = new Set();
   let acc: Accumulator = { carry: 0 };
   let last: number | null = null;
   let frameId: number | null = null;
 
+  function newSession(): Session {
+    return createSession(createState(level, PLAY_SEED, count));
+  }
+
   const onKeyDown = (e: KeyboardEvent): void => {
-    if (isBound(e.code)) e.preventDefault(); // arrows must not scroll the page
+    // Arrows must not scroll the page, nor / open Firefox's quick find.
+    if (isBound(e.code, count)) e.preventDefault();
     held = keyDown(held, e.code);
   };
   const onKeyUp = (e: KeyboardEvent): void => {
@@ -107,15 +155,49 @@ function createGame(
     held = new Set();
   };
 
+  /** A new game with `n` players, from the start of the level. */
+  const choose = (n: PlayerCount): void => {
+    picked = n;
+    if (playersFor(level, n) === count) return;
+    count = playersFor(level, n);
+    session = newSession();
+    acc = { carry: 0 };
+    showPlayers();
+    // Keys go to the game, not to the button just clicked.
+    els.one.blur();
+    els.two.blur();
+  };
+  const onOne = (): void => {
+    choose(1);
+  };
+  const onTwo = (): void => {
+    choose(2);
+  };
+
+  function showPlayers(): void {
+    els.group.hidden = maxPlayers(level) < 2;
+    els.one.setAttribute("aria-pressed", String(count === 1));
+    els.two.setAttribute("aria-pressed", String(count === 2));
+    els.hud.hidden = count < 2;
+    shown = null; // the next frame shows the message and status line again
+    hudText = null;
+  }
+
   const frame = (now: number): void => {
     const result = advance(acc, last === null ? 0 : now - last);
     last = now;
     acc = result.acc;
-    const input = inputFrom(held);
-    for (let i = 0; i < result.ticks; i++) session = tickSession(session, input);
-    if (session.state.status !== status) {
-      status = session.state.status;
-      onStatus(STATUS_MESSAGE[status]);
+    const inputs = inputsFrom(held, count);
+    for (let i = 0; i < result.ticks; i++) session = tickSession(session, inputs);
+    const key = statusMessage(session.state.status, count);
+    if (key !== shown) {
+      shown = key;
+      onStatus(key);
+    }
+    const text = playerStatusText(locale, session.state);
+    if (text !== hudText) {
+      hudText = text;
+      els.hud.textContent = text;
     }
     render(context, session.state);
     frameId = requestAnimationFrame(frame);
@@ -128,10 +210,12 @@ function createGame(
       const size = canvasSize(session.state);
       target.width = size.width;
       target.height = size.height;
-      status = null; // the first frame shows this game's message again
+      showPlayers();
       window.addEventListener("keydown", onKeyDown);
       window.addEventListener("keyup", onKeyUp);
       window.addEventListener("blur", onBlur);
+      els.one.addEventListener("click", onOne);
+      els.two.addEventListener("click", onTwo);
       last = null; // no catch-up for the time spent on another screen
       frameId = requestAnimationFrame(frame);
     },
@@ -142,7 +226,12 @@ function createGame(
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
       window.removeEventListener("blur", onBlur);
+      els.one.removeEventListener("click", onOne);
+      els.two.removeEventListener("click", onTwo);
       held = new Set();
+    },
+    relabel() {
+      hudText = null;
     },
   };
 }
@@ -218,11 +307,11 @@ function startTestPlay(test: ValidTest): void {
   editorMain.hidden = true;
   testScreen.hidden = false;
   const showStatus = (key: MessageKey): void => {
-    testMessageKey = key === "controls" ? "testHint" : key;
+    testMessageKey = key === "controls" ? "testHint" : key === "controls2" ? "testHint2" : key;
     testMessage.textContent = translate(locale, testMessageKey);
   };
   showStatus("controls"); // not the last test's "Caught!"
-  testGame = createGame(testCanvas, test.session, showStatus);
+  testGame = createGame(testCanvas, testPlayers, test.level, showStatus);
   testGame.resume();
   window.addEventListener("keydown", onTestKey);
 }
@@ -256,7 +345,7 @@ const showMessage = (key: MessageKey): void => {
 let game: Game | null = null;
 const parsed = parseLevel(firstSteps);
 if (parsed.ok) {
-  game = createGame(canvas, createSession(createState(parsed.level, PLAY_SEED)), showMessage);
+  game = createGame(canvas, playPlayers, parsed.level, showMessage);
 } else {
   messageKey = "levelError";
   console.error("Bundled level is invalid", parsed.errors);
@@ -291,7 +380,7 @@ function openShared(payload: string): void {
       ? {
           kind: "ready",
           level: r.level,
-          game: createGame(canvas, createSession(createState(r.level, PLAY_SEED)), showMessage),
+          game: createGame(canvas, playPlayers, r.level, showMessage),
         }
       : { kind: "broken", codes: uniqueCodes(r.errors) };
     const route = parseRoute(location.hash);

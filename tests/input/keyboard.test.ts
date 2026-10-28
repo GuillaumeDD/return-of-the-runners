@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_BINDINGS,
+  TWO_PLAYER_BINDINGS,
+  bindingsFor,
   inputFrom,
+  inputsFrom,
   isBound,
   keyDown,
   keyUp,
@@ -59,5 +62,50 @@ describe("keyboard input", () => {
 
   it("binds every action by default", () => {
     for (const codes of Object.values(DEFAULT_BINDINGS)) expect(codes.length).toBeGreaterThan(0);
+  });
+});
+
+const codesOf = (b: Bindings): string[] => Object.values(b).flat();
+
+describe("two players on one keyboard", () => {
+  it("player 1 and player 2 share no key, and each binds every action", () => {
+    const [one, two] = TWO_PLAYER_BINDINGS;
+    const shared = codesOf(one).filter((c) => codesOf(two).includes(c));
+    expect(shared).toEqual([]);
+    for (const b of TWO_PLAYER_BINDINGS) {
+      for (const codes of Object.values(b)) expect(codes.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("each player's keys produce only that player's input", () => {
+    TWO_PLAYER_BINDINGS.forEach((b, player) => {
+      for (const [action, codes] of Object.entries(b)) {
+        for (const code of codes) {
+          const inputs = inputsFrom(keyDown(new Set(), code), 2);
+          expect(inputs[player], code).toEqual({ ...NO_INPUT, [action]: true });
+          expect(inputs[1 - player], code).toEqual(NO_INPUT);
+        }
+      }
+    });
+  });
+
+  it("both players can press keys at once", () => {
+    let held = keyDown(new Set(), "ArrowLeft");
+    held = keyDown(held, "KeyD");
+    held = keyDown(held, "KeyE");
+    expect(inputsFrom(held, 2)).toEqual([
+      { ...NO_INPUT, left: true },
+      { ...NO_INPUT, right: true, digRight: true },
+    ]);
+  });
+
+  it("one player keeps the one-player keys; the two-player keys of the other are not bound", () => {
+    expect(bindingsFor(1)).toEqual([DEFAULT_BINDINGS]);
+    expect(inputsFrom(keyDown(new Set(), "KeyZ"), 1)).toEqual([{ ...NO_INPUT, digLeft: true }]);
+    expect(isBound("KeyW", 1)).toBe(false);
+    expect(isBound("KeyW", 2)).toBe(true);
+    expect(isBound("Slash", 2)).toBe(true);
+    // With two players, Z and X sit under player 2's hand: not bound.
+    expect(isBound("KeyZ", 2)).toBe(false);
   });
 });

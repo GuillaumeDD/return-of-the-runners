@@ -1,4 +1,4 @@
-import type { GameState, MonkMode, Status } from "./state";
+import type { GameState, MonkMode, PlayerMode, Status } from "./state";
 
 const STATUS_CODE: Readonly<Record<Status, number>> = { playing: 0, dead: 1, won: 2 };
 const MONK_MODE_CODE: Readonly<Record<MonkMode, number>> = {
@@ -7,6 +7,8 @@ const MONK_MODE_CODE: Readonly<Record<MonkMode, number>> = {
   escaping: 2,
   dead: 3,
 };
+
+const PLAYER_MODE_CODE: Readonly<Record<PlayerMode, number>> = { alive: 0, dead: 1, out: 2 };
 
 const FNV_OFFSET = 0x811c9dc5;
 const FNV_PRIME = 0x01000193;
@@ -38,10 +40,19 @@ export function hashState(s: GameState): number {
     for (let i = 0; i < row.length; i++) int(row.charCodeAt(i));
   }
   int(s.goldLeft);
-  int(s.runner.x);
-  int(s.runner.y);
-  int(s.runner.facing);
-  int(s.runner.busy);
+  int(s.players.length);
+  for (const p of s.players) {
+    int(p.x);
+    int(p.y);
+    int(p.facing);
+    int(p.busy);
+    int(PLAYER_MODE_CODE[p.mode]);
+    int(p.timer);
+    int(p.lives);
+    int(p.gold);
+    int(p.startX);
+    int(p.startY);
+  }
   int(s.holes.length);
   for (const h of s.holes) {
     int(h.cx);

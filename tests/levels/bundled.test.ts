@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { parseLevel } from "../../src/level/parse";
+import { maxPlayers } from "../../src/sim/state";
 
 const DIR = join(import.meta.dirname, "../../src/levels");
 const files = readdirSync(DIR).filter((f) => f.endsWith(".json"));
@@ -14,5 +15,10 @@ describe("bundled levels", () => {
   it.each(files)("%s parses with no errors", (file) => {
     const result = parseLevel(readFileSync(join(DIR, file), "utf8"));
     expect(result.ok ? [] : result.errors).toEqual([]);
+  });
+
+  it("the play screen's level can be played by two (it has a player 2 start)", () => {
+    const result = parseLevel(readFileSync(join(DIR, "first-steps.json"), "utf8"));
+    expect(result.ok && maxPlayers(result.level)).toBe(2);
   });
 });

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { RUNNER_PERIOD, SUB } from "../../src/sim/rules";
 import { isFalling } from "../../src/sim/move";
-import { atCell, cell, placeRunner, press, run, stateFrom } from "./helpers";
+import { atCell, cell, p1, placeRunner, press, run, stateFrom } from "./helpers";
 
 const TILE_TICKS = {
   walk: SUB * RUNNER_PERIOD.walk,
@@ -25,13 +25,13 @@ describe("walking", () => {
   it("walks right one tile in exactly SUB * walk-period ticks", () => {
     const s = run(stateFrom(flat), press.right, TILE_TICKS.walk);
     expect(cell(s)).toEqual({ x: 3, y: 6 });
-    expect(s.runner.facing).toBe(1);
+    expect(p1(s).facing).toBe(1);
   });
 
   it("walks left and faces left", () => {
     const s = run(stateFrom(flat), press.left, TILE_TICKS.walk);
     expect(cell(s)).toEqual({ x: 1, y: 6 });
-    expect(s.runner.facing).toBe(-1);
+    expect(p1(s).facing).toBe(-1);
   });
 
   it("stops at a brick wall", () => {
@@ -46,14 +46,14 @@ describe("walking", () => {
 
   it("stays put with no input or with opposite directions pressed", () => {
     const start = stateFrom(flat);
-    expect(run(start, press.none, 50).runner).toEqual(start.runner);
-    expect(run(start, press.leftRight, 50).runner).toEqual(start.runner);
+    expect(p1(run(start, press.none, 50))).toEqual(p1(start));
+    expect(p1(run(start, press.leftRight, 50))).toEqual(p1(start));
   });
 
   it("can reverse mid-tile", () => {
     const mid = run(stateFrom(flat), press.right, 6); // 3 sub-units in
     const back = run(mid, press.left, 6);
-    expect(back.runner.x).toBe(stateFrom(flat).runner.x);
+    expect(p1(back).x).toBe(p1(stateFrom(flat)).x);
   });
 });
 
@@ -82,13 +82,13 @@ describe("ladders", () => {
 
   it("cannot climb where there is no ladder (no jumping)", () => {
     const start = stateFrom(flat);
-    expect(run(start, press.up, 50).runner).toEqual(start.runner);
+    expect(p1(run(start, press.up, 50))).toEqual(p1(start));
   });
 
   it("climbs off the top of a ladder and stands on it", () => {
     const s = run(atCell(stateFrom(ladder), 3, 6), press.up, 200);
     expect(cell(s)).toEqual({ x: 3, y: 2 });
-    expect(isFalling(s, s.runner)).toBe(false);
+    expect(isFalling(s, p1(s))).toBe(false);
   });
 
   it("walks onto a ladder and can then climb it", () => {
@@ -101,7 +101,7 @@ describe("ladders", () => {
     // 3 sub-units left of the ladder column: pressing up first slides right to align.
     const start = placeRunner(stateFrom(ladder), 3 * SUB - 3, 6 * SUB);
     const aligned = run(start, press.up, 3 * RUNNER_PERIOD.walk);
-    expect(aligned.runner).toMatchObject({ x: 3 * SUB, y: 6 * SUB });
+    expect(p1(aligned)).toMatchObject({ x: 3 * SUB, y: 6 * SUB });
     const climbing = run(aligned, press.up, TILE_TICKS.climb);
     expect(cell(climbing)).toEqual({ x: 3, y: 5 });
   });
@@ -109,7 +109,7 @@ describe("ladders", () => {
   it("steps off a ladder mid-climb by first snapping to the nearest row", () => {
     const start = placeRunner(stateFrom(ladder), 3 * SUB, 5 * SUB + 2);
     const s = run(start, press.left, 2 * RUNNER_PERIOD.climb);
-    expect(s.runner.y).toBe(5 * SUB);
+    expect(p1(s).y).toBe(5 * SUB);
   });
 });
 
@@ -149,7 +149,7 @@ describe("bars", () => {
 
   it("lets go of a bar after moving along it and stopping", () => {
     const moved = run(atCell(stateFrom(bars), 1, 2), press.right, RUNNER_PERIOD.bar * 5);
-    expect(moved.runner.x % SUB).not.toBe(0);
+    expect(p1(moved).x % SUB).not.toBe(0);
     const s = run(moved, press.down, 200);
     expect(cell(s)).toEqual({ x: 2, y: 6 });
   });
@@ -195,15 +195,15 @@ describe("falling", () => {
   it("walking off a ledge makes the runner fall", () => {
     const rows = ["P...", "#...", "....", "####"];
     const s = run(stateFrom(rows), press.right, 200);
-    expect(s.runner.y).toBe(2 * SUB);
+    expect(p1(s).y).toBe(2 * SUB);
   });
 
   it("ignores input while falling", () => {
     const start = atCell(stateFrom(flat), 2, 0);
     const a = run(start, press.left, TILE_TICKS.fall * 2);
     const b = run(start, press.none, TILE_TICKS.fall * 2);
-    expect(a.runner.x).toBe(b.runner.x);
-    expect(a.runner.y).toBe(b.runner.y);
+    expect(p1(a).x).toBe(p1(b).x);
+    expect(p1(a).y).toBe(p1(b).y);
   });
 });
 

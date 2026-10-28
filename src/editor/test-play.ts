@@ -1,10 +1,8 @@
 import type { Level, LevelError, LevelErrorCode } from "../level/format";
-import { PLAY_SEED, createSession, type Session } from "../game/session";
-import { createState } from "../sim/state";
 import { toLevel, type EditorState } from "./model";
 
 export type TestStart =
-  | { readonly ok: true; readonly level: Level; readonly session: Session }
+  | { readonly ok: true; readonly level: Level }
   | { readonly ok: false; readonly errors: readonly LevelErrorCode[] };
 
 /**
@@ -21,16 +19,12 @@ function codesOf(errors: readonly LevelError[]): LevelErrorCode[] {
 }
 
 /**
- * Starts a test of the level being edited, or returns the validator's error codes (each
- * once, in the validator's order) and starts nothing. The editor state is not touched:
- * coming back from the test finds it as it was, undo history included.
+ * The level to test, or the validator's error codes (each once, in the validator's
+ * order). The editor state is not touched: coming back from the test finds it as it
+ * was, undo history included. The play screen builds the game, with one or two players.
  */
-export function startTest(editor: EditorState, seed: number = PLAY_SEED): TestStart {
+export function startTest(editor: EditorState): TestStart {
   const result = toLevel(editor);
   if (!result.ok) return { ok: false, errors: codesOf(result.errors) };
-  return {
-    ok: true,
-    level: result.level,
-    session: createSession(createState(result.level, seed)),
-  };
+  return { ok: true, level: result.level };
 }

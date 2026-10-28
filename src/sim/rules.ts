@@ -56,3 +56,12 @@ export const HOLE_TICKS = {
   /** Refilling: still passable; whoever is inside when it ends dies. */
   closing: 30,
 } as const;
+
+/** Lives each player starts a level with (both players show 05 at the start, S-026). */
+export const START_LIVES = 5;
+
+/**
+ * In a two-player game, ticks a caught or buried player waits before reappearing at its
+ * start (1.5 s, like the level restart after a one-player death; provisional).
+ */
+export const PLAYER_RESPAWN_TICKS = 90;

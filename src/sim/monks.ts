@@ -7,15 +7,15 @@ import { every, isFalling, stepActor, tryHorizontal } from "./move";
 import { cellOf, isPassable, isSolid, offsetOf, type Terrain } from "./physics";
 import { prngInt } from "./prng";
 import { MONK_CARRY, MONK_PERIOD, MONK_TICKS, SUB } from "./rules";
-import type { Actor, Facing, GameState, Monk } from "./state";
+import type { Actor, Facing, GameState, Monk, Player } from "./state";
 
 /** What the monks change in one tick. */
 export interface MonksResult {
   readonly monks: readonly Monk[];
   readonly tiles: readonly string[];
   readonly rng: number;
-  /** A monk touched the runner. */
-  readonly caught: boolean;
+  /** `caught[i]`: a monk touched player i. */
+  readonly caught: readonly boolean[];
 }
 
 const INPUT: Readonly<Record<MonkMove, PlayerInput>> = {
@@ -52,16 +52,33 @@ function canHoldGold(t: Terrain, cx: number, cy: number): boolean {
 }
 
 /**
+ * The player a monk chases: the nearest one in play, by the distance between their
+ * positions (|dx| + |dy|, in sub-units); a tie goes to the lower index (player 1).
+ * Null when no player is in play.
+ */
+export function targetOf(m: Pick<Actor, "x" | "y">, players: readonly Player[]): Player | null {
+  let best: Player | null = null;
+  let bestDistance = Infinity;
+  for (const p of players) {
+    if (p.mode !== "alive") continue;
+    const d = Math.abs(p.x - m.x) + Math.abs(p.y - m.y);
+    if (d < bestDistance) {
+      best = p;
+      bestDistance = d;
+    }
+  }
+  return best;
+}
+
+/**
  * Advances every monk by one tick, in order; each sees the monks before it already
- * moved. Runs after the runner has moved and collected gold.
+ * moved. Runs after the players have moved and collected gold.
  */
 export function stepMonks(state: GameState, tick: number): MonksResult {
   const monks = [...state.monks];
   let tiles = state.tiles;
   let rng = state.rng;
-  let caught = false;
-  const runnerCell = centerCell(state.runner);
-  const runnerFalling = isFalling(state, state.runner);
+  const caught = state.players.map(() => false);
 
   for (let i = 0; i < monks.length; i++) {
     const before = monks[i];
@@ -69,6 +86,7 @@ export function stepMonks(state: GameState, tick: number): MonksResult {
     const others = monks.filter((_, j) => j !== i);
     const t: Terrain = { ...state, tiles, monks: others };
     let m: Monk = before;
+    const v = view(t, m, targetOf(m, state.players));
 
     switch (m.mode) {
       case "dead": {
@@ -76,7 +94,7 @@ export function stepMonks(state: GameState, tick: number): MonksResult {
           m = { ...m, timer: m.timer - 1 };
           break;
         }
-        const spot = respawnCell(t, state.runner, rng);
+        const spot = respawnCell(t, state.players, rng);
         rng = spot.rng;
         m =
           spot.cell === null
@@ -88,10 +106,11 @@ export function stepMonks(state: GameState, tick: number): MonksResult {
         m = m.timer > 1 ? { ...m, timer: m.timer - 1 } : { ...m, mode: "escaping", timer: 0 };
         break;
       case "escaping":
-        m = escape(t, m, view(m), tick);
+        m = escape(t, m, v, tick);
         break;
       case "free": {
-        const move = chooseMove(t, view(m));
+        // No player in play: the monk waits (it still falls if unsupported).
+        const move = v === null ? "none" : chooseMove(t, v);
         const moved = stepActor(t, m, INPUT[move], tick, MONK_PERIOD);
         m = { ...m, ...moved };
         break;
@@ -119,33 +138,41 @@ export function stepMonks(state: GameState, tick: number): MonksResult {
       }
     }
 
-    if (m.mode !== "dead" && sameCell(m, state.runner)) caught = true;
+    if (m.mode !== "dead") {
+      state.players.forEach((p, j) => {
+        if (p.mode === "alive" && sameCell(m, p)) caught[j] = true;
+      });
+    }
     monks[i] = m;
   }
 
   return { monks, tiles, rng, caught };
+}
 
-  function view(m: Monk): ChaseView {
-    const { cx, cy } = centerCell(m);
-    return {
-      cx,
-      cy,
-      x: m.x,
-      rx: runnerCell.cx,
-      ry: runnerCell.cy,
-      runnerX: state.runner.x,
-      runnerFalling,
-    };
-  }
+/** What the chase AI sees of a monk and the player it chases; null without a player. */
+function view(t: Terrain, m: Monk, target: Player | null): ChaseView | null {
+  if (target === null) return null;
+  const { cx, cy } = centerCell(m);
+  const r = centerCell(target);
+  return {
+    cx,
+    cy,
+    x: m.x,
+    rx: r.cx,
+    ry: r.cy,
+    runnerX: target.x,
+    runnerFalling: isFalling(t, target),
+  };
 }
 
 /**
  * Climbing out of a hole: straight up to the row above it, then sideways in the
- * direction the AI picks (or the way the monk faces). Above the hole it does not fall
+ * direction the AI picks (or the way the monk faces, when it picks none or no player is
+ * in play). Above the hole it does not fall
  * back in, until it has left the hole's column. Walled in on both sides, it gives up
  * and falls back in.
  */
-function escape(t: Terrain, m: Monk, v: ChaseView, tick: number): Monk {
+function escape(t: Terrain, m: Monk, v: ChaseView | null, tick: number): Monk {
   const topY = (m.holeY - 1) * SUB;
   if (m.y > topY) {
     if (!isPassable(t, m.holeX, m.holeY - 1)) return m;
@@ -155,7 +182,7 @@ function escape(t: Terrain, m: Monk, v: ChaseView, tick: number): Monk {
   if (!isPassable(t, m.holeX - 1, top) && !isPassable(t, m.holeX + 1, top)) {
     return { ...m, mode: "free", holeX: -1, holeY: -1 };
   }
-  const move = chooseMove(t, v);
+  const move = v === null ? "none" : chooseMove(t, v);
   const dir: Facing = move === "left" ? -1 : move === "right" ? 1 : m.facing;
   const moved = tryHorizontal(t, m, dir, tick, MONK_PERIOD) ?? m;
   const out = cellOf(moved.x + SUB / 2) !== m.holeX;
@@ -215,15 +242,16 @@ function carryGold(
 
 /**
  * Where a dead monk reappears (1982 rule): on the second row, from a random column
- * onward (wrapping), the first empty cell; if the row is full, the next row down.
+ * onward (wrapping), the first empty cell free of monks and of players in play; if the
+ * row is full, the next row down.
  */
 export function respawnCell(
   t: Terrain,
-  runner: Actor,
+  players: readonly Player[],
   rng: number,
 ): { cell: { cx: number; cy: number } | null; rng: number } {
   const start = prngInt(rng, t.width);
-  const runnerCell = centerCell(runner);
+  const playerCells = players.filter((p) => p.mode === "alive").map(centerCell);
   const holes: readonly Hole[] = t.holes;
   for (let cy = Math.min(1, t.height - 1); cy < t.height; cy++) {
     for (let i = 0; i < t.width; i++) {
@@ -232,7 +260,7 @@ export function respawnCell(
         t.tiles[cy]?.charAt(cx) === TILE.empty &&
         holeAt(holes, cx, cy) === undefined &&
         !t.monks.some((o) => o.mode !== "dead" && overlaps(o, { x: cx * SUB, y: cy * SUB })) &&
-        !(runnerCell.cx === cx && runnerCell.cy === cy);
+        !playerCells.some((c) => c.cx === cx && c.cy === cy);
       if (free) return { cell: { cx, cy }, rng: start.state };
     }
   }

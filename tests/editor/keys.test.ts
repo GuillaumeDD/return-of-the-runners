@@ -15,22 +15,25 @@ const key = (
 });
 
 describe("palette", () => {
-  it("holds every v1 tile once, and every tile name is translated", () => {
-    // The v2 tiles join the palette with their behavior (B-020 to B-028).
-    expect(new Set(PALETTE.map((p) => p.tile))).toEqual(TILE_CHARS_V1);
-    expect(PALETTE).toHaveLength(TILE_CHARS_V1.size);
+  it("holds every v1 tile and the player 2 start once, and every tile name is translated", () => {
+    // The other v2 tiles join the palette with their behavior (B-022 to B-028).
+    const expected = new Set([...TILE_CHARS_V1, TILE.player2Start]);
+    expect(new Set(PALETTE.map((p) => p.tile))).toEqual(expected);
+    expect(PALETTE).toHaveLength(expected.size);
     for (const locale of LOCALES) {
       for (const { name } of PALETTE) expect(catalog(locale)[name].trim()).not.toBe("");
     }
   });
 
-  it("number keys 1–9 (top row or numpad) pick the palette entries in order", () => {
-    PALETTE.forEach(({ tile }, i) => {
-      expect(tileForKey(`Digit${String(i + 1)}`)).toBe(tile);
-      expect(tileForKey(`Numpad${String(i + 1)}`)).toBe(tile);
+  it("number keys 1–9, then 0 (top row or numpad) pick the palette entries in order", () => {
+    PALETTE.slice(0, 10).forEach(({ tile }, i) => {
+      const digit = String((i + 1) % 10);
+      expect(tileForKey(`Digit${digit}`)).toBe(tile);
+      expect(tileForKey(`Numpad${digit}`)).toBe(tile);
     });
     expect(tileForKey("Digit1")).toBe(TILE.brick);
-    for (const code of ["Digit0", "Numpad0", "KeyA", "Digit10", "digit1", ""]) {
+    expect(tileForKey("Digit0")).toBe(TILE.player2Start);
+    for (const code of ["KeyA", "Digit10", "digit1", ""]) {
       expect(tileForKey(code), code).toBeNull();
     }
   });

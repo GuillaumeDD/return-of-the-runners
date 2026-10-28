@@ -93,10 +93,10 @@ export function paint(
   const current = tileAt(s.grid, cx, cy);
   if (current === undefined || current === tile) return s;
   let grid = s.grid;
-  // Exactly one runner start: placing it moves it.
-  if (tile === TILE.runnerStart) {
-    const y = grid.findIndex((row) => row.includes(TILE.runnerStart));
-    if (y >= 0) grid = setCell(grid, grid[y]?.indexOf(TILE.runnerStart) ?? 0, y, TILE.empty);
+  // One start per player: placing it moves it.
+  if (tile === TILE.runnerStart || tile === TILE.player2Start) {
+    const y = grid.findIndex((row) => row.includes(tile));
+    if (y >= 0) grid = setCell(grid, grid[y]?.indexOf(tile) ?? 0, y, TILE.empty);
   }
   grid = setCell(grid, cx, cy, tile);
   return change(s, grid);

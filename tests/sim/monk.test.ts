@@ -6,8 +6,7 @@ import { NO_INPUT, type PlayerInput } from "../../src/sim/input";
 import { respawnCell } from "../../src/sim/monks";
 import { HOLE_TICKS, MONK_CARRY, MONK_PERIOD, MONK_TICKS, SUB } from "../../src/sim/rules";
 import type { GameState, Monk } from "../../src/sim/state";
-import { step } from "../../src/sim/step";
-import { atCell, press, run, stateFrom } from "./helpers";
+import { atCell, p1, press, run, stateFrom, stepOne, withPlayer } from "./helpers";
 
 const digRight: PlayerInput = { ...NO_INPUT, digRight: true };
 
@@ -68,7 +67,7 @@ describe("monks: setup and movement", () => {
   it("never overlap each other", () => {
     let s = stateFrom(["P.........MMM", "#############"]);
     for (let t = 0; t < 300; t++) {
-      s = step(s, press.none);
+      s = stepOne(s, press.none);
       const [a, b, c] = s.monks;
       if (a === undefined || b === undefined || c === undefined) throw new Error("monks");
       for (const [p, q] of [
@@ -94,7 +93,7 @@ describe("monks and the runner", () => {
     const s = stateFrom(["...P....", "...M....", "########"].map((r) => r));
     const pit = { ...s, monks: [{ ...monk(s), mode: "trapped" as const, timer: 1000 }] };
     const later = run(pit, press.none, 30);
-    expect(later.runner.y).toBe(0);
+    expect(p1(later).y).toBe(0);
     expect(later.status).toBe("playing");
   });
 
@@ -105,7 +104,7 @@ describe("monks and the runner", () => {
       monks: [{ ...monk(stateFrom(["....M...", "P.......", "########"])), y: SUB }],
     };
     // Monk at (4, 1) stands over the target (4, 2).
-    expect(step(withMonk, digRight).holes).toEqual([]);
+    expect(stepOne(withMonk, digRight).holes).toEqual([]);
   });
 });
 
@@ -114,9 +113,9 @@ describe("monks and holes", () => {
   const pitRows = ["........", "...P...M", "########", "########"];
 
   function trappedState(): GameState {
-    let s = step(stateFrom(pitRows), digRight);
+    let s = stepOne(stateFrom(pitRows), digRight);
     s = run(s, press.none, HOLE_TICKS.digging);
-    for (let t = 0; t < 400 && monk(s).mode !== "trapped"; t++) s = step(s, press.none);
+    for (let t = 0; t < 400 && monk(s).mode !== "trapped"; t++) s = stepOne(s, press.none);
     return s;
   }
 
@@ -135,9 +134,9 @@ describe("monks and holes", () => {
     s = run(s, press.none, MONK_TICKS.trapped - 1);
     expect(monk(s).mode).toBe("trapped");
     expect({ x: monk(s).x, y: monk(s).y }).toEqual(pos);
-    s = step(s, press.none);
+    s = stepOne(s, press.none);
     expect(monk(s).mode).toBe("escaping");
-    for (let t = 0; t < 200 && monk(s).mode === "escaping"; t++) s = step(s, press.none);
+    for (let t = 0; t < 200 && monk(s).mode === "escaping"; t++) s = stepOne(s, press.none);
     expect(monk(s).mode).toBe("free");
     expect(monkCell(s).y).toBe(1);
     expect(monkCell(s).x).not.toBe(4);
@@ -146,13 +145,13 @@ describe("monks and holes", () => {
   it("drops the gold it carries on top of the hole when trapped", () => {
     // The monk walks over gold at (6, 1) on its way to the hole at (4, 2).
     const rows = ["........", "...P..$M", "########", "########"];
-    let s = step(stateFrom(rows), digRight);
-    for (let t = 0; t < 30 && monk(s).carry === 0; t++) s = step(s, press.none);
+    let s = stepOne(stateFrom(rows), digRight);
+    for (let t = 0; t < 30 && monk(s).carry === 0; t++) s = stepOne(s, press.none);
     expect(monk(s).carry).toBeGreaterThanOrEqual(MONK_CARRY.min);
     expect(monk(s).carry).toBeLessThan(MONK_CARRY.min + MONK_CARRY.spread);
     expect(s.tiles[1]?.charAt(6)).toBe(TILE.empty);
     expect(s.goldLeft).toBe(1);
-    for (let t = 0; t < 400 && monk(s).mode !== "trapped"; t++) s = step(s, press.none);
+    for (let t = 0; t < 400 && monk(s).mode !== "trapped"; t++) s = stepOne(s, press.none);
     expect(monk(s).mode).toBe("trapped");
     expect(monk(s).carry).toBe(-2);
     expect(s.tiles[1]?.charAt(4)).toBe(TILE.gold);
@@ -162,11 +161,11 @@ describe("monks and holes", () => {
   // while climbing out through it.
   it("leaves the dropped gold behind when it climbs out", () => {
     const rows = ["........", "...P..$M", "########", "########"];
-    let s = step(stateFrom(rows), digRight);
-    for (let t = 0; t < 400 && monk(s).mode !== "trapped"; t++) s = step(s, press.none);
+    let s = stepOne(stateFrom(rows), digRight);
+    for (let t = 0; t < 400 && monk(s).mode !== "trapped"; t++) s = stepOne(s, press.none);
     // Keep the runner out of reach so the monk climbs out and walks away.
-    s = { ...s, runner: { ...s.runner, x: 0, y: 0 } };
-    for (let t = 0; t < 400 && monk(s).mode !== "free"; t++) s = step(s, press.none);
+    s = withPlayer(s, { x: 0, y: 0 });
+    for (let t = 0; t < 400 && monk(s).mode !== "free"; t++) s = stepOne(s, press.none);
     expect(monk(s).mode).toBe("free");
     s = run(s, press.none, 30);
     expect(s.tiles[1]?.charAt(4)).toBe(TILE.gold);
@@ -187,8 +186,7 @@ describe("monks and holes", () => {
     };
     const blocker: Monk = { ...monk(base), x: 3 * SUB + 3, y: SUB, mode: "trapped", timer: 10_000 };
     let s: GameState = {
-      ...base,
-      runner: { ...base.runner, x: 7 * SUB, y: SUB },
+      ...withPlayer(base, { x: 7 * SUB, y: SUB }),
       holes: [{ cx: 2, cy: 2, age: 100 }],
       monks: [escaping, blocker],
     };
@@ -231,24 +229,24 @@ describe("monks and holes", () => {
     expect(s.status).toBe("playing");
     s = run(s, press.none, MONK_TICKS.respawn - 1);
     expect(monk(s).mode).toBe("dead");
-    s = step(s, press.none);
+    s = stepOne(s, press.none);
     expect(monk(s).mode).toBe("free");
     expect(monkCell(s).y).toBe(1);
   });
 
   it("respawn: second row from a PRNG column, skipping taken cells, wrapping, then lower", () => {
     const s = stateFrom(["........", "P.......", "........", "########"]);
-    const a = respawnCell(s, s.runner, 7);
-    const b = respawnCell(s, s.runner, 7);
+    const a = respawnCell(s, s.players, 7);
+    const b = respawnCell(s, s.players, 7);
     expect(a).toEqual(b);
     expect(a.cell?.cy).toBe(1);
     // A full second row sends it to the third.
     const full = { ...s, tiles: ["........", "########", "........", "########"] };
-    expect(respawnCell(full, full.runner, 7).cell?.cy).toBe(2);
+    expect(respawnCell(full, full.players, 7).cell?.cy).toBe(2);
     // The runner's cell is never chosen.
     const one = { ...s, tiles: ["........", "P#######".replace("P", "."), "########", "########"] };
     const runnerThere = atCell(one, 0, 1);
-    expect(respawnCell(runnerThere, runnerThere.runner, 3).cell).toBeNull();
+    expect(respawnCell(runnerThere, runnerThere.players, 3).cell).toBeNull();
   });
 });
 
@@ -259,7 +257,7 @@ describe("monks and gold", () => {
     // First arrival in a new cell: 2 -> 1. Second: drops the gold there.
     let drops = 0;
     for (let t = 0; t < 80 && drops === 0; t++) {
-      s = step(s, press.none);
+      s = stepOne(s, press.none);
       drops = s.tiles[0]?.split("").filter((c) => c === TILE.gold).length ?? 0;
     }
     expect(drops).toBe(1);
@@ -270,13 +268,13 @@ describe("monks and gold", () => {
   it("after dropping, waits one cell before picking gold up again", () => {
     let s = stateFrom(["P..............M", "################"]);
     s = { ...s, monks: [{ ...monk(s), carry: -1 }] };
-    for (let t = 0; t < 40 && monk(s).carry !== 0; t++) s = step(s, press.none);
+    for (let t = 0; t < 40 && monk(s).carry !== 0; t++) s = stepOne(s, press.none);
     expect(monk(s).carry).toBe(0);
   });
 
   it("gold carried by a monk still counts as gold left (the exit stays locked)", () => {
     let s = stateFrom(["P....$.M", "########"]);
-    for (let t = 0; t < 60 && monk(s).carry === 0; t++) s = step(s, press.none);
+    for (let t = 0; t < 60 && monk(s).carry === 0; t++) s = stepOne(s, press.none);
     expect(monk(s).carry).toBeGreaterThan(0);
     expect(s.goldLeft).toBe(1);
   });

@@ -2,11 +2,11 @@
   "about": "A monk takes gold, falls in a hole, drops the gold, dies when it refills, respawns at a PRNG column, takes the gold again and catches the runner.",
   "replay": {
     "format": "return-of-the-runners/replay",
-    "version": 1,
+    "version": 2,
     "seed": 7,
     "level": {
       "format": "return-of-the-runners/level",
-      "version": 1,
+      "version": 2,
       "name": "Monk trap",
       "width": 14,
       "height": 8,
@@ -22,13 +22,21 @@
       ]
     },
     "inputs": [
-      [1, ">"],
-      [581, ""]
+      [
+        [
+          1,
+          ">"
+        ],
+        [
+          581,
+          ""
+        ]
+      ]
     ]
   },
   "expected": {
     "tick": 582,
     "status": "dead",
-    "hash": 1612444902
+    "hash": 388467490
   }
 }

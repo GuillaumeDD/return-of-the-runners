@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { TILE } from "../../src/level/format";
-import { PLAY_SEED, createSession } from "../../src/game/session";
-import { createState } from "../../src/sim/state";
-import { hashState } from "../../src/sim/hash";
+import { maxPlayers } from "../../src/sim/state";
 import { newEditor, paint, rename, type EditorState } from "../../src/editor/model";
 import { startTest, testErrors } from "../../src/editor/test-play";
 
@@ -15,16 +13,15 @@ const valid = (): EditorState => {
 };
 
 describe("startTest", () => {
-  it("a valid level starts a session whose start state is createState(level, seed)", () => {
+  it("a valid level gives the level to play, with the editor's grid", () => {
     const r = startTest(valid());
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.level.grid).toEqual(valid().grid);
-    expect(r.session).toEqual(createSession(createState(r.level, PLAY_SEED)));
-    expect(hashState(r.session.state)).toBe(hashState(createState(r.level, PLAY_SEED)));
-    // Another seed gives that seed's start.
-    const other = startTest(valid(), 7);
-    if (other.ok) expect(other.session.start).toEqual(createState(other.level, 7));
+    expect(maxPlayers(r.level)).toBe(1);
+    // A player 2 start makes it playable by two.
+    const two = startTest(paint(valid(), 2, 14, TILE.player2Start));
+    expect(two.ok && maxPlayers(two.level)).toBe(2);
   });
 
   it("an invalid level returns its error codes, each once, and starts nothing", () => {

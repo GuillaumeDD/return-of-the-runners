@@ -1,7 +1,7 @@
 import { TILE, type Level } from "../level/format";
 import { countGold } from "./gold";
 import type { Hole } from "./holes";
-import { SUB } from "./rules";
+import { START_LIVES, SUB } from "./rules";
 
 export type Facing = -1 | 1;
 
@@ -35,7 +35,32 @@ export interface Monk extends Actor {
   readonly holeY: number;
 }
 
+/**
+ * What a player is doing. `alive`: in play. `dead`: caught or buried, waiting `timer`
+ * ticks to reappear at its start (two-player games only). `out`: no life left.
+ */
+export type PlayerMode = "alive" | "dead" | "out";
+
+export interface Player extends Actor {
+  readonly mode: PlayerMode;
+  readonly timer: number;
+  /** Lives left, this one included: a death takes one, and at 0 the player is out. */
+  readonly lives: number;
+  /** Gold this player has collected (its own count, as in TLR's status bar). */
+  readonly gold: number;
+  /** Where the player starts and reappears, in sub-units. */
+  readonly startX: number;
+  readonly startY: number;
+}
+
+/**
+ * `dead`: the level is lost (in a one-player game, the player died; with two, both are
+ * out). `won`: a player reached the open exit.
+ */
 export type Status = "playing" | "dead" | "won";
+
+/** One or two players: `P` is player 1, `Q` player 2. */
+export type PlayerCount = 1 | 2;
 
 /**
  * The whole game state: plain data only (no classes, no functions), so it can be
@@ -51,11 +76,12 @@ export interface GameState {
    * gold is removed.
    */
   readonly tiles: readonly string[];
-  /** Gold not yet collected by the runner. The exit opens when it reaches 0. */
+  /** Gold not yet collected by a player. The exit opens when it reaches 0. */
   readonly goldLeft: number;
   /** Holes being dug or open, ordered by creation (deterministic). */
   readonly holes: readonly Hole[];
-  readonly runner: Actor;
+  /** Player 1, then player 2 in a two-player game; this order is the update order. */
+  readonly players: readonly Player[];
   /** Monks in level reading order (row by row); this order is the update order. */
   readonly monks: readonly Monk[];
   readonly status: Status;
@@ -75,11 +101,48 @@ export function newMonk(cx: number, cy: number): Monk {
   };
 }
 
-export function createState(level: Level, seed: number): GameState {
-  const runnerRow = level.grid.findIndex((row) => row.includes(TILE.runnerStart));
-  const runnerCol = runnerRow >= 0 ? (level.grid[runnerRow] ?? "").indexOf(TILE.runnerStart) : -1;
-  if (runnerRow < 0 || runnerCol < 0) {
+function findTile(level: Level, tile: string): { cx: number; cy: number } | null {
+  for (let cy = 0; cy < level.grid.length; cy++) {
+    const cx = (level.grid[cy] ?? "").indexOf(tile);
+    if (cx >= 0) return { cx, cy };
+  }
+  return null;
+}
+
+/** How many players can play a level: two when it has a player 2 start. */
+export function maxPlayers(level: Level): PlayerCount {
+  return findTile(level, TILE.player2Start) === null ? 1 : 2;
+}
+
+export function newPlayer(cx: number, cy: number): Player {
+  const x = cx * SUB;
+  const y = cy * SUB;
+  return {
+    x,
+    y,
+    facing: 1,
+    busy: 0,
+    mode: "alive",
+    timer: 0,
+    lives: START_LIVES,
+    gold: 0,
+    startX: x,
+    startY: y,
+  };
+}
+
+/**
+ * The state at the start of a level. With `players` = 1, a player 2 start is ignored
+ * (an empty cell); 2 needs one.
+ */
+export function createState(level: Level, seed: number, players: PlayerCount = 1): GameState {
+  const p1 = findTile(level, TILE.runnerStart);
+  if (p1 === null) {
     throw new Error("createState: level has no runner start (validate it first)");
+  }
+  const p2 = players === 2 ? findTile(level, TILE.player2Start) : null;
+  if (players === 2 && p2 === null) {
+    throw new Error("createState: two players need a player 2 start");
   }
   const monks: Monk[] = [];
   level.grid.forEach((row, cy) => {
@@ -87,8 +150,7 @@ export function createState(level: Level, seed: number): GameState {
       if (row.charAt(cx) === TILE.monkStart) monks.push(newMonk(cx, cy));
     }
   });
-  // Start markers are not terrain: the cells they mark are empty. Player 2 joins with
-  // B-020; until then its start is just an empty cell.
+  // Start markers are not terrain: the cells they mark are empty.
   const tiles = level.grid.map((row) =>
     row
       .replaceAll(TILE.runnerStart, TILE.empty)
@@ -103,7 +165,8 @@ export function createState(level: Level, seed: number): GameState {
     tiles,
     goldLeft: countGold(tiles),
     holes: [],
-    runner: { x: runnerCol * SUB, y: runnerRow * SUB, facing: 1, busy: 0 },
+    players:
+      p2 === null ? [newPlayer(p1.cx, p1.cy)] : [newPlayer(p1.cx, p1.cy), newPlayer(p2.cx, p2.cy)],
     monks,
     status: "playing",
   };

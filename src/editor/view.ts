@@ -79,10 +79,14 @@ export function createEditorView(els: EditorElements, options: EditorOptions): E
     swatch.width = size.width;
     swatch.height = size.height;
     renderGrid(context2d(swatch), [tile]);
-    const key = document.createElement("kbd");
-    key.textContent = String(i + 1);
     const label = document.createElement("span");
-    button.append(swatch, label, key);
+    button.append(swatch, label);
+    if (i < 10) {
+      // Keys 1–9, then 0 for the tenth entry.
+      const key = document.createElement("kbd");
+      key.textContent = String((i + 1) % 10);
+      button.append(key);
+    }
     button.addEventListener("click", () => {
       update(selectTile(editor, tile));
     });

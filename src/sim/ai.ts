@@ -9,6 +9,8 @@ import { monkAt, type Terrain } from "./physics";
  * It works on whole cells and on the level's static tiles: holes count as the brick they
  * were dug in, so monks walk into them, as in the original.
  *
+ * The runner is the player the monk chases (the nearest one, see `targetOf`).
+ *
  * 1. If the runner is on the monk's row and the floor between them is walkable, go
  *    straight at the runner.
  * 2. Otherwise scan the monk's floor, left and right up to a wall or an edge. From each
@@ -24,7 +26,7 @@ export interface ChaseView {
   readonly cx: number;
   readonly cy: number;
   readonly x: number;
-  /** The runner's cell and x position, and whether it is falling. */
+  /** The chased player's cell and x position, and whether it is falling. */
   readonly rx: number;
   readonly ry: number;
   readonly runnerX: number;

@@ -80,6 +80,18 @@ describe("paint and erase", () => {
     expect(count(undo(s), TILE.runnerStart)).toBe(1);
     expect(at(undo(s), 2, 2)).toBe(TILE.runnerStart);
   });
+
+  it("placing a player 2 start where one exists moves it too; P and Q replace each other", () => {
+    let s = paint(newEditor("t"), 2, 2, TILE.player2Start);
+    s = paint(s, 9, 5, TILE.player2Start);
+    expect(count(s, TILE.player2Start)).toBe(1);
+    expect(at(s, 9, 5)).toBe(TILE.player2Start);
+    expect(at(s, 2, 2)).toBe(TILE.empty);
+    // Painting P over Q leaves no Q.
+    s = paint(s, 9, 5, TILE.runnerStart);
+    expect(count(s, TILE.player2Start)).toBe(0);
+    expect(count(s, TILE.runnerStart)).toBe(1);
+  });
 });
 
 describe("lines", () => {

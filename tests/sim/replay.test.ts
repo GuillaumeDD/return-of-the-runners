@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { NO_INPUT, type PlayerInput } from "../../src/sim/input";
 import {
+  type InputLog,
   REPLAY_FORMAT_ID,
   REPLAY_LIMITS,
   decodeInputs,
@@ -21,10 +22,13 @@ const fixtures = replayFixtures();
 describe("committed replays (Node)", () => {
   it("there are replays to check", () => {
     expect(fixtures.map((f) => f.name)).toEqual([
+      "coop-monks",
       "first-steps-random",
       "monk-trap-respawn",
       "win-gold-and-exit",
     ]);
+    // At least one replay has two players.
+    expect(fixtures.some((f) => f.replay.inputs.length === 2)).toBe(true);
   });
 
   // If one of these changes, gameplay changed: update the fixture only together with
@@ -43,12 +47,7 @@ describe("committed replays (Node)", () => {
   it("each replay ends on the tick the game ends (no padding after it)", () => {
     for (const f of fixtures) {
       if (f.expected.status === "playing") continue;
-      const last = f.replay.inputs.at(-1);
-      if (last === undefined) throw new Error(f.name);
-      const shorter = [
-        ...f.replay.inputs.slice(0, -1),
-        ...(last[0] > 1 ? [[last[0] - 1, last[1]] as const] : []),
-      ];
+      const shorter = f.replay.inputs.map(dropLastTick);
       expect(runReplay({ ...f.replay, inputs: shorter }).state.status, f.name).toBe("playing");
     }
   });
@@ -62,6 +61,13 @@ describe("committed replays (Node)", () => {
     }
   });
 });
+
+/** The log without its last tick. */
+function dropLastTick(log: InputLog): InputLog {
+  const last = log.at(-1);
+  if (last === undefined) return log;
+  return [...log.slice(0, -1), ...(last[0] > 1 ? [[last[0] - 1, last[1]] as const] : [])];
+}
 
 const ALL_INPUTS: PlayerInput[] = Array.from({ length: 64 }, (_, bits) => ({
   left: (bits & 1) !== 0,
@@ -77,7 +83,7 @@ describe("runReplay", () => {
   it("an empty input log gives one checkpoint: the hash of the initial state", () => {
     const f = fixtures[0];
     if (f === undefined) throw new Error("no fixture");
-    const { state, checkpoints } = runReplay({ ...f.replay, inputs: [] });
+    const { state, checkpoints } = runReplay({ ...f.replay, inputs: [[]] });
     expect(state.tick).toBe(0);
     expect(checkpoints).toEqual([hashState(createState(f.replay.level, f.replay.seed))]);
   });
@@ -85,8 +91,28 @@ describe("runReplay", () => {
   it("hashes every 60th tick, plus the last tick when it is not one", () => {
     const f = fixtures[0];
     if (f === undefined) throw new Error("no fixture");
-    expect(runReplay({ ...f.replay, inputs: [[120, ""]] }).checkpoints).toHaveLength(2);
-    expect(runReplay({ ...f.replay, inputs: [[121, ""]] }).checkpoints).toHaveLength(3);
+    expect(runReplay({ ...f.replay, inputs: [[[120, ""]]] }).checkpoints).toHaveLength(2);
+    expect(runReplay({ ...f.replay, inputs: [[[121, ""]]] }).checkpoints).toHaveLength(3);
+  });
+
+  it("feeds each log to its own player", () => {
+    const level = {
+      version: 2 as const,
+      name: "t",
+      width: 8,
+      height: 2,
+      grid: ["P..$..Q.", "########"],
+      teleports: [],
+    };
+    const { state } = runReplay({ level, seed: 1, inputs: [[[16, "R"]], [[16, "L"]]] });
+    expect(state.players.map((p) => p.x)).toEqual([8, 5 * 8]);
+  });
+
+  it("refuses zero or three logs", () => {
+    const f = fixtures[0];
+    if (f === undefined) throw new Error("no fixture");
+    expect(() => runReplay({ ...f.replay, inputs: [] })).toThrow();
+    expect(() => runReplay({ ...f.replay, inputs: [[], [], []] })).toThrow();
   });
 });
 
@@ -125,11 +151,11 @@ describe("parseReplay", () => {
   const base = JSON.parse(
     JSON.stringify({
       format: REPLAY_FORMAT_ID,
-      version: 1,
+      version: 2,
       seed: 1,
       level: {
         format: "return-of-the-runners/level",
-        version: 1,
+        version: 2,
         name: "t",
         width: 8,
         height: 8,
@@ -140,24 +166,40 @@ describe("parseReplay", () => {
           "........",
           "........",
           "........",
-          "P..$..E.",
+          "P..$..EQ",
           "########",
         ],
       },
       inputs: [
-        [10, "R"],
-        [1, ">"],
+        [
+          [10, "R"],
+          [1, ">"],
+        ],
       ],
     }),
   ) as Record<string, unknown>;
   const text = (patch: Record<string, unknown>): string => JSON.stringify({ ...base, ...patch });
 
-  it("accepts a valid replay", () => {
+  it("accepts a valid replay, with one or two logs", () => {
     const ok = parseReplay(text({}));
     expect(ok.ok && ok.replay.inputs).toEqual([
-      [10, "R"],
-      [1, ">"],
+      [
+        [10, "R"],
+        [1, ">"],
+      ],
     ]);
+    const two = parseReplay(
+      text({
+        inputs: [
+          [[11, "R"]],
+          [
+            [5, "L"],
+            [6, ""],
+          ],
+        ],
+      }),
+    );
+    expect(two.ok && two.replay.inputs).toHaveLength(2);
   });
 
   it("rejects malformed documents, each with a reason", () => {
@@ -165,8 +207,9 @@ describe("parseReplay", () => {
       ["not json", "{"],
       ["array", "[]"],
       ["wrong format", text({ format: "other" })],
-      ["unknown version", text({ version: 2 })],
-      ["version as string", text({ version: "1" })],
+      ["unknown version", text({ version: 3 })],
+      ["version 1 (a single log)", text({ version: 1, inputs: [[10, "R"]] })],
+      ["version as string", text({ version: "2" })],
       ["unknown field", text({ extra: true })],
       ["negative seed", text({ seed: -1 })],
       ["seed too big", text({ seed: 2 ** 32 })],
@@ -174,23 +217,58 @@ describe("parseReplay", () => {
       ["invalid level", text({ level: { ...(base.level as object), grid: [] } })],
       ["no level", text({ level: undefined })],
       ["inputs not array", text({ inputs: "R" })],
-      ["run not a pair", text({ inputs: [[1]] })],
-      ["zero ticks", text({ inputs: [[0, ""]] })],
-      ["fractional ticks", text({ inputs: [[1.5, ""]] })],
-      ["bad keys", text({ inputs: [[1, "RL"]] })],
-      ["too long", text({ inputs: [[REPLAY_LIMITS.maxTicks + 1, ""]] })],
+      ["no log", text({ inputs: [] })],
+      ["three logs", text({ inputs: [[[1, ""]], [[1, ""]], [[1, ""]]] })],
+      ["log not array", text({ inputs: ["R"] })],
+      ["v1-style log", text({ inputs: [[1, "R"]] })],
+      ["run not a pair", text({ inputs: [[[1]]] })],
+      ["zero ticks", text({ inputs: [[[0, ""]]] })],
+      ["fractional ticks", text({ inputs: [[[1.5, ""]]] })],
+      ["bad keys", text({ inputs: [[[1, "RL"]]] })],
+      ["too long", text({ inputs: [[[REPLAY_LIMITS.maxTicks + 1, ""]]] })],
       [
         "too long in total",
         text({
           inputs: [
-            [REPLAY_LIMITS.maxTicks, ""],
-            [1, ""],
+            [
+              [REPLAY_LIMITS.maxTicks, ""],
+              [1, ""],
+            ],
           ],
         }),
       ],
       [
         "too many runs",
-        text({ inputs: Array.from({ length: REPLAY_LIMITS.maxRuns + 1 }, () => [1, ""]) }),
+        text({ inputs: [Array.from({ length: REPLAY_LIMITS.maxRuns + 1 }, () => [1, ""])] }),
+      ],
+      [
+        "too many runs over two logs",
+        text({
+          inputs: [
+            Array.from({ length: REPLAY_LIMITS.maxRuns / 2 + 1 }, () => [1, ""]),
+            Array.from({ length: REPLAY_LIMITS.maxRuns / 2 }, () => [1, ""]).concat([[1, ""]]),
+          ],
+        }),
+      ],
+      ["logs of different lengths", text({ inputs: [[[11, "R"]], [[10, "L"]]] })],
+      [
+        "two logs on a level without a player 2 start",
+        text({
+          level: {
+            ...(base.level as object),
+            grid: [
+              "........",
+              "........",
+              "........",
+              "........",
+              "........",
+              "........",
+              "P..$..E.",
+              "########",
+            ],
+          },
+          inputs: [[[1, ""]], [[1, ""]]],
+        }),
       ],
       ["too large", " ".repeat(REPLAY_LIMITS.maxInputLength + 1)],
     ];
@@ -220,7 +298,7 @@ describe("parseReplay", () => {
       }
       const r = parseReplay(s);
       // Whatever is accepted can be run.
-      if (r.ok) expect(() => decodeInputs(r.replay.inputs)).not.toThrow();
+      if (r.ok) expect(() => r.replay.inputs.map(decodeInputs)).not.toThrow();
     }
   });
 });

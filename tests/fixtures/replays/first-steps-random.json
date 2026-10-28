@@ -2,11 +2,11 @@
   "about": "Seeded random input on the bundled level: digging, a trapped monk dying, gold, then caught.",
   "replay": {
     "format": "return-of-the-runners/replay",
-    "version": 1,
+    "version": 2,
     "seed": 15,
     "level": {
       "format": "return-of-the-runners/level",
-      "version": 1,
+      "version": 2,
       "name": "First steps",
       "width": 28,
       "height": 16,
@@ -30,27 +30,77 @@
       ]
     },
     "inputs": [
-      [107, "R"],
-      [121, "LU"],
-      [1, ">"],
-      [52, "RD"],
-      [1, "<"],
-      [1, ">"],
-      [1, ">"],
-      [51, "L"],
-      [123, "LU"],
-      [1, "<"],
-      [1, "<"],
-      [19, ""],
-      [124, "R"],
-      [48, "LU"],
-      [89, "L"],
-      [49, "R"]
+      [
+        [
+          107,
+          "R"
+        ],
+        [
+          121,
+          "LU"
+        ],
+        [
+          1,
+          ">"
+        ],
+        [
+          52,
+          "RD"
+        ],
+        [
+          1,
+          "<"
+        ],
+        [
+          1,
+          ">"
+        ],
+        [
+          1,
+          ">"
+        ],
+        [
+          51,
+          "L"
+        ],
+        [
+          123,
+          "LU"
+        ],
+        [
+          1,
+          "<"
+        ],
+        [
+          1,
+          "<"
+        ],
+        [
+          19,
+          ""
+        ],
+        [
+          124,
+          "R"
+        ],
+        [
+          48,
+          "LU"
+        ],
+        [
+          89,
+          "L"
+        ],
+        [
+          49,
+          "R"
+        ]
+      ]
     ]
   },
   "expected": {
     "tick": 789,
     "status": "dead",
-    "hash": 1780159328
+    "hash": 2533992117
   }
 }

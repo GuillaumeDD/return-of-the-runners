@@ -3,8 +3,17 @@ import { TILE } from "../../src/level/format";
 import { centerCell, countGold, takeGold } from "../../src/sim/gold";
 import { HOLE_LIFETIME } from "../../src/sim/holes";
 import { SUB } from "../../src/sim/rules";
-import { step } from "../../src/sim/step";
-import { atCell, cell, placeRunner, press, run, stateFrom } from "./helpers";
+import {
+  atCell,
+  cell,
+  p1,
+  placeRunner,
+  press,
+  run,
+  stateFrom,
+  stepOne,
+  withPlayer,
+} from "./helpers";
 
 describe("gold", () => {
   it("counts the level's gold at the start", () => {
@@ -22,9 +31,9 @@ describe("gold", () => {
   it("gold is collected once the runner's centre enters its cell", () => {
     const s = stateFrom(["P$.....E", "########"]);
     // Centre still in cell 0 at offset SUB / 2 - 1, in cell 1 at offset SUB / 2.
-    expect(step(placeRunner(s, SUB / 2 - 2, 0), press.right).goldLeft).toBe(1);
-    expect(step(placeRunner(s, SUB / 2 - 1, 0), press.none).goldLeft).toBe(1);
-    expect(step(placeRunner(s, SUB / 2, 0), press.none).goldLeft).toBe(0);
+    expect(stepOne(placeRunner(s, SUB / 2 - 2, 0), press.right).goldLeft).toBe(1);
+    expect(stepOne(placeRunner(s, SUB / 2 - 1, 0), press.none).goldLeft).toBe(1);
+    expect(stepOne(placeRunner(s, SUB / 2, 0), press.none).goldLeft).toBe(0);
   });
 
   it("gold is collected while falling through it", () => {
@@ -80,7 +89,7 @@ describe("exit", () => {
     expect(s.status).toBe("playing");
     s = run(s, press.right, 50);
     expect(s.status).toBe("won");
-    expect(centerCell(s.runner)).toEqual({ cx: 5, cy: 0 });
+    expect(centerCell(p1(s))).toEqual({ cx: 5, cy: 0 });
   });
 
   it("a locked exit passed earlier opens once the last gold is taken", () => {
@@ -106,15 +115,14 @@ describe("exit", () => {
     // make the next tick (2) a walking tick.
     const base = stateFrom(["P.......", "#.E#####", "########"]);
     const s = {
-      ...base,
+      ...withPlayer(base, { x: SUB + SUB / 2 - 1, y: SUB }),
       tick: 1,
       goldLeft: 0,
-      runner: { ...base.runner, x: SUB + SUB / 2 - 1, y: SUB },
       holes: [{ cx: 1, cy: 1, age: HOLE_LIFETIME - 1 }],
     };
-    const next = step(s, press.right);
+    const next = stepOne(s, press.right);
     expect(next.holes).toEqual([]);
-    expect(next.runner.x).toBe(SUB + SUB / 2);
+    expect(p1(next).x).toBe(SUB + SUB / 2);
     expect(next.status).toBe("won");
   });
 });
