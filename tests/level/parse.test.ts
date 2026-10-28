@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { LIMITS } from "../../src/level/format";
+import { LIMITS, TILE, TILE_CHARS, TILE_CHARS_V1 } from "../../src/level/format";
 import { parseLevel } from "../../src/level/parse";
-import { loadFixtures } from "./fixtures";
+import { FIXTURE_VERSIONS, loadFixtures } from "./fixtures";
 import { expectLevelInvariants } from "./invariants";
 
 const validFixtures = loadFixtures("valid");
 const invalidFixtures = loadFixtures("invalid");
-const minimal = validFixtures.find((f) => f.file === "minimal-8x8.json");
-if (!minimal) throw new Error("missing minimal-8x8.json fixture");
+const minimal = validFixtures.find((f) => f.file === "v2/minimal-8x8.json");
+if (!minimal) throw new Error("missing v2/minimal-8x8.json fixture");
 
 function codes(text: string): string[] {
   const result = parseLevel(text);
@@ -28,6 +28,7 @@ describe("parseLevel: valid fixtures", () => {
       "grid",
       "height",
       "name",
+      "teleports",
       "version",
       "width",
     ]);
@@ -42,8 +43,17 @@ describe("parseLevel: invalid fixtures", () => {
     },
   );
 
-  it("has an invalid fixture for every content error code", () => {
-    const covered = new Set(invalidFixtures.map((f) => f.expectedCode));
+  it.each(FIXTURE_VERSIONS)("has a %s invalid fixture for every content error code", (v) => {
+    const covered = new Set(loadFixtures("invalid", v).map((f) => f.expectedCode));
+    const v2Only = [
+      "player2-count",
+      "invalid-teleports",
+      "teleport-out-of-grid",
+      "teleport-not-entrance",
+      "teleport-not-exit",
+      "teleport-duplicate",
+      "teleport-unlinked",
+    ];
     for (const code of [
       "not-json",
       "not-object",
@@ -61,6 +71,7 @@ describe("parseLevel: invalid fixtures", () => {
       "no-gold",
       "no-exit",
       "too-many-monks",
+      ...(v === "v2" ? v2Only : []),
     ]) {
       expect(covered, code).toContain(code);
     }
@@ -91,9 +102,9 @@ describe("parseLevel: limits and robustness", () => {
   });
 
   it("does not let __proto__ pollute Object.prototype", () => {
-    const polluted = invalidFixtures.find((f) => f.file === "unknown-field--proto.json");
-    if (!polluted) throw new Error("missing fixture");
-    parseLevel(polluted.text);
+    const polluted = invalidFixtures.filter((f) => f.file.endsWith("/unknown-field--proto.json"));
+    expect(polluted).toHaveLength(FIXTURE_VERSIONS.length);
+    for (const f of polluted) parseLevel(f.text);
     expect(({} as Record<string, unknown>).polluted).toBeUndefined();
   });
 
@@ -150,5 +161,95 @@ describe("parseLevel: drafts (gameRules: false)", () => {
     expect(codes([...empty.slice(1), "...x...."])).toEqual(["unknown-tile"]);
     expect(codes(empty.slice(1))).toEqual(["row-count"]);
     expect(codes([...empty.slice(1), "..."])).toEqual(["row-length"]);
+  });
+});
+
+describe("parseLevel: version 2", () => {
+  const doc = (row5: string, extra: Record<string, unknown> = {}): string =>
+    JSON.stringify({
+      format: "return-of-the-runners/level",
+      version: 2,
+      name: "V2",
+      width: 8,
+      height: 8,
+      grid: [...Array<string>(5).fill("........"), row5, ".P...E$.", "########"],
+      ...extra,
+    });
+
+  it("has 30 tiles, each a distinct single ASCII character, v1's among them", () => {
+    expect(TILE_CHARS.size).toBe(Object.keys(TILE).length);
+    expect(TILE_CHARS.size).toBe(30);
+    for (const c of TILE_CHARS) expect(c).toMatch(/^[\x21-\x7e]$/);
+    for (const c of TILE_CHARS_V1) expect(TILE_CHARS.has(c)).toBe(true);
+  });
+
+  it.each([...TILE_CHARS].filter((c) => !TILE_CHARS_V1.has(c) && c !== TILE.teleportEntrance))(
+    "accepts the new tile %s",
+    (c) => {
+      expect(codes(doc(`${c}.......`))).toEqual([]);
+    },
+  );
+
+  it("accepts a linked teleporter entrance, and an exit with no entrance", () => {
+    const r = parseLevel(doc(".T....t.", { teleports: [[1, 5, 6, 5]] }));
+    expect(r.ok && r.level.teleports).toEqual([[1, 5, 6, 5]]);
+    expect(codes(doc("......t."))).toEqual([]);
+  });
+
+  it("lets several entrances lead to one exit", () => {
+    const links = [
+      [1, 5, 6, 5],
+      [3, 5, 6, 5],
+    ];
+    expect(codes(doc(".T.T..t.", { teleports: links }))).toEqual([]);
+  });
+
+  it("gives an unknown character its code, and a teleports field no level", () => {
+    expect(codes(doc("x......."))).toEqual(["unknown-tile"]);
+    expect(codes(doc(".T....t.", { teleports: "1,5,6,5" }))).toEqual(["invalid-teleports"]);
+  });
+
+  it("reports each teleporter problem once, all problems together", () => {
+    const links = [
+      [2, 5, 7, 5],
+      [3, 5, 7, 5],
+      [1, 5, 7, 5],
+      [1, 5, 6, 5],
+      [9, 9, 6, 5],
+    ];
+    expect(codes(doc(".T.T..t.", { teleports: links })).sort()).toEqual(
+      [
+        "teleport-duplicate",
+        "teleport-not-entrance",
+        "teleport-not-exit",
+        "teleport-out-of-grid",
+      ].sort(),
+    );
+  });
+
+  it("does not check links against a broken grid (its errors are enough)", () => {
+    const broken = JSON.parse(doc(".T....t.", { teleports: [[1, 5, 6, 5]] })) as {
+      grid: string[];
+    };
+    broken.grid.pop();
+    expect(codes(JSON.stringify(broken))).toEqual(["row-count"]);
+  });
+
+  it("checks links and the player 2 count as game rules, not for drafts", () => {
+    const draft = (text: string): boolean => parseLevel(text, { gameRules: false }).ok;
+    expect(draft(doc(".T....tT", { teleports: [[9, 9, 0, 0]] }))).toBe(true);
+    expect(draft(doc(".Q....Q."))).toBe(true);
+    expect(draft(doc("........", { teleports: [[1]] }))).toBe(false);
+  });
+
+  it("reads a v1 document as its v2 migration, and refuses v2 content in it", () => {
+    const v1 = JSON.parse(doc("........")) as Record<string, unknown>;
+    v1.version = 1;
+    const r = parseLevel(JSON.stringify(v1));
+    expect(r.ok && r.level.version).toBe(2);
+    expect(r.ok && r.level.teleports).toEqual([]);
+    const withQ = { ...v1, grid: [...(v1.grid as string[]).slice(0, 7), "Q#######"] };
+    expect(codes(JSON.stringify(withQ))).toEqual(["unknown-tile"]);
+    expect(codes(JSON.stringify({ ...v1, teleports: [] }))).toEqual(["unknown-field"]);
   });
 });

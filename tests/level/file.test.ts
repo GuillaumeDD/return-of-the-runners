@@ -38,11 +38,41 @@ describe("export then import", () => {
     }
   });
 
-  it("is the v1 document, one grid row per line, with a final newline", () => {
+  it("a v1 file imports as the level's v2 migration, and exports as v2", async () => {
+    for (const f of loadFixtures("valid", "v1")) {
+      const back = await importLevel(file(f.text));
+      expect(back.ok && back.level, f.file).toEqual(parsed(f.text));
+      if (back.ok) {
+        const doc = JSON.parse(exportLevel(back.level).text) as Record<string, unknown>;
+        expect(doc.version).toBe(2);
+      }
+    }
+  });
+
+  it("writes teleporter links one per line, after the grid", () => {
+    const fixture = loadFixtures("valid", "v2").find((f) => f.file === "v2/all-tiles.json");
+    if (!fixture) throw new Error("missing v2/all-tiles.json");
+    const { text } = exportLevel(parsed(fixture.text));
+    expect(text).toContain('  ],\n  "teleports": [\n    [2,3,8,3],\n    [18,3,8,3]\n  ]\n}\n');
+    // The fixture is written in the export layout.
+    expect(text).toBe(fixture.text);
+  });
+
+  it("leaves a name that looks like a link as it is", () => {
+    const fixture = loadFixtures("valid", "v2").find((f) => f.file === "v2/all-tiles.json");
+    if (!fixture) throw new Error("missing v2/all-tiles.json");
+    const level = { ...parsed(fixture.text), name: "[1, 2, 3, 4]" };
+    const back = parsed(exportLevel(level).text);
+    expect(back).toEqual(level);
+  });
+
+  it("is the v2 document, one grid row per line, with a final newline", () => {
     const { text } = exportLevel(parsed(firstSteps));
     expect(text.endsWith("}\n")).toBe(true);
     const doc = JSON.parse(text) as Record<string, unknown>;
+    // No teleporters: no `teleports` field.
     expect(Object.keys(doc)).toEqual(["format", "version", "name", "width", "height", "grid"]);
+    expect(doc.version).toBe(2);
     for (const row of doc.grid as string[]) expect(text).toContain(`    ${JSON.stringify(row)}`);
   });
 });

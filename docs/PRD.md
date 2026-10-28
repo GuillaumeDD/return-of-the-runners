@@ -106,7 +106,7 @@ their own levels.
 | 0    | Repo, TS/Vite skeleton, CI, GitHub Pages deploy                                      | A link that opens         | done              |
 | 1    | Core engine: grid, movement, ladders, bars, falling, digging, gold, monks + AI, exit | First playable level      | done (2026-10-25) |
 | 2    | Editor v1: paint, test, save, export, share by link                                  | We can create levels      | done (2026-10-26) |
-| 3    | TLR specifics: terrain, tools, 2-player co-op and versus                             | The "real" Legend Returns | next              |
+| 3    | TLR specifics: terrain, tools, 2-player co-op and versus                             | The "real" Legend Returns | in progress       |
 | 4    | World tile sets, day/night, music, packs, menus, scores, EN/FR                       | Complete game             | later             |
 
 ## 8. Growth

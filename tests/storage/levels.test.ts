@@ -44,7 +44,9 @@ function level(name: string, gold = 1): Level {
     "P" + "$".repeat(gold) + ".".repeat(6 - gold) + "E",
     "@".repeat(8),
   ];
-  const r = parseLevel(JSON.stringify(levelDocument({ name, width: 8, height: 8, grid })));
+  const r = parseLevel(
+    JSON.stringify(levelDocument({ name, width: 8, height: 8, grid, teleports: [] })),
+  );
   if (!r.ok) throw new Error(r.errors.map((e) => e.code).join());
   return r.level;
 }
@@ -76,6 +78,44 @@ describe("save and list", () => {
     expect(names(s)).toEqual(["A2", "B"]);
     expect(listLevels(s).levels[0]?.level.grid[6]).toBe("P$$$...E");
     expect(saveLevel(s, level("X"), 99)).toEqual({ ok: false, problem: "not-found" });
+  });
+});
+
+describe("level format versions", () => {
+  const storedText = (levels: unknown[]): string =>
+    JSON.stringify({ format: STORE_FORMAT_ID, version: 1, nextId: 2, levels });
+
+  it("a v1 stored level opens as its v2 migration, and is written back as v2", () => {
+    const v1 = { ...levelDocument(level("Old")), version: 1 };
+    const s = memory({ [STORAGE_KEY]: storedText([{ id: 1, level: v1 }]) });
+    const opened = getLevel(s, 1);
+    expect(opened?.level).toEqual(draftOf(level("Old")));
+    expect(listLevels(s).problems).toEqual([]);
+    // Any save rewrites the whole document: the old level is now v2.
+    saveLevel(s, level("New"));
+    const doc = JSON.parse(s.data.get(STORAGE_KEY) ?? "") as {
+      levels: { level: { version: number } }[];
+    };
+    expect(doc.levels.map((l) => l.level.version)).toEqual([2, 2]);
+  });
+
+  it("a v2 level round trips byte-identical, teleporter links included", () => {
+    const withLinks = parseLevel(
+      JSON.stringify({
+        ...levelDocument(level("Links")),
+        grid: [".".repeat(8), ".T....t.", ...level("Links").grid.slice(2)],
+        teleports: [[1, 1, 6, 1]],
+      }),
+    );
+    if (!withLinks.ok) throw new Error(withLinks.errors.map((e) => e.code).join());
+    const s = memory();
+    saveLevel(s, withLinks.level);
+    const first = s.data.get(STORAGE_KEY);
+    expect(getLevel(s, 1)?.level.teleports).toEqual([[1, 1, 6, 1]]);
+    const again = getLevel(s, 1);
+    if (!again) throw new Error("not found");
+    saveLevel(s, again.level, 1);
+    expect(s.data.get(STORAGE_KEY)).toBe(first);
   });
 });
 
@@ -185,7 +225,13 @@ describe("untrusted contents", () => {
 describe("drafts", () => {
   it("a level that cannot be played yet (no runner, no gold, no exit) can be saved", () => {
     const s = memory();
-    const draft = { name: "WIP", width: 8, height: 8, grid: Array<string>(8).fill(".".repeat(8)) };
+    const draft = {
+      name: "WIP",
+      width: 8,
+      height: 8,
+      grid: Array<string>(8).fill(".".repeat(8)),
+      teleports: [],
+    };
     expect(saveLevel(s, draft)).toEqual({ ok: true, id: 1 });
     expect(listLevels(s).levels).toEqual([{ id: 1, level: draft }]);
   });

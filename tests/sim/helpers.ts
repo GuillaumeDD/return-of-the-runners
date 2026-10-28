@@ -7,11 +7,12 @@ import { step } from "../../src/sim/step";
 /** Builds a level from rows without validation (tests use tiny, partial levels). */
 export function levelFrom(rows: readonly string[]): Level {
   return {
-    version: 1,
+    version: 2,
     name: "test",
     width: rows[0]?.length ?? 0,
     height: rows.length,
     grid: rows,
+    teleports: [],
   };
 }
 

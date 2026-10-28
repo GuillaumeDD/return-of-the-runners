@@ -7,14 +7,19 @@ export const LEVEL_FILE_EXTENSION = ".rotr.json";
 const MAX_FILE_STEM = 60;
 
 /**
- * The exported file of a level: its exact v1 document, pretty-printed (two spaces, one
- * row per line, a final newline) so it reads well in a text editor and diffs cleanly.
+ * The exported file of a level: its exact v2 document, pretty-printed (two spaces, one
+ * grid row and one teleporter link per line, a final newline) so it reads well in a
+ * text editor and diffs cleanly.
  */
 export function exportLevel(level: Level): { readonly fileName: string; readonly text: string } {
-  return {
-    fileName: fileName(level.name),
-    text: `${JSON.stringify(levelDocument(level), null, 2)}\n`,
-  };
+  // Pretty-printing puts each number of a link on its own line: join them back. Only
+  // links are arrays of numbers, and a raw line break is never inside a JSON string, so
+  // a name that looks like a link is left alone.
+  const text = JSON.stringify(levelDocument(level), null, 2).replace(
+    /\[\n *(-?\d+),\n *(-?\d+),\n *(-?\d+),\n *(-?\d+)\n *\]/g,
+    "[$1,$2,$3,$4]",
+  );
+  return { fileName: fileName(level.name), text: `${text}\n` };
 }
 
 /**

@@ -1,12 +1,14 @@
 /**
- * Level format v1: a human-readable JSON document with a text grid.
- * See docs/ARCHITECTURE.md § Level format.
+ * Level format v2: a human-readable JSON document with a text grid, plus the links of
+ * its teleporters. Version 1 documents are still read (migrated on read, see
+ * `migrate.ts`); only v2 is written. See docs/ARCHITECTURE.md § Level format.
  */
 
 export const LEVEL_FORMAT_ID = "return-of-the-runners/level";
-export const LEVEL_FORMAT_VERSION = 1;
+export const LEVEL_FORMAT_VERSION = 2;
 
-export const TILE = {
+/** The tiles of version 1, the only ones a v1 document may hold. */
+export const TILE_V1 = {
   empty: ".",
   brick: "#",
   bedrock: "@",
@@ -18,9 +20,47 @@ export const TILE = {
   monkStart: "M",
 } as const;
 
+/**
+ * Every tile of version 2. The tiles added in v2 are reserved by the format first
+ * (B-019); each gets its behavior, its drawing and its place in the editor palette in
+ * a later step 3 item. Until then the game does not draw them, and they are neither
+ * solid nor climbable.
+ */
+export const TILE = {
+  ...TILE_V1,
+  player2Start: "Q",
+  trapdoor: "%",
+  gooeyTurf: "~",
+  hiddenLadder: "h",
+  monkRespawn: "R",
+  alcove: "n",
+  teleportEntrance: "T",
+  teleportExit: "t",
+  keyRed: "a",
+  keyGreen: "b",
+  keyBlue: "c",
+  doorRed: "A",
+  doorGreen: "B",
+  doorBlue: "C",
+  jackhammer: "j",
+  pickaxe: "k",
+  smallBomb: "o",
+  bigBomb: "O",
+  snare: "s",
+  gasSpray: "g",
+  gooBucket: "u",
+} as const;
+
 export type TileChar = (typeof TILE)[keyof typeof TILE];
 
 export const TILE_CHARS: ReadonlySet<string> = new Set(Object.values(TILE));
+export const TILE_CHARS_V1: ReadonlySet<string> = new Set(Object.values(TILE_V1));
+
+/**
+ * A one-way teleporter link, `[fromX, fromY, toX, toY]` in cells: from an entrance
+ * (`T`) to an exit (`t`).
+ */
+export type Teleport = readonly [number, number, number, number];
 
 export const LIMITS = {
   /** Raw input size, in UTF-8 bytes. */
@@ -40,6 +80,8 @@ export interface Level {
   readonly height: number;
   /** `height` rows of exactly `width` tile characters, top row first. */
   readonly grid: readonly string[];
+  /** Teleporter links, in document order; empty when the level has none. */
+  readonly teleports: readonly Teleport[];
 }
 
 /**
@@ -53,6 +95,7 @@ export interface LevelDraft {
   readonly width: number;
   readonly height: number;
   readonly grid: readonly string[];
+  readonly teleports: readonly Teleport[];
 }
 
 export type LevelErrorCode =
@@ -73,6 +116,16 @@ export type LevelErrorCode =
   | "no-gold"
   | "no-exit"
   | "too-many-monks"
+  | "player2-count"
+  /** `teleports` is not an array of `[fromX, fromY, toX, toY]` integer links. */
+  | "invalid-teleports"
+  | "teleport-out-of-grid"
+  | "teleport-not-entrance"
+  | "teleport-not-exit"
+  /** An entrance with more than one link. */
+  | "teleport-duplicate"
+  /** An entrance with no link. */
+  | "teleport-unlinked"
   /** Import only: the file could not be read (moved, deleted, no permission). */
   | "unreadable-file"
   /** Share links only: the payload is over its cap, not base64url, or not DEFLATE data. */

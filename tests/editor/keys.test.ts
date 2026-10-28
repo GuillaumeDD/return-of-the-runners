@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { catalog, LOCALES } from "../../src/i18n";
-import { TILE, TILE_CHARS } from "../../src/level/format";
+import { TILE, TILE_CHARS_V1 } from "../../src/level/format";
 import { PALETTE, shortcutFor, tileForKey } from "../../src/editor/keys";
 
 const key = (
@@ -15,9 +15,10 @@ const key = (
 });
 
 describe("palette", () => {
-  it("holds every tile once, and every tile name is translated", () => {
-    expect(new Set(PALETTE.map((p) => p.tile))).toEqual(TILE_CHARS);
-    expect(PALETTE).toHaveLength(TILE_CHARS.size);
+  it("holds every v1 tile once, and every tile name is translated", () => {
+    // The v2 tiles join the palette with their behavior (B-020 to B-028).
+    expect(new Set(PALETTE.map((p) => p.tile))).toEqual(TILE_CHARS_V1);
+    expect(PALETTE).toHaveLength(TILE_CHARS_V1.size);
     for (const locale of LOCALES) {
       for (const { name } of PALETTE) expect(catalog(locale)[name].trim()).not.toBe("");
     }

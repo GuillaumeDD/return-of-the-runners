@@ -87,9 +87,13 @@ export function createState(level: Level, seed: number): GameState {
       if (row.charAt(cx) === TILE.monkStart) monks.push(newMonk(cx, cy));
     }
   });
-  // Start markers are not terrain: the cells they mark are empty.
+  // Start markers are not terrain: the cells they mark are empty. Player 2 joins with
+  // B-020; until then its start is just an empty cell.
   const tiles = level.grid.map((row) =>
-    row.replaceAll(TILE.runnerStart, TILE.empty).replaceAll(TILE.monkStart, TILE.empty),
+    row
+      .replaceAll(TILE.runnerStart, TILE.empty)
+      .replaceAll(TILE.player2Start, TILE.empty)
+      .replaceAll(TILE.monkStart, TILE.empty),
   );
   return {
     tick: 0,
