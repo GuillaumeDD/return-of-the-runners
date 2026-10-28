@@ -1,13 +1,40 @@
 import { translate, type Locale, type MessageKey } from "../i18n";
 import type { Level } from "../level/format";
-import { maxPlayers, type GameState, type PlayerCount } from "../sim/state";
+import { maxPlayers, type GameState } from "../sim/state";
+import { playersAtExit } from "../sim/step";
+import type { PlayMode } from "./session";
 
 /**
- * The player count a level is played with: the count the players picked, when the
- * level allows it (two players need a player 2 start).
+ * The mode a level is played in: the mode the players picked, when the level allows it
+ * (two players need a player 2 start); otherwise alone.
  */
-export function playersFor(level: Level, picked: PlayerCount): PlayerCount {
-  return picked === 2 && maxPlayers(level) === 2 ? 2 : 1;
+export function modeFor(level: Level, picked: PlayMode): PlayMode {
+  return maxPlayers(level) === 2 ? picked : "solo";
+}
+
+/**
+ * The message under a game: the controls while playing, then how the level ended. In
+ * versus, the end names the winner, or says it is a draw when both players reached an
+ * exit on the same tick.
+ */
+export function statusMessage(
+  state: Pick<GameState, "status" | "tiles" | "goldLeft" | "players">,
+  mode: PlayMode,
+): MessageKey {
+  switch (state.status) {
+    case "playing":
+      return mode === "solo" ? "controls" : mode === "coop" ? "controls2" : "controlsVersus";
+    case "dead":
+      return mode === "solo" ? "caught" : "allOut";
+    case "won": {
+      if (mode !== "versus") return "won";
+      const winners = playersAtExit(state);
+      if (winners.length > 1) return "versusDraw";
+      if (winners[0] === 0) return "versusWon1";
+      if (winners[0] === 1) return "versusWon2";
+      return "won"; // not a state `step` makes: a won level names a winner
+    }
+  }
 }
 
 const PLAYER_NAME: readonly MessageKey[] = ["playerName1", "playerName2"];

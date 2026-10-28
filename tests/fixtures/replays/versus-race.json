@@ -1,0 +1,84 @@
+{
+  "about": "Versus race on a mirrored level, as in S-025: each player climbs to the gold on its own side, then comes down to its own exit. Player 2 sets off 20 ticks late, so player 1 gets out first and wins while player 2, its gold taken, is still on its way.",
+  "replay": {
+    "format": "return-of-the-runners/replay",
+    "version": 2,
+    "seed": 7,
+    "level": {
+      "format": "return-of-the-runners/level",
+      "version": 2,
+      "name": "Versus race",
+      "width": 14,
+      "height": 8,
+      "grid": [
+        "..............",
+        "..............",
+        ".$....@@....$.",
+        "####H.@@.H####",
+        "....H.@@.H....",
+        "....H.@@.H....",
+        "P..EH.@@.HE..Q",
+        "@@@@@@@@@@@@@@"
+      ]
+    },
+    "inputs": [
+      [
+        [
+          64,
+          "R"
+        ],
+        [
+          64,
+          "U"
+        ],
+        [
+          48,
+          "L"
+        ],
+        [
+          48,
+          "R"
+        ],
+        [
+          64,
+          "D"
+        ],
+        [
+          10,
+          "L"
+        ]
+      ],
+      [
+        [
+          20,
+          ""
+        ],
+        [
+          64,
+          "L"
+        ],
+        [
+          64,
+          "U"
+        ],
+        [
+          48,
+          "R"
+        ],
+        [
+          48,
+          "L"
+        ],
+        [
+          54,
+          "D"
+        ]
+      ]
+    ]
+  },
+  "expected": {
+    "tick": 298,
+    "status": "won",
+    "hash": 1566247989
+  }
+}

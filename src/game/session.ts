@@ -1,6 +1,20 @@
 import type { TickInput } from "../sim/input";
-import type { GameState } from "../sim/state";
+import type { GameState, PlayerCount } from "../sim/state";
 import { step } from "../sim/step";
+
+/**
+ * How a level is played: alone, or two players working together (`coop`: one player
+ * out wins the level for both) or racing for the gold (`versus`: the first player out
+ * wins). The simulation is the same in both two-player modes (shared gold, any exit,
+ * holes bury either player); only who wins differs, so replays do not record the mode.
+ */
+export type PlayMode = "solo" | "coop" | "versus";
+
+export const PLAY_MODES: readonly PlayMode[] = ["solo", "coop", "versus"];
+
+export function playerCount(mode: PlayMode): PlayerCount {
+  return mode === "solo" ? 1 : 2;
+}
 
 /** The seed of every play session (the play screen and the editor's test play). */
 export const PLAY_SEED = 1;

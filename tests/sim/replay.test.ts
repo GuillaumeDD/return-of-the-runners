@@ -14,6 +14,7 @@ import {
 import { hashState } from "../../src/sim/hash";
 import { TICKS_PER_SECOND } from "../../src/sim/rules";
 import { createState } from "../../src/sim/state";
+import { playersAtExit } from "../../src/sim/step";
 import { makeRng, randInt } from "../helpers/rng";
 import { replayFixtures } from "../helpers/replays";
 
@@ -25,10 +26,19 @@ describe("committed replays (Node)", () => {
       "coop-monks",
       "first-steps-random",
       "monk-trap-respawn",
+      "versus-race",
       "win-gold-and-exit",
     ]);
     // At least one replay has two players.
     expect(fixtures.some((f) => f.replay.inputs.length === 2)).toBe(true);
+  });
+
+  it("versus-race is won by player 1 alone, player 2 having its own gold", () => {
+    const f = fixtures.find((x) => x.name === "versus-race");
+    if (f === undefined) throw new Error("missing versus-race");
+    const { state } = runReplay(f.replay);
+    expect(playersAtExit(state)).toEqual([0]);
+    expect(state.players.map((p) => p.gold)).toEqual([1, 1]);
   });
 
   // If one of these changes, gameplay changed: update the fixture only together with

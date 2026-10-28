@@ -222,6 +222,11 @@ keys produce only that player's input.
 
 ### B-021 — Two players: versus
 
+_Done. As built: versus plays by the co-op rules (shared gold, any exit, deaths), so
+the simulation and replays do not know the mode; `playersAtExit` names who got out, and
+the session turns that into the winner or a draw. Dropping the carried item on death
+comes with the item slot (B-024)._
+
 - Versus mode chosen at start for levels with a `Q`. Seen in S-025: a race on a
   mirrored level, each player in their own half with their own gold and their own exit;
   both exits appear when all the gold is taken, and the first player out wins. Each

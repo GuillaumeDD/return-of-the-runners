@@ -121,7 +121,9 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
 - The exit (`E`) is a door: passable, no support, locked while `goldLeft > 0`.
   A player in play touching it once the last gold is taken sets the status to `won`
   (for both players), which freezes the state like `dead`, and takes precedence over a
-  hole filling on the same tick.
+  hole filling on the same tick: nobody dies on the winning tick. `playersAtExit` names the players touching the open
+  exit, so on a won state it names who got out: one player, or both on the same tick.
+  Exits belong to no player.
 - Order within a tick: each player acts (dig or move) and collects gold, then the exit
   is checked, holes age, and deaths are counted. `game/session.ts` restarts the level after a win, since there is
   only one level until packs exist.
@@ -141,6 +143,12 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
   `PLAYER_RESPAWN_TICKS`, then reappears at its start (later, while a monk overlaps that
   cell) while the other keeps playing; the level is lost only once both are `out`, and
   won as soon as one player reaches the open exit.
+- **Modes** (`game/session.ts`, `PlayMode`): `solo`, `coop` or `versus`. Both
+  two-player modes play by the same rules above (shared gold, any exit, holes bury
+  either player, so a player can trap the other in a hole it digs); only the ending
+  differs. In co-op the level is complete; in versus the player `playersAtExit` names
+  wins, and both on the same tick is a draw (`game/hud.ts`, `statusMessage`). The
+  simulation never sees the mode, so replays do not record it.
 - Per-player lives and gold show in a status line under a two-player game
   (`game/hud.ts`); lives across levels and scores come with level packs (step 4).
 
@@ -192,8 +200,10 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
   the two keys left of right Shift (`Period`, `Slash`), player 2 (left) `W A S D` and
   `Q` / `E` (Z Q S D and A / E on AZERTY); the two sets share no key. Remapping and
   gamepads: step 4.
-- A level with a `Q` shows a "1 player / 2 players" choice above the play and test
-  canvases; switching restarts the level. The last choice applies to the next game.
+- A level with a `Q` shows a "1 player / 2 players: co-op / 2 players: versus" choice
+  above the play and test canvases; switching restarts the level. The last choice
+  applies to the next game. The message under the canvas gives each mode's controls
+  and goal, and how the level ended (in versus: the winner, or a draw).
 - The renderer draws the state with placeholder shapes, `TILE_PX = 24` pixels per tile
   (3 per sub-unit); the canvas is sized to the level and scaled by CSS.
 - Bundled levels go through `parseLevel` like any imported level.
@@ -450,6 +460,9 @@ as gameplay is implemented.
 | Jackhammer                      | rides straight down through brick, ≈ 5 tiles in 9 s; tool kept                            | S-019 @ 2:33–2:43          |
 | Gas gun                         | cloud ≈ 2 tiles for ≈ 6 s; monks inside stuck; gun kept                                   | S-021 @ 0:54–1:04          |
 | Two-player race                 | mirrored halves, exits appear with the gold, first out wins                               | S-025                      |
+| Versus end                      | first player out wins                                                                     | S-025 @ 0:04–1:24          |
+| Versus gold and exits           | shared, as in co-op (any gold, any exit); both out on the same tick: draw                 | **Provisional**, to check  |
+| Versus deaths                   | as in co-op: own lives, respawn at the start; a player can bury the other                 | **Provisional**, to check  |
 | Co-op end                       | won when one player exits; a dead player alone restarts, on their own lives               | S-100 (2026-10-27)         |
 | Lives at start (two players)    | 5 each (status bar shows 05 for both)                                                     | S-026 @ 0:01               |
 | Two-player respawn delay        | 90 ticks (1.5 s) at the player's start                                                    | **Provisional**            |
