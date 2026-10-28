@@ -7,7 +7,7 @@ import { countGold } from "../../src/sim/gold";
 import type { GameState } from "../../src/sim/state";
 import { playersAtExit, step } from "../../src/sim/step";
 import { makeRng, randInt } from "../helpers/rng";
-import { p1, press, stateFrom } from "./helpers";
+import { p1, press, stateFrom, withPlayer } from "./helpers";
 
 // Versus plays by the co-op rules (shared gold, any exit, holes bury either player):
 // these tests cover what a race needs on top of them.
@@ -138,6 +138,21 @@ describe("versus: the race to the exit", () => {
     );
     expect(end.status).toBe("won");
     expect(playersAtExit(end)).toEqual([0, 1]);
+  });
+
+  // Regression (self-review): a hole filling on the winning tick buried the winner,
+  // who then dropped out of playersAtExit, and the banner named the other player.
+  it("nobody dies on the tick the level is won, so the winner stays named", () => {
+    // Player 2 climbs out of the hole at (2, 1) onto the exit at (3, 1) as it fills.
+    let s = stateFrom(["P......Q", "..#E....", "########"], 1, 2);
+    s = withPlayer({ ...s, goldLeft: 0 }, { x: 2 * SUB + SUB / 2, y: SUB }, 1);
+    s = { ...s, holes: [{ cx: 2, cy: 1, age: HOLE_LIFETIME - 1 }] };
+    const end = step(s, [NO_INPUT, NO_INPUT]);
+    expect(end.status).toBe("won");
+    expect(playersAtExit(end)).toEqual([1]);
+    expect(p2(end)).toMatchObject({ mode: "alive", lives: START_LIVES });
+    // The hole still closes.
+    expect(end.holes).toEqual([]);
   });
 
   it("any exit will do: exits belong to no player", () => {

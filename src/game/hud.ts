@@ -30,7 +30,9 @@ export function statusMessage(
       if (mode !== "versus") return "won";
       const winners = playersAtExit(state);
       if (winners.length > 1) return "versusDraw";
-      return winners[0] === 1 ? "versusWon2" : "versusWon1";
+      if (winners[0] === 0) return "versusWon1";
+      if (winners[0] === 1) return "versusWon2";
+      return "won"; // not a state `step` makes: a won level names a winner
     }
   }
 }

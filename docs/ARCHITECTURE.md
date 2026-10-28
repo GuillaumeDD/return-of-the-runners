@@ -121,7 +121,7 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
 - The exit (`E`) is a door: passable, no support, locked while `goldLeft > 0`.
   A player in play touching it once the last gold is taken sets the status to `won`
   (for both players), which freezes the state like `dead`, and takes precedence over a
-  hole filling on the same tick. `playersAtExit` names the players touching the open
+  hole filling on the same tick: nobody dies on the winning tick. `playersAtExit` names the players touching the open
   exit, so on a won state it names who got out: one player, or both on the same tick.
   Exits belong to no player.
 - Order within a tick: each player acts (dig or move) and collects gold, then the exit
@@ -460,7 +460,8 @@ as gameplay is implemented.
 | Jackhammer                      | rides straight down through brick, ≈ 5 tiles in 9 s; tool kept                            | S-019 @ 2:33–2:43          |
 | Gas gun                         | cloud ≈ 2 tiles for ≈ 6 s; monks inside stuck; gun kept                                   | S-021 @ 0:54–1:04          |
 | Two-player race                 | mirrored halves, exits appear with the gold, first out wins                               | S-025                      |
-| Versus end                      | first player out wins; both on the same tick is a draw; exits shared                      | S-025, tie **provisional** |
+| Versus end                      | first player out wins                                                                     | S-025 @ 0:04–1:24          |
+| Versus gold and exits           | shared, as in co-op (any gold, any exit); both out on the same tick: draw                 | **Provisional**, to check  |
 | Versus deaths                   | as in co-op: own lives, respawn at the start; a player can bury the other                 | **Provisional**, to check  |
 | Co-op end                       | won when one player exits; a dead player alone restarts, on their own lives               | S-100 (2026-10-27)         |
 | Lives at start (two players)    | 5 each (status bar shows 05 for both)                                                     | S-026 @ 0:01               |

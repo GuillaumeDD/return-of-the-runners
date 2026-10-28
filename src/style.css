@@ -86,6 +86,7 @@ button {
 .palette {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   align-items: center;
   gap: 8px;
 }
@@ -200,6 +201,7 @@ button.primary {
 .shared-bar {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   align-items: center;
   gap: 4px 16px;
 }

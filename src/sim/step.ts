@@ -16,8 +16,8 @@ import type { Actor, Facing, GameState, Player } from "./state";
  * and picks up the gold it touches; a dead player counts down, then reappears at its
  * start. A player touching the open exit wins the level (`playersAtExit`). Unless it
  * was won, the monks then act in order, and a monk touching a player catches it. Then
- * holes age: a player or monk inside a hole that just filled dies. Last, deaths are
- * counted (see `die`).
+ * holes age: a player or monk inside a hole that just filled dies (no player dies on
+ * the winning tick). Last, deaths are counted (see `die`).
  */
 export function step(state: GameState, inputs: TickInput): GameState {
   const tick = state.tick + 1;
@@ -66,8 +66,10 @@ export function step(state: GameState, inputs: TickInput): GameState {
   );
   const solo = players.length === 1;
   let died = false;
+  // A won level ends as it is: nobody dies on the winning tick (a hole filling under
+  // the winner would otherwise remove it from `playersAtExit`).
   const final = players.map((p, i) => {
-    if (p.mode !== "alive" || !(caught[i] === true || buried(p))) return p;
+    if (won || p.mode !== "alive" || !(caught[i] === true || buried(p))) return p;
     died = true;
     return die(p, solo);
   });
