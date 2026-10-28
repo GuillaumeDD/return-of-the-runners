@@ -74,6 +74,11 @@ export function stepActor(
   return a;
 }
 
+/** The walking period here: `GOO_PERIOD` on gooey turf, for runners and monks alike. */
+function walkPeriod(t: Terrain, a: Actor, period: Period): number {
+  return onGoo(t, a) ? GOO_PERIOD : period.walk;
+}
+
 /** Moves toward the nearest aligned position on one axis (used before turning). */
 function snap(pos: number): number {
   const off = offsetOf(pos);
@@ -101,7 +106,7 @@ function tryVertical(
       (isBar(t, cx, cy) || isBar(t, cx + 1, cy)) &&
       isPassable(t, near, cy + 1);
     if (!ladderNear && !letGo) return null;
-    return every(tick, period.walk) ? { ...a, x: snap(a.x) } : a;
+    return every(tick, walkPeriod(t, a, period)) ? { ...a, x: snap(a.x) } : a;
   }
 
   if (offsetOf(a.y) !== 0) {
@@ -141,7 +146,7 @@ export function tryHorizontal(
     if (!isPassable(t, cx + dir, cy)) return { ...a, facing };
   }
   // Mid-tile: both neighbouring cells were checked when the move began, so the actor
-  // may continue or reverse freely. Gooey turf slows runners and monks alike.
-  const p = isBar(t, cellOf(a.x), cy) ? period.bar : onGoo(t, a) ? GOO_PERIOD : period.walk;
+  // may continue or reverse freely.
+  const p = isBar(t, cellOf(a.x), cy) ? period.bar : walkPeriod(t, a, period);
   return every(tick, p) ? { ...a, x: a.x + dir, facing } : { ...a, facing };
 }

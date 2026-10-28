@@ -2,7 +2,7 @@ import { TILE } from "../level/format";
 import { centerCell, revealLadders, takeGold } from "./gold";
 import { HOLE_LIFETIME, holeAt, type Hole } from "./holes";
 import { NO_INPUT, type PlayerInput, type TickInput } from "./input";
-import { stepMonks } from "./monks";
+import { isHidden, stepMonks } from "./monks";
 import { isFalling, overlapsCell, stepActor } from "./move";
 import { cellOf, monkAt, tileAt, type Terrain } from "./physics";
 import { HOLE_TICKS, MONK_TICKS, PLAYER_RESPAWN_TICKS, RUNNER_PERIOD, SUB } from "./rules";
@@ -27,7 +27,8 @@ export function step(state: GameState, inputs: TickInput): GameState {
   let goldLeft = state.goldLeft;
   let holes = state.holes;
   const players: Player[] = [];
-  const anyAlive = state.players.some((p) => p.mode === "alive");
+  // Monks only move while they can see someone: hiding players do not count.
+  const anyAlive = state.players.some((p) => p.mode === "alive" && !isHidden(state.tiles, p));
   for (let i = 0; i < state.players.length; i++) {
     const before = state.players[i];
     if (before === undefined) continue;
@@ -120,7 +121,7 @@ function die(p: Player, solo: boolean): Player {
 
 /**
  * One player's own action this tick: dig, move, or count down to reappearing.
- * `anyAlive`: some player was in play at the start of the tick.
+ * `anyAlive`: some player was in play, and not hiding, at the start of the tick.
  */
 function actPlayer(
   t: Terrain,
@@ -135,7 +136,8 @@ function actPlayer(
     case "dead": {
       if (p.timer > 1) return { player: { ...p, timer: p.timer - 1 }, hole: null };
       // A monk on the start, even partly: wait until it leaves. Only while another
-      // player is in play: with nobody to chase, monks stand still and never would.
+      // player is in play and in sight: with nobody to chase, monks stand still and
+      // never would.
       const cx = cellOf(p.startX);
       const cy = cellOf(p.startY);
       if (anyAlive && t.monks.some((m) => m.mode !== "dead" && overlapsCell(m, cx, cy))) {

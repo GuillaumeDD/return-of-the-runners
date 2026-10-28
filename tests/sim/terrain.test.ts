@@ -85,6 +85,13 @@ describe("gooey turf", () => {
     expect(p1(run(goo, press.right, SUB * GOO_PERIOD)).x).toBeLessThanOrEqual(SUB);
   });
 
+  // Regression (self-review): snapping sideways toward a ladder ignored the goo.
+  it("snapping sideways onto a ladder on goo is slowed too", () => {
+    let s = stateFrom(["..H.....", "P.H.....", "~~~~~~~~"]);
+    s = withPlayer(s, { x: 2 * SUB - 3, y: SUB });
+    expect(ticksToMove(s, press.up, (x) => p1(x).x)).toBe(GOO_PERIOD);
+  });
+
   it("monks walk on it at GOO_PERIOD too", () => {
     const rows = (floor: string) => ["P......M", "@@@@" + floor.repeat(4)];
     const x = (s: GameState) => monk(s).x;
@@ -170,6 +177,18 @@ describe("alcove", () => {
     expect(isHidden(s.tiles, p1(s))).toBe(false);
     s = run(s, press.none, 4 * SUB * MONK_PERIOD.walk);
     expect(s.status).toBe("dead");
+  });
+
+  // Regression (self-review): a dead player kept waiting for a monk on its start to
+  // leave while the only other player hid, and hidden players freeze monks: a stall.
+  it("a dead player reappears even with a monk on its start, when the other is hiding", () => {
+    let s = stateFrom(["P......Q", ...rows.slice(1)], 1, 2);
+    s = atCell(s, 3, 1);
+    s = withPlayer(s, { mode: "dead", timer: 1 }, 1);
+    s = { ...s, monks: [{ ...newMonk(7, 0) }] };
+    const next = step(s, [NO_INPUT, NO_INPUT]);
+    // It reappears on the monk, which catches it: a life is gone, no stall.
+    expect(p1(next, 1).lives).toBeLessThan(p1(s, 1).lives);
   });
 
   it("monks do not see a hiding player: with nobody else in sight they wait", () => {

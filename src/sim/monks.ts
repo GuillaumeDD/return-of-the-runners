@@ -50,7 +50,7 @@ function aligned(a: Actor): boolean {
   return offsetOf(a.x) === 0 && offsetOf(a.y) === 0;
 }
 
-/** Free floor for gold: an empty tile (not dug) with brick, bedrock or a ladder below. */
+/** Free floor for gold: an empty tile (not dug) with a solid tile or a ladder below. */
 function canHoldGold(t: Terrain, cx: number, cy: number): boolean {
   if (t.tiles[cy]?.charAt(cx) !== TILE.empty || holeAt(t.holes, cx, cy) !== undefined) {
     return false;
@@ -63,7 +63,7 @@ function canHoldGold(t: Terrain, cx: number, cy: number): boolean {
 /**
  * The player a monk chases: the nearest one in play, by the distance between their
  * positions (|dx| + |dy|, in sub-units); a tie goes to the lower index (player 1).
- * Null when no player is in play.
+ * Null when no player is in play. (Callers pass the players in sight, see `view`.)
  */
 export function targetOf(m: Pick<Actor, "x" | "y">, players: readonly Player[]): Player | null {
   let best: Player | null = null;
@@ -117,7 +117,7 @@ export function stepMonks(state: GameState, tick: number): MonksResult {
         m = escape(t, m, view(state, m), tick, state.players);
         break;
       case "free": {
-        // No player in play: the monk waits (it still falls if unsupported).
+        // No player in play and in sight: the monk waits (it still falls if unsupported).
         const v = view(state, m);
         const move = v === null ? "none" : chooseMove(t, v);
         const moved = stepActor(t, m, INPUT[move], tick, MONK_PERIOD);
@@ -186,7 +186,7 @@ function view(state: GameState, m: Monk): ChaseView | null {
 /**
  * Climbing out of a hole: straight up to the row above it, then sideways in the
  * direction the AI picks (or the way the monk faces, when it picks none or no player is
- * in play). Above the hole it does not fall
+ * in play and in sight). Above the hole it does not fall
  * back in, until it has left the hole's column. Walled in on both sides, it gives up
  * and falls back in. A player standing on the hole holds it down: it cannot climb
  * while a player in play is in the cell above (S-100).
