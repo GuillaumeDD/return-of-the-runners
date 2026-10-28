@@ -3,7 +3,7 @@ import { chooseMove, type ChaseView, type MonkMove } from "./ai";
 import { centerCell, setTile, takeGold } from "./gold";
 import { holeAt, isDugOut, type Hole } from "./holes";
 import { NO_INPUT, type PlayerInput } from "./input";
-import { every, isFalling, stepActor, tryHorizontal } from "./move";
+import { every, isFalling, overlapsCell, stepActor, tryHorizontal } from "./move";
 import { cellOf, isPassable, isSolid, offsetOf, type Terrain } from "./physics";
 import { prngInt } from "./prng";
 import { MONK_CARRY, MONK_PERIOD, MONK_TICKS, SUB } from "./rules";
@@ -88,7 +88,7 @@ export function stepMonks(state: GameState, tick: number): MonksResult {
         m = m.timer > 1 ? { ...m, timer: m.timer - 1 } : { ...m, mode: "escaping", timer: 0 };
         break;
       case "escaping":
-        m = escape(t, m, view(m), tick);
+        m = escape(t, m, view(m), tick, state.runner);
         break;
       case "free": {
         const move = chooseMove(t, view(m));
@@ -143,12 +143,14 @@ export function stepMonks(state: GameState, tick: number): MonksResult {
  * Climbing out of a hole: straight up to the row above it, then sideways in the
  * direction the AI picks (or the way the monk faces). Above the hole it does not fall
  * back in, until it has left the hole's column. Walled in on both sides, it gives up
- * and falls back in.
+ * and falls back in. A runner standing on the hole holds it down: it cannot climb
+ * while the runner is in the cell above (S-100).
  */
-function escape(t: Terrain, m: Monk, v: ChaseView, tick: number): Monk {
+function escape(t: Terrain, m: Monk, v: ChaseView, tick: number, runner: Actor): Monk {
   const topY = (m.holeY - 1) * SUB;
   if (m.y > topY) {
     if (!isPassable(t, m.holeX, m.holeY - 1)) return m;
+    if (overlapsCell(runner, m.holeX, m.holeY - 1)) return m;
     return every(tick, MONK_PERIOD.climb) ? { ...m, y: m.y - 1 } : m;
   }
   const top = m.holeY - 1;

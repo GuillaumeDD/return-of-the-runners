@@ -138,7 +138,8 @@ Code: `src/sim/`. Entry points: `createState(level, seed)` and
   against a naive reference implementation.
 - **Holes** (`monks.ts`): a monk aligned in an open hole is `trapped` for
   `MONK_TICKS.trapped`, then `escaping`: it climbs to the row above and walks off
-  sideways, without falling back in (walled in on both sides, it falls back in). If the hole refills on it, it is `dead` for
+  sideways, without falling back in (walled in on both sides, it falls back in). It
+  cannot climb while the runner stands in the cell above the hole (S-100). If the hole refills on it, it is `dead` for
   `MONK_TICKS.respawn`, then reappears on the second row from a PRNG-chosen column (the
   first empty cell from there, wrapping, else the next row down).
 - **Gold**: a monk with nothing picks up the gold it touches and carries it for
@@ -424,6 +425,7 @@ as gameplay is implemented.
 | Monk speed                      | 2/3 of the runner's                                                                       | **Provisional**, 1982 feel |
 | Monk chase AI                   | classic floor scan (see Monks)                                                            | 1982 rule [^lrtr]          |
 | Monk stuck in a hole            | 120 ticks (2 s), then climbs out                                                          | **Provisional**            |
+| Runner standing on a hole       | the monk inside cannot climb out until the runner leaves                                  | S-100 (2026-10-28)         |
 | Monk respawn                    | after 60 ticks, second row, random                                                        | 1982 rule [^lrtr]          |
 | Monk carries gold               | 12 to 37 cells, then drops it                                                             | 1982 rule [^lrtr]          |
 | Caught by a monk                | same centre cell                                                                          | **Provisional**            |
