@@ -463,7 +463,7 @@ as gameplay is implemented.
 | Monk speed                      | 2/3 of the runner's                                                                       | **Provisional**, 1982 feel |
 | Monk chase AI                   | classic floor scan (see Monks)                                                            | 1982 rule [^lrtr]          |
 | Monk stuck in a hole            | 120 ticks (2 s), then climbs out                                                          | **Provisional**            |
-| Runner standing on a hole       | the monk inside cannot climb out until no player in play stands there                      | S-100 (2026-10-28)         |
+| Runner standing on a hole       | the monk inside cannot climb out while a player in play stands there                      | S-100 (2026-10-28)         |
 | Monk respawn                    | after 60 ticks, second row, random                                                        | 1982 rule [^lrtr]          |
 | Monk carries gold               | 12 to 37 cells, then drops it                                                             | 1982 rule [^lrtr]          |
 | Caught by a monk                | same centre cell                                                                          | **Provisional**            |
