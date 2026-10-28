@@ -1,14 +1,13 @@
 /**
  * Level format v2: a human-readable JSON document with a text grid, plus the links of
- * its teleporters. Version 1 documents are still read (migrated on read, see
- * `migrate.ts`); only v2 is written. See docs/ARCHITECTURE.md § Level format.
+ * its teleporters. See docs/ARCHITECTURE.md § Level format.
  */
 
 export const LEVEL_FORMAT_ID = "return-of-the-runners/level";
 export const LEVEL_FORMAT_VERSION = 2;
 
-/** The tiles of version 1, the only ones a v1 document may hold. */
-export const TILE_V1 = {
+/** The tiles of the original 1982 game, the ones the editor palette offers so far. */
+export const TILE_BASE = {
   empty: ".",
   brick: "#",
   bedrock: "@",
@@ -27,7 +26,7 @@ export const TILE_V1 = {
  * solid nor climbable.
  */
 export const TILE = {
-  ...TILE_V1,
+  ...TILE_BASE,
   player2Start: "Q",
   trapdoor: "%",
   gooeyTurf: "~",
@@ -54,7 +53,6 @@ export const TILE = {
 export type TileChar = (typeof TILE)[keyof typeof TILE];
 
 export const TILE_CHARS: ReadonlySet<string> = new Set(Object.values(TILE));
-export const TILE_CHARS_V1: ReadonlySet<string> = new Set(Object.values(TILE_V1));
 
 /**
  * A one-way teleporter link, `[fromX, fromY, toX, toY]` in cells: from an entrance

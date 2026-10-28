@@ -218,6 +218,51 @@ describe("monks and holes", () => {
     expect(monkCell(s)).toEqual({ x: 2, y: 2 });
   });
 
+  // Regression (B-029, S-100): the monk used to climb into the runner standing on its
+  // head, and catch it.
+  it("a runner standing on the hole holds the monk in it until the hole refills", () => {
+    let s = trappedState();
+    s = atCell(s, 4, 1);
+    const pos = { x: monk(s).x, y: monk(s).y };
+    const age = s.holes[0]?.age ?? 0;
+    for (let t = 0; t < HOLE_LIFETIME - age - 1; t++) {
+      s = stepOne(s, press.none);
+      expect({ x: monk(s).x, y: monk(s).y }).toEqual(pos);
+      expect(s.status).toBe("playing");
+    }
+    expect(monk(s).mode).toBe("escaping");
+    s = stepOne(s, press.none);
+    expect(s.holes).toEqual([]);
+    expect(monk(s).mode).toBe("dead");
+    expect(s.status).toBe("playing");
+  });
+
+  it("once the runner steps off the hole, the held monk climbs out", () => {
+    let s = trappedState();
+    s = atCell(s, 4, 1);
+    s = run(s, press.none, MONK_TICKS.trapped + 20);
+    expect(monk(s).mode).toBe("escaping");
+    expect(monkCell(s)).toEqual({ x: 4, y: 2 });
+    // Out of reach on the far left: the monk is free to leave.
+    s = atCell(s, 0, 0);
+    for (let t = 0; t < 200 && monk(s).mode === "escaping"; t++) s = stepOne(s, press.none);
+    expect(monk(s).mode).toBe("free");
+    expect(monkCell(s).y).toBe(1);
+  });
+
+  it("with two players, either one standing on the hole holds the monk; a dead one does not", () => {
+    const base = trappedState();
+    const two: GameState = { ...base, players: [p1(base), { ...p1(base), x: 4 * SUB, y: SUB }] };
+    const held = run(withPlayer(two, { x: 0, y: 0 }), press.none, MONK_TICKS.trapped + 40);
+    expect(monk(held).mode).toBe("escaping");
+    expect(monkCell(held)).toEqual({ x: 4, y: 2 });
+    // The same player dead (its body left there) holds nothing.
+    let dead = withPlayer(two, { mode: "dead", timer: 10_000 }, 1);
+    dead = withPlayer(dead, { x: 0, y: 0 });
+    dead = run(dead, press.none, MONK_TICKS.trapped + 40);
+    expect(monkCell(dead).y).toBeLessThan(2);
+  });
+
   it("a monk inside a hole when it refills dies, then reappears near the top", () => {
     let s = trappedState();
     // Keep it trapped until the hole fills: freeze its timer.

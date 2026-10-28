@@ -3,7 +3,7 @@ import { chooseMove, type ChaseView, type MonkMove } from "./ai";
 import { centerCell, setTile, takeGold } from "./gold";
 import { holeAt, isDugOut, type Hole } from "./holes";
 import { NO_INPUT, type PlayerInput } from "./input";
-import { every, isFalling, stepActor, tryHorizontal } from "./move";
+import { every, isFalling, overlapsCell, stepActor, tryHorizontal } from "./move";
 import { cellOf, isPassable, isSolid, offsetOf, type Terrain } from "./physics";
 import { prngInt } from "./prng";
 import { MONK_CARRY, MONK_PERIOD, MONK_TICKS, SUB } from "./rules";
@@ -105,7 +105,7 @@ export function stepMonks(state: GameState, tick: number): MonksResult {
         m = m.timer > 1 ? { ...m, timer: m.timer - 1 } : { ...m, mode: "escaping", timer: 0 };
         break;
       case "escaping":
-        m = escape(t, m, view(state, m), tick);
+        m = escape(t, m, view(state, m), tick, state.players);
         break;
       case "free": {
         // No player in play: the monk waits (it still falls if unsupported).
@@ -175,12 +175,22 @@ function view(state: GameState, m: Monk): ChaseView | null {
  * direction the AI picks (or the way the monk faces, when it picks none or no player is
  * in play). Above the hole it does not fall
  * back in, until it has left the hole's column. Walled in on both sides, it gives up
- * and falls back in.
+ * and falls back in. A player standing on the hole holds it down: it cannot climb
+ * while a player in play is in the cell above (S-100).
  */
-function escape(t: Terrain, m: Monk, v: ChaseView | null, tick: number): Monk {
+function escape(
+  t: Terrain,
+  m: Monk,
+  v: ChaseView | null,
+  tick: number,
+  players: readonly Player[],
+): Monk {
   const topY = (m.holeY - 1) * SUB;
   if (m.y > topY) {
     if (!isPassable(t, m.holeX, m.holeY - 1)) return m;
+    if (players.some((p) => p.mode === "alive" && overlapsCell(p, m.holeX, m.holeY - 1))) {
+      return m;
+    }
     return every(tick, MONK_PERIOD.climb) ? { ...m, y: m.y - 1 } : m;
   }
   const top = m.holeY - 1;

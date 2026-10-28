@@ -38,17 +38,6 @@ describe("export then import", () => {
     }
   });
 
-  it("a v1 file imports as the level's v2 migration, and exports as v2", async () => {
-    for (const f of loadFixtures("valid", "v1")) {
-      const back = await importLevel(file(f.text));
-      expect(back.ok && back.level, f.file).toEqual(parsed(f.text));
-      if (back.ok) {
-        const doc = JSON.parse(exportLevel(back.level).text) as Record<string, unknown>;
-        expect(doc.version).toBe(2);
-      }
-    }
-  });
-
   it("writes teleporter links one per line, after the grid", () => {
     const fixture = loadFixtures("valid", "v2").find((f) => f.file === "v2/all-tiles.json");
     if (!fixture) throw new Error("missing v2/all-tiles.json");

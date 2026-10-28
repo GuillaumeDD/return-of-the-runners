@@ -4,7 +4,6 @@ import {
   LIMITS,
   TILE,
   TILE_CHARS,
-  TILE_CHARS_V1,
   codePoints,
   type Level,
   type LevelError,
@@ -12,18 +11,10 @@ import {
   type ParseResult,
   type Teleport,
 } from "./format";
-import { migrateV1 } from "./migrate";
-
-/** What each version allows: its fields (required, then optional) and its tiles. */
-interface VersionRules {
-  readonly required: readonly string[];
-  readonly optional: readonly string[];
-  readonly tiles: ReadonlySet<string>;
-}
 
 const REQUIRED = ["format", "version", "name", "width", "height", "grid"] as const;
-const V1: VersionRules = { required: REQUIRED, optional: [], tiles: TILE_CHARS_V1 };
-const V2: VersionRules = { required: REQUIRED, optional: ["teleports"], tiles: TILE_CHARS };
+const OPTIONAL = ["teleports"] as const;
+const KNOWN_FIELDS: ReadonlySet<string> = new Set([...REQUIRED, ...OPTIONAL]);
 
 const utf8 = new TextEncoder();
 
@@ -35,11 +26,9 @@ export interface ParseOptions {
 type Add = (code: LevelErrorCode, detail: string) => void;
 
 /**
- * Parses and validates an untrusted level document, v1 or v2. Never throws: every
- * problem is returned as a `LevelError`. Structural problems (size, JSON, format,
- * version) stop validation early; content problems are all reported together. A v1
- * document is checked against the v1 rules (v1 fields and tiles only), then migrated:
- * the result is always a v2 `Level`.
+ * Parses and validates an untrusted level document. Never throws: every problem is
+ * returned as a `LevelError`. Structural problems (size, JSON, format, version) stop
+ * validation early; content problems are all reported together.
  */
 export function parseLevel(text: string, options: ParseOptions = {}): ParseResult {
   const gameRules = options.gameRules ?? true;
@@ -57,24 +46,17 @@ export function parseLevel(text: string, options: ParseOptions = {}): ParseResul
   if (typeof doc !== "object" || doc === null || Array.isArray(doc)) {
     return fail("not-object", "top level must be a JSON object");
   }
-  let obj = doc as Record<string, unknown>;
+  const obj = doc as Record<string, unknown>;
 
   if (!Object.hasOwn(obj, "format") || obj.format !== LEVEL_FORMAT_ID) {
     return fail("wrong-format", `"format" must be "${LEVEL_FORMAT_ID}"`);
   }
-  const version = Object.hasOwn(obj, "version") ? obj.version : undefined;
-  if (version !== 1 && version !== LEVEL_FORMAT_VERSION) {
-    return fail("unsupported-version", `"version" must be 1 or ${String(LEVEL_FORMAT_VERSION)}`);
+  if (!Object.hasOwn(obj, "version") || obj.version !== LEVEL_FORMAT_VERSION) {
+    return fail("unsupported-version", `"version" must be ${String(LEVEL_FORMAT_VERSION)}`);
   }
 
-  const { errors, teleports } = validate(obj, version === 1 ? V1 : V2, gameRules);
+  const { errors, teleports } = validate(obj, gameRules);
   if (errors.length > 0) return { ok: false, errors };
-  if (version === 1) {
-    // A valid v1 document is a valid v2 one once migrated: every v1 rule holds in v2.
-    const migrated = migrateV1(obj);
-    if (!migrated.ok) return { ok: false, errors: [migrated.error] };
-    obj = migrated.doc;
-  }
 
   const level: Level = {
     version: LEVEL_FORMAT_VERSION,
@@ -87,10 +69,9 @@ export function parseLevel(text: string, options: ParseOptions = {}): ParseResul
   return { ok: true, level };
 }
 
-/** Every content error of a document against one version's rules. */
+/** Every content error of a document. */
 function validate(
   obj: Record<string, unknown>,
-  rules: VersionRules,
   gameRules: boolean,
 ): { readonly errors: LevelError[]; readonly teleports: Teleport[] } {
   const errors: LevelError[] = [];
@@ -98,11 +79,10 @@ function validate(
     errors.push({ code, detail });
   };
 
-  const known = new Set([...rules.required, ...rules.optional]);
   for (const key of Object.keys(obj)) {
-    if (!known.has(key)) add("unknown-field", `unknown field "${truncate(key)}"`);
+    if (!KNOWN_FIELDS.has(key)) add("unknown-field", `unknown field "${truncate(key)}"`);
   }
-  for (const key of rules.required) {
+  for (const key of REQUIRED) {
     if (!Object.hasOwn(obj, key)) add("missing-field", `missing field "${key}"`);
   }
 
@@ -130,16 +110,13 @@ function validate(
         grid,
         widthOk ? (width as number) : null,
         heightOk ? (height as number) : null,
-        rules.tiles,
         gameRules,
         add,
       );
     }
   }
 
-  // A field the version does not know is reported as unknown above, not read.
-  const hasLinks = rules.optional.includes("teleports") && Object.hasOwn(obj, "teleports");
-  const links = hasLinks ? readTeleports(obj.teleports) : [];
+  const links = Object.hasOwn(obj, "teleports") ? readTeleports(obj.teleports) : [];
   if (links === null) {
     add("invalid-teleports", `"teleports" must be an array of [fromX, fromY, toX, toY] integers`);
   } else if (gameRules && cells !== null) {
@@ -176,7 +153,6 @@ function checkGrid(
   grid: readonly string[],
   width: number | null,
   height: number | null,
-  tiles: ReadonlySet<string>,
   gameRules: boolean,
   add: Add,
 ): string[][] | null {
@@ -198,7 +174,7 @@ function checkGrid(
       wellFormed = false;
     }
     for (const c of rowCells) {
-      if (tiles.has(c)) counts.set(c, (counts.get(c) ?? 0) + 1);
+      if (TILE_CHARS.has(c)) counts.set(c, (counts.get(c) ?? 0) + 1);
       else unknown.add(c);
     }
     return rowCells;

@@ -81,22 +81,19 @@ describe("save and list", () => {
   });
 });
 
-describe("level format versions", () => {
-  const storedText = (levels: unknown[]): string =>
-    JSON.stringify({ format: STORE_FORMAT_ID, version: 1, nextId: 2, levels });
-
-  it("a v1 stored level opens as its v2 migration, and is written back as v2", () => {
+describe("level format", () => {
+  it("a stored version 1 level is skipped and reported, and kept by the next save", () => {
     const v1 = { ...levelDocument(level("Old")), version: 1 };
-    const s = memory({ [STORAGE_KEY]: storedText([{ id: 1, level: v1 }]) });
-    const opened = getLevel(s, 1);
-    expect(opened?.level).toEqual(draftOf(level("Old")));
-    expect(listLevels(s).problems).toEqual([]);
-    // Any save rewrites the whole document: the old level is now v2.
-    saveLevel(s, level("New"));
-    const doc = JSON.parse(s.data.get(STORAGE_KEY) ?? "") as {
-      levels: { level: { version: number } }[];
-    };
-    expect(doc.levels.map((l) => l.level.version)).toEqual([2, 2]);
+    const text = JSON.stringify({
+      format: STORE_FORMAT_ID,
+      version: 1,
+      nextId: 2,
+      levels: [{ id: 1, level: v1 }],
+    });
+    const s = memory({ [STORAGE_KEY]: text });
+    expect(listLevels(s)).toEqual({ levels: [], problems: ["corrupt-entry"] });
+    expect(saveLevel(s, level("New"))).toEqual({ ok: true, id: 2 });
+    expect(s.data.get(STORAGE_KEY)).toContain('"name":"Old"');
   });
 
   it("a v2 level round trips byte-identical, teleporter links included", () => {

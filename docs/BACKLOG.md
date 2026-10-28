@@ -3,7 +3,7 @@
 Scoped work items. Ideas start in the Growth section of `docs/PRD.md`.
 Each item lands in its own commit, which also flips its status here.
 Step 1 (B-004 to B-010) is planned in [`plans/step-1.md`](plans/step-1.md), step 2 (B-011 to
-B-017) in [`plans/step-2.md`](plans/step-2.md), step 3 (B-019 to B-028) in
+B-017) in [`plans/step-2.md`](plans/step-2.md), step 3 (B-019 to B-029) in
 [`plans/step-3.md`](plans/step-3.md), each with its delivery order.
 
 Statuses: `todo` / `in-progress` / `done`.
@@ -28,7 +28,7 @@ Statuses: `todo` / `in-progress` / `done`.
 | B-016 | Export / import files                                   | Download and import `.rotr.json` (64 KB cap before reading); invalid files report the validator's translated errors                                         | done   |
 | B-017 | Share links                                             | Level in the URL fragment (deflate-raw + base64url); length and decompressed-size caps; fuzzed; link opens in Chromium, Firefox and WebKit (Playwright)     | done   |
 | B-018 | E2E tests of the game's screens                         | Playwright specs on the built game in 3 engines (Replays job): test, My levels, files, share, Edit a copy; runs the ARCHITECTURE browser quirks             | todo   |
-| B-019 | Level format v2 + migration                             | New TLR tiles and `teleports` links; v1 files, links and stored levels migrate on read; v2 fixtures per error code; fuzzed                                  | done   |
+| B-019 | Level format v2 + migration                             | New TLR tiles and `teleports` links; v2 fixtures per error code; fuzzed. v1 migration shipped, then dropped (unused; 2026-10-28)                            | done   |
 | B-020 | Two players: co-op                                      | `players` list from `P`/`Q`; per-player keys on one keyboard; shared gold; monks chase the nearest player; two-player replay in 4 engines                   | done   |
 | B-021 | Two players: versus                                     | Per-player gold count; winner banner (EN + FR); a player can bury the other; replay fixture                                                                 | todo   |
 | B-022 | Terrain                                                 | Trapdoor turf, gooey turf, hidden ladder, alcove (hiding place), monk respawn points: playable and in the editor palette; replay fixture                    | todo   |
@@ -38,3 +38,4 @@ Statuses: `todo` / `in-progress` / `done`.
 | B-026 | Bombs                                                   | Per-level bomb counter; fuse; small bomb: temporary crater, bedrock intact; big bomb: permanent, spares the exit; chain reactions; kills actors in range    | todo   |
 | B-027 | Snare and gas                                           | Snare holds the first actor that steps on it; gas dazes the first monk in range, not on ladders or bars; replay fixture                                     | todo   |
 | B-028 | Goo bucket                                              | Turns the floor in front into gooey turf; slows players and monks; replay fixture                                                                           | todo   |
+| B-029 | Fix: a runner on a hole holds the monk in it            | A trapped monk cannot climb while the runner stands in the cell above its hole; it climbs out once the runner leaves; regression test                       | done   |

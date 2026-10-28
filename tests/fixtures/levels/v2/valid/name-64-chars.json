@@ -1,7 +1,7 @@
 {
   "format": "return-of-the-runners/level",
-  "version": 1,
-  "name": "Test",
+  "version": 2,
+  "name": "NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN",
   "width": 8,
   "height": 8,
   "grid": [
@@ -12,6 +12,6 @@
     "........",
     "........",
     ".P...E$.",
-    12345678
+    "########"
   ]
 }
