@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LIMITS, TILE, TILE_CHARS, TILE_CHARS_V1 } from "../../src/level/format";
+import { LIMITS, TILE, TILE_BASE, TILE_CHARS } from "../../src/level/format";
 import { parseLevel } from "../../src/level/parse";
 import { FIXTURE_VERSIONS, loadFixtures } from "./fixtures";
 import { expectLevelInvariants } from "./invariants";
@@ -43,9 +43,9 @@ describe("parseLevel: invalid fixtures", () => {
     },
   );
 
-  it.each(FIXTURE_VERSIONS)("has a %s invalid fixture for every content error code", (v) => {
-    const covered = new Set(loadFixtures("invalid", v).map((f) => f.expectedCode));
-    const v2Only = [
+  it("has an invalid fixture for every content error code", () => {
+    const covered = new Set(invalidFixtures.map((f) => f.expectedCode));
+    for (const code of [
       "player2-count",
       "invalid-teleports",
       "teleport-out-of-grid",
@@ -53,8 +53,6 @@ describe("parseLevel: invalid fixtures", () => {
       "teleport-not-exit",
       "teleport-duplicate",
       "teleport-unlinked",
-    ];
-    for (const code of [
       "not-json",
       "not-object",
       "wrong-format",
@@ -71,7 +69,6 @@ describe("parseLevel: invalid fixtures", () => {
       "no-gold",
       "no-exit",
       "too-many-monks",
-      ...(v === "v2" ? v2Only : []),
     ]) {
       expect(covered, code).toContain(code);
     }
@@ -132,7 +129,7 @@ describe("parseLevel: drafts (gameRules: false)", () => {
   const draft = (grid: string[]): string =>
     JSON.stringify({
       format: "return-of-the-runners/level",
-      version: 1,
+      version: 2,
       name: "WIP",
       width: 8,
       height: 8,
@@ -176,14 +173,15 @@ describe("parseLevel: version 2", () => {
       ...extra,
     });
 
-  it("has 30 tiles, each a distinct single ASCII character, v1's among them", () => {
+  it("has 30 tiles, each a distinct single ASCII character, the base tiles among them", () => {
     expect(TILE_CHARS.size).toBe(Object.keys(TILE).length);
     expect(TILE_CHARS.size).toBe(30);
     for (const c of TILE_CHARS) expect(c).toMatch(/^[\x21-\x7e]$/);
-    for (const c of TILE_CHARS_V1) expect(TILE_CHARS.has(c)).toBe(true);
+    for (const c of Object.values(TILE_BASE)) expect(TILE_CHARS.has(c)).toBe(true);
   });
 
-  it.each([...TILE_CHARS].filter((c) => !TILE_CHARS_V1.has(c) && c !== TILE.teleportEntrance))(
+  const base: ReadonlySet<string> = new Set(Object.values(TILE_BASE));
+  it.each([...TILE_CHARS].filter((c) => !base.has(c) && c !== TILE.teleportEntrance))(
     "accepts the new tile %s",
     (c) => {
       expect(codes(doc(`${c}.......`))).toEqual([]);
@@ -242,14 +240,8 @@ describe("parseLevel: version 2", () => {
     expect(draft(doc("........", { teleports: [[1]] }))).toBe(false);
   });
 
-  it("reads a v1 document as its v2 migration, and refuses v2 content in it", () => {
+  it("refuses a version 1 document: v1 was dropped before anyone used it", () => {
     const v1 = JSON.parse(doc("........")) as Record<string, unknown>;
-    v1.version = 1;
-    const r = parseLevel(JSON.stringify(v1));
-    expect(r.ok && r.level.version).toBe(2);
-    expect(r.ok && r.level.teleports).toEqual([]);
-    const withQ = { ...v1, grid: [...(v1.grid as string[]).slice(0, 7), "Q#######"] };
-    expect(codes(JSON.stringify(withQ))).toEqual(["unknown-tile"]);
-    expect(codes(JSON.stringify({ ...v1, teleports: [] }))).toEqual(["unknown-field"]);
+    expect(codes(JSON.stringify({ ...v1, version: 1 }))).toEqual(["unsupported-version"]);
   });
 });

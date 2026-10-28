@@ -1,7 +1,7 @@
 {
   "format": "return-of-the-runners/level",
-  "version": 1,
-  "name": "Test",
+  "version": 2,
+  "name": "Les mines d'Ür ⛏",
   "width": 8,
   "height": 8,
   "grid": [
@@ -11,7 +11,7 @@
     "........",
     "........",
     "........",
-    ".....E$.",
+    ".P...E$.",
     "########"
   ]
 }

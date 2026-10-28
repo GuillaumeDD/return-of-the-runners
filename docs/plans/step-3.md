@@ -83,6 +83,9 @@ so they are good to about half a second.
    lands first and alone (B-019) with all the new tiles reserved, a v1 → v2 migration
    and fixtures for both versions. Later items only add behavior, never format. A v1
    file, link or stored level still opens (migrated on read); the app writes v2 only.
+   _Update 2026-10-28: after B-019 merged, Guillaume dropped v1 reading (no player had
+   used it). The migration, the v1 fixtures and their tests are gone; a v1 document is
+   `unsupported-version`._
 2. **One tile per cell, plus a teleporter link list.** The grid stays a list of strings
    (readable, diffable, short links). Teleporter links cannot live in a cell, so v2 adds
    one optional field, `teleports: [[fromX, fromY, toX, toY], …]`, validated against
@@ -150,6 +153,8 @@ Firefox, WebKit) and updates ARCHITECTURE § Observed behavior with its sources.
 ## Modules and enumerated tests
 
 ### B-019 — Level format v2 and migration
+
+_Done; the v1 migration below was removed afterwards (see key design decision 1)._
 
 - `src/level/format.ts`: v2 tile alphabet and limits; `src/level/parse.ts` reads v1
   and v2; `src/level/migrate.ts`: `migrateV1(doc) → v2 doc` (pure).

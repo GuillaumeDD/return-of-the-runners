@@ -129,7 +129,7 @@ describe("parseReplay", () => {
       seed: 1,
       level: {
         format: "return-of-the-runners/level",
-        version: 1,
+        version: 2,
         name: "t",
         width: 8,
         height: 8,

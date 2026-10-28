@@ -6,7 +6,7 @@
     "seed": 1,
     "level": {
       "format": "return-of-the-runners/level",
-      "version": 1,
+      "version": 2,
       "name": "Win",
       "width": 10,
       "height": 8,
