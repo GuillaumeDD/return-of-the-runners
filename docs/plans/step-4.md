@@ -74,10 +74,19 @@ Common to all three, because it is what "modern" means in 2026–27 beyond the s
 
 ## Key design decisions
 
-- **Who draws.** The art is made for this project: SVG or code-drawn sources in the
-  repo, rasterized at load or at build. A third-party pack may help only if its license
-  is CC0, CC BY, CC BY-SA or GPL-compatible (ASSETS.md). Images from generative AI are
-  out until their licensing question is settled (open question 1).
+- **Who draws** (Guillaume, 2026-10-28). By default the art is written as code: SVG
+  shapes and procedural textures (seeded noise for moss, lava, frost) in the repo,
+  rasterized at load or at build, reviewed in PRs like code. The heroes may be touched
+  up by hand. A third-party pack may help only if its license is CC0, CC BY, CC BY-SA
+  or GPL-compatible (ASSETS.md).
+- **Fallback: generated images.** If the code-drawn art does not convince, images from
+  generative AI are allowed, on one condition: each one passes a **similarity check**
+  before it is committed. The check compares it with the original game's frames (from
+  the S-014 to S-026 files, kept out of the repo) using a perceptual hash and an image
+  embedding distance, rejects anything above a threshold set in B-030, and adds a
+  reverse image search to catch other licensed images. The tool, model and prompt of
+  each image are recorded in its `ASSETS.md` entry. No check proves the absence of
+  every licensed lookalike; it catches the close ones.
 - **The simulation stays untouched.** Art is a renderer concern: no new state, no
   timing change. Every replay fixture keeps its hash (the B-010 suite is the proof).
 - **Animation clock.** Sprites pick their frame from the simulation state (action,
@@ -117,7 +126,9 @@ its `ASSETS.md` entry in the same PR, and every UI string lands in EN and FR.
   sizes, palette per world, outline and light rules, animation list and frame counts,
   reduced-motion rules), and this plan's status set to approved.
 
-No code, no tests. Acceptance: Guillaume has chosen a direction in the PR.
+No code, no tests. Acceptance: Guillaume has chosen a direction in the PR. If he
+turns down the code-drawn art for generated images, B-030 also delivers the similarity
+check (a script with its threshold and its tests) before the first generated image.
 
 ### B-031 — Sprite renderer
 
@@ -191,8 +202,6 @@ the state; every label is translated (EN + FR).
 
 ## Open questions
 
-1. **Generative AI images**: allowed as a starting point or not? Their license and
-   provenance are unclear, so the default is no.
-2. **Resolution**: keep TLR's 4:3 frame around the 28 × 16 grid, or a 16:9 layout with
+1. **Resolution**: keep TLR's 4:3 frame around the 28 × 16 grid, or a 16:9 layout with
    the HUD on the side? To settle with the mockups.
-3. **Hero names and looks** (PRD § Open questions): the runners' design needs them.
+2. **Hero names and looks** (PRD § Open questions): the runners' design needs them.
