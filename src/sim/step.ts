@@ -14,9 +14,10 @@ import type { Actor, Facing, GameState, Player } from "./state";
  *
  * Order within a tick: each player in order acts (dig or move) on the current terrain
  * and picks up the gold it touches; a dead player counts down, then reappears at its
- * start. A player touching the open exit wins the level. Unless it was won, the monks
- * then act in order, and a monk touching a player catches it. Then holes age: a player
- * or monk inside a hole that just filled dies. Last, deaths are counted (see `die`).
+ * start. A player touching the open exit wins the level (`playersAtExit`). Unless it
+ * was won, the monks then act in order, and a monk touching a player catches it. Then
+ * holes age: a player or monk inside a hole that just filled dies. Last, deaths are
+ * counted (see `die`).
  */
 export function step(state: GameState, inputs: TickInput): GameState {
   const tick = state.tick + 1;
@@ -45,13 +46,7 @@ export function step(state: GameState, inputs: TickInput): GameState {
     }
     players.push(p);
   }
-  const won =
-    goldLeft === 0 &&
-    players.some((p) => {
-      if (p.mode !== "alive") return false;
-      const { cx, cy } = centerCell(p);
-      return tiles[cy]?.charAt(cx) === TILE.exit;
-    });
+  const won = playersAtExit({ tiles, goldLeft, players }).length > 0;
 
   let monks = state.monks;
   let rng = state.rng;
@@ -90,6 +85,23 @@ export function step(state: GameState, inputs: TickInput): GameState {
     holes: aged.filter((h) => h.age < HOLE_LIFETIME),
     status,
   };
+}
+
+/**
+ * The players in play touching the open exit (indices, in player order). The tick this
+ * becomes non-empty, the level is won; since a won state is frozen, on a won state it
+ * still names the winners: one player, or both when they reached an exit on the same
+ * tick (a draw in versus). Exits are not owned: in versus, a player may leave by any.
+ */
+export function playersAtExit(s: Pick<GameState, "tiles" | "goldLeft" | "players">): number[] {
+  if (s.goldLeft !== 0) return [];
+  const out: number[] = [];
+  s.players.forEach((p, i) => {
+    if (p.mode !== "alive") return;
+    const { cx, cy } = centerCell(p);
+    if (s.tiles[cy]?.charAt(cx) === TILE.exit) out.push(i);
+  });
+  return out;
 }
 
 /**

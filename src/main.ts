@@ -4,10 +4,18 @@ import { createLibraryView } from "./editor/library-view";
 import { createEditorView } from "./editor/view";
 import type { StorageLike } from "./storage/levels";
 import { advance, type Accumulator } from "./game/loop";
-import { PLAY_SEED, createSession, tickSession, type Session } from "./game/session";
+import {
+  PLAY_MODES,
+  PLAY_SEED,
+  createSession,
+  playerCount,
+  tickSession,
+  type PlayMode,
+  type Session,
+} from "./game/session";
 import { detectLocale, translate, type Locale, type MessageKey } from "./i18n";
 import { inputsFrom, isBound, keyDown, keyUp, type HeldKeys } from "./input/keyboard";
-import { playerStatusText, playersFor } from "./game/hud";
+import { modeFor, playerStatusText, statusMessage } from "./game/hud";
 import { levelErrorMessage, uniqueCodes } from "./i18n/level-errors";
 import type { Level, LevelErrorCode } from "./level/format";
 import { parseLevel } from "./level/parse";
@@ -15,7 +23,7 @@ import { decodeLevel } from "./share/link";
 import firstSteps from "./levels/first-steps.json?raw";
 import { canvasSize, context2d, render } from "./render/canvas";
 import type { ValidTest } from "./editor/view";
-import { createState, maxPlayers, type PlayerCount, type Status } from "./sim/state";
+import { createState, maxPlayers } from "./sim/state";
 
 function byId<T extends HTMLElement>(id: string, type: new () => T): T {
   const el = document.getElementById(id);
@@ -43,27 +51,33 @@ const sharedErrors = byId("shared-errors", HTMLUListElement);
 const sharedEdit = byId("shared-edit", HTMLButtonElement);
 
 /**
- * The player count picked last; games started afterwards use it (a game already
- * running keeps its own until changed there). A level without a player 2 start plays alone.
+ * The play mode picked last; games started afterwards use it (a game already running
+ * keeps its own until changed there). A level without a player 2 start plays alone.
  */
-let picked: PlayerCount = 1;
+let picked: PlayMode = "solo";
 
-/** Where a game shows its player choice (for a level with a player 2 start) and its status line. */
+/** Where a game shows its mode choice (for a level with a player 2 start) and its status line. */
 interface PlayerEls {
   readonly group: HTMLElement;
-  readonly one: HTMLButtonElement;
-  readonly two: HTMLButtonElement;
+  readonly buttons: Readonly<Record<PlayMode, HTMLButtonElement>>;
   readonly hud: HTMLElement;
 }
 
 function playerEls(prefix: string): PlayerEls {
+  const button = (mode: PlayMode): HTMLButtonElement =>
+    byId(`${prefix}-players-${mode}`, HTMLButtonElement);
   return {
     group: byId(`${prefix}-players`, HTMLDivElement),
-    one: byId(`${prefix}-players-1`, HTMLButtonElement),
-    two: byId(`${prefix}-players-2`, HTMLButtonElement),
+    buttons: { solo: button("solo"), coop: button("coop"), versus: button("versus") },
     hud: byId(`${prefix}-hud`, HTMLParagraphElement),
   };
 }
+
+const MODE_LABEL: Readonly<Record<PlayMode, MessageKey>> = {
+  solo: "players1",
+  coop: "playersCoop",
+  versus: "playersVersus",
+};
 
 const playPlayers = playerEls("play");
 const testPlayers = playerEls("test");
@@ -85,8 +99,9 @@ function renderText(): void {
   sharedEdit.textContent = translate(locale, "sharedEdit");
   for (const els of [playPlayers, testPlayers]) {
     els.group.setAttribute("aria-label", translate(locale, "playersLabel"));
-    els.one.textContent = translate(locale, "players1");
-    els.two.textContent = translate(locale, "players2");
+    for (const mode of PLAY_MODES) {
+      els.buttons[mode].textContent = translate(locale, MODE_LABEL[mode]);
+    }
   }
   playing?.relabel();
   testGame?.relabel();
@@ -108,22 +123,10 @@ interface Game {
   readonly relabel: () => void;
 }
 
-/** The message for a game's status, by player count. */
-function statusMessage(status: Status, count: PlayerCount): MessageKey {
-  switch (status) {
-    case "playing":
-      return count === 2 ? "controls2" : "controls";
-    case "dead":
-      return count === 2 ? "allOut" : "caught";
-    case "won":
-      return "won";
-  }
-}
-
 /**
- * A game of `level` on `target`, with one or two players (`picked`, if the level
- * allows two); `onStatus` gets the message to show whenever the game's status or player
- * count changes.
+ * A game of `level` on `target`, alone or with two players in co-op or versus
+ * (`picked`, if the level allows two); `onStatus` gets the message to show whenever the
+ * game's status or mode changes.
  */
 function createGame(
   target: HTMLCanvasElement,
@@ -132,7 +135,8 @@ function createGame(
   onStatus: (key: MessageKey) => void,
 ): Game {
   const context = context2d(target);
-  let count = playersFor(level, picked);
+  let mode = modeFor(level, picked);
+  let count = playerCount(mode);
   let session = newSession();
   let shown: MessageKey | null = null;
   let hudText: string | null = null;
@@ -160,29 +164,33 @@ function createGame(
     held = new Set();
   };
 
-  /** A new game with `n` players, from the start of the level. */
-  const choose = (n: PlayerCount): void => {
-    picked = n;
-    if (playersFor(level, n) === count) return;
-    count = playersFor(level, n);
+  /** A new game in mode `m`, from the start of the level. */
+  const choose = (m: PlayMode): void => {
+    picked = m;
+    // Keys go to the game, not to the button just clicked.
+    els.buttons[m].blur();
+    if (modeFor(level, m) === mode) return;
+    mode = modeFor(level, m);
+    count = playerCount(mode);
     session = newSession();
     acc = { carry: 0 };
     showPlayers();
-    // Keys go to the game, not to the button just clicked.
-    els.one.blur();
-    els.two.blur();
   };
-  const onOne = (): void => {
-    choose(1);
-  };
-  const onTwo = (): void => {
-    choose(2);
+  const onChoose: Readonly<Record<PlayMode, () => void>> = {
+    solo: () => {
+      choose("solo");
+    },
+    coop: () => {
+      choose("coop");
+    },
+    versus: () => {
+      choose("versus");
+    },
   };
 
   function showPlayers(): void {
     els.group.hidden = maxPlayers(level) < 2;
-    els.one.setAttribute("aria-pressed", String(count === 1));
-    els.two.setAttribute("aria-pressed", String(count === 2));
+    for (const m of PLAY_MODES) els.buttons[m].setAttribute("aria-pressed", String(m === mode));
     els.hud.hidden = count < 2;
     shown = null; // the next frame shows the message and status line again
     hudText = null;
@@ -194,7 +202,7 @@ function createGame(
     acc = result.acc;
     const inputs = inputsFrom(held, count);
     for (let i = 0; i < result.ticks; i++) session = tickSession(session, inputs);
-    const key = statusMessage(session.state.status, count);
+    const key = statusMessage(session.state, mode);
     if (key !== shown) {
       shown = key;
       onStatus(key);
@@ -219,8 +227,7 @@ function createGame(
       window.addEventListener("keydown", onKeyDown);
       window.addEventListener("keyup", onKeyUp);
       window.addEventListener("blur", onBlur);
-      els.one.addEventListener("click", onOne);
-      els.two.addEventListener("click", onTwo);
+      for (const m of PLAY_MODES) els.buttons[m].addEventListener("click", onChoose[m]);
       last = null; // no catch-up for the time spent on another screen
       frameId = requestAnimationFrame(frame);
     },
@@ -231,8 +238,7 @@ function createGame(
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
       window.removeEventListener("blur", onBlur);
-      els.one.removeEventListener("click", onOne);
-      els.two.removeEventListener("click", onTwo);
+      for (const m of PLAY_MODES) els.buttons[m].removeEventListener("click", onChoose[m]);
       held = new Set();
     },
     relabel() {
@@ -312,7 +318,12 @@ function startTestPlay(test: ValidTest): void {
   editorMain.hidden = true;
   testScreen.hidden = false;
   const showStatus = (key: MessageKey): void => {
-    testMessageKey = key === "controls" ? "testHint" : key === "controls2" ? "testHint2" : key;
+    testMessageKey =
+      key === "controls"
+        ? "testHint"
+        : key === "controls2" || key === "controlsVersus"
+          ? "testHint2"
+          : key;
     testMessage.textContent = translate(locale, testMessageKey);
   };
   showStatus("controls"); // not the last test's "Caught!"
