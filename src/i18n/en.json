@@ -96,6 +96,6 @@
   "players2": "2 players",
   "playerName1": "Player 1",
   "playerName2": "Player 2",
-  "hudPlayer": "{player}: {lives} lives, {gold} gold",
+  "hudPlayer": "{player}: lives {lives}, gold {gold}",
   "hudOut": "{player}: out"
 }

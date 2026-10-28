@@ -86,7 +86,6 @@ export function stepMonks(state: GameState, tick: number): MonksResult {
     const others = monks.filter((_, j) => j !== i);
     const t: Terrain = { ...state, tiles, monks: others };
     let m: Monk = before;
-    const v = view(t, m, targetOf(m, state.players));
 
     switch (m.mode) {
       case "dead": {
@@ -106,10 +105,11 @@ export function stepMonks(state: GameState, tick: number): MonksResult {
         m = m.timer > 1 ? { ...m, timer: m.timer - 1 } : { ...m, mode: "escaping", timer: 0 };
         break;
       case "escaping":
-        m = escape(t, m, v, tick);
+        m = escape(t, m, view(state, m), tick);
         break;
       case "free": {
         // No player in play: the monk waits (it still falls if unsupported).
+        const v = view(state, m);
         const move = v === null ? "none" : chooseMove(t, v);
         const moved = stepActor(t, m, INPUT[move], tick, MONK_PERIOD);
         m = { ...m, ...moved };
@@ -149,8 +149,13 @@ export function stepMonks(state: GameState, tick: number): MonksResult {
   return { monks, tiles, rng, caught };
 }
 
-/** What the chase AI sees of a monk and the player it chases; null without a player. */
-function view(t: Terrain, m: Monk, target: Player | null): ChaseView | null {
+/**
+ * What the chase AI sees of a monk and the player it chases; null without a player.
+ * Whether that player falls is judged on the state at the start of the tick, so it
+ * does not depend on which monks moved before this one.
+ */
+function view(state: GameState, m: Monk): ChaseView | null {
+  const target = targetOf(m, state.players);
   if (target === null) return null;
   const { cx, cy } = centerCell(m);
   const r = centerCell(target);
@@ -161,7 +166,7 @@ function view(t: Terrain, m: Monk, target: Player | null): ChaseView | null {
     rx: r.cx,
     ry: r.cy,
     runnerX: target.x,
-    runnerFalling: isFalling(t, target),
+    runnerFalling: isFalling(state, target),
   };
 }
 

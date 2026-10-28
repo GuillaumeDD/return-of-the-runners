@@ -42,7 +42,10 @@ const sharedText = byId("shared-text", HTMLParagraphElement);
 const sharedErrors = byId("shared-errors", HTMLUListElement);
 const sharedEdit = byId("shared-edit", HTMLButtonElement);
 
-/** The player count picked last (on any screen); a level without a player 2 start plays alone. */
+/**
+ * The player count picked last; games started afterwards use it (a game already
+ * running keeps its own until changed there). A level without a player 2 start plays alone.
+ */
 let picked: PlayerCount = 1;
 
 /** Where a game shows its player choice (for a level with a player 2 start) and its status line. */
@@ -143,6 +146,8 @@ function createGame(
   }
 
   const onKeyDown = (e: KeyboardEvent): void => {
+    // Browser shortcuts (Ctrl+S, Ctrl+D…) are not game keys.
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
     // Arrows must not scroll the page, nor / open Firefox's quick find.
     if (isBound(e.code, count)) e.preventDefault();
     held = keyDown(held, e.code);
@@ -456,6 +461,10 @@ function show(route: Route): void {
   const noGame = route.screen === "shared" && next === null;
   canvas.hidden = noGame;
   message.hidden = noGame;
+  if (noGame) {
+    playPlayers.group.hidden = true;
+    playPlayers.hud.hidden = true;
+  }
   if (route.screen === "shared") renderShared();
   if (editing) {
     editor.show();

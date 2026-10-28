@@ -174,6 +174,20 @@ describe("two players: deaths and lives", () => {
     expect(p2(step(gone, [])).mode).toBe("alive");
   });
 
+  // Regression (self-review): with nobody in play, monks stand still, so a monk on the
+  // start of the last dead player kept it waiting forever and the game hung.
+  it("with no player in play, a dead player reappears even with a monk on its start", () => {
+    let s = stateFrom(flat, 1, 2);
+    s = withPlayer(s, { mode: "out", lives: 0 }, 1);
+    s = withPlayer(s, { x: 3 * SUB, mode: "dead", timer: 1 }, 0);
+    s = { ...s, monks: [{ ...newMonk(0, 0), x: p1(s).startX, y: 0 }] };
+    const next = step(s, []);
+    // It reappears on the monk, which catches it at once: a life is gone, no hang.
+    expect(p1(next).lives).toBe(START_LIVES - 1);
+    const later = runBoth(s, NO_INPUT, NO_INPUT, PLAYER_RESPAWN_TICKS * START_LIVES + 1);
+    expect(later.status).toBe("dead");
+  });
+
   it("a player buried in a hole loses a life too", () => {
     let s = stateFrom(["P.....Q.", "########", "########"], 1, 2);
     s = withPlayer(s, { x: 6 * SUB, y: SUB }, 1);

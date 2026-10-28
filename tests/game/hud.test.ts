@@ -21,17 +21,17 @@ describe("playerStatusText", () => {
   it("shows each player's lives and gold, in both languages", () => {
     const s = withPlayer(stateFrom(twoRows, 1, 2), { gold: 3, lives: 2 }, 1);
     expect(playerStatusText("en", s)).toBe(
-      `Player 1: ${String(START_LIVES)} lives, 0 gold · Player 2: 2 lives, 3 gold`,
+      `Player 1: lives ${String(START_LIVES)}, gold 0 · Player 2: lives 2, gold 3`,
     );
     expect(playerStatusText("fr", s)).toBe(
-      `Joueur 1 : ${String(START_LIVES)} vies, 0 or · Joueur 2 : 2 vies, 3 or`,
+      `Joueur 1 : vies ${String(START_LIVES)}, or 0 · Joueur 2 : vies 2, or 3`,
     );
   });
 
   it("says when a player is out", () => {
     const s = withPlayer(stateFrom(twoRows, 1, 2), { mode: "out", lives: 0 }, 0);
     expect(playerStatusText("en", s)).toBe(
-      `Player 1: out · Player 2: ${String(START_LIVES)} lives, 0 gold`,
+      `Player 1: out · Player 2: lives ${String(START_LIVES)}, gold 0`,
     );
   });
 });

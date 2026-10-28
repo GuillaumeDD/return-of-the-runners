@@ -26,11 +26,12 @@ export function step(state: GameState, inputs: TickInput): GameState {
   let goldLeft = state.goldLeft;
   let holes = state.holes;
   const players: Player[] = [];
+  const anyAlive = state.players.some((p) => p.mode === "alive");
   for (let i = 0; i < state.players.length; i++) {
     const before = state.players[i];
     if (before === undefined) continue;
     const t: Terrain = { ...state, tiles, holes };
-    const acted = actPlayer(t, before, inputs[i] ?? NO_INPUT, tick);
+    const acted = actPlayer(t, before, inputs[i] ?? NO_INPUT, tick, anyAlive);
     let p = acted.player;
     if (acted.hole !== null) holes = [...holes, acted.hole];
     if (p.mode === "alive") {
@@ -102,22 +103,27 @@ function die(p: Player, solo: boolean): Player {
   return { ...p, lives, mode: "dead", timer: solo ? 0 : PLAYER_RESPAWN_TICKS, busy: 0 };
 }
 
-/** One player's own action this tick: dig, move, or count down to reappearing. */
+/**
+ * One player's own action this tick: dig, move, or count down to reappearing.
+ * `anyAlive`: some player was in play at the start of the tick.
+ */
 function actPlayer(
   t: Terrain,
   p: Player,
   input: PlayerInput,
   tick: number,
+  anyAlive: boolean,
 ): { player: Player; hole: Hole | null } {
   switch (p.mode) {
     case "out":
       return { player: p, hole: null };
     case "dead": {
       if (p.timer > 1) return { player: { ...p, timer: p.timer - 1 }, hole: null };
-      // A monk on the start, even partly: wait until it leaves.
+      // A monk on the start, even partly: wait until it leaves. Only while another
+      // player is in play: with nobody to chase, monks stand still and never would.
       const cx = cellOf(p.startX);
       const cy = cellOf(p.startY);
-      if (t.monks.some((m) => m.mode !== "dead" && overlapsCell(m, cx, cy))) {
+      if (anyAlive && t.monks.some((m) => m.mode !== "dead" && overlapsCell(m, cx, cy))) {
         return { player: p, hole: null };
       }
       const back: Player = { ...p, x: p.startX, y: p.startY, facing: 1, mode: "alive", timer: 0 };
