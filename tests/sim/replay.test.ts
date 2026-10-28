@@ -26,11 +26,25 @@ describe("committed replays (Node)", () => {
       "coop-monks",
       "first-steps-random",
       "monk-trap-respawn",
+      "terrain",
       "versus-race",
       "win-gold-and-exit",
     ]);
     // At least one replay has two players.
     expect(fixtures.some((f) => f.replay.inputs.length === 2)).toBe(true);
+  });
+
+  it("terrain: the monk reappears at the respawn point; the hidden ladder is out at the end", () => {
+    const f = fixtures.find((x) => x.name === "terrain");
+    if (f === undefined) throw new Error("missing terrain");
+    const respawned = runReplay({
+      ...f.replay,
+      inputs: f.replay.inputs.map((log) => encodeInputs(decodeInputs(log).slice(0, 633))),
+    }).state;
+    expect(respawned.monks.map((m) => [m.mode, m.x, m.y])).toEqual([["free", 0, 0]]);
+    const end = runReplay(f.replay).state;
+    expect(end.tiles.map((r) => r.charAt(12)).slice(1, 7)).toEqual(Array(6).fill("H"));
+    expect(end.status).toBe("won");
   });
 
   it("versus-race is won by player 1 alone, player 2 having its own gold", () => {

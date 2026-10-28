@@ -25,6 +25,12 @@ const COLOR = {
   runnerDead: "#d64545",
   monk: "#e07b39",
   monkFace: "#2b1a0e",
+  goo: "#4f8f3a",
+  gooDrip: "#2f5e22",
+  alcove: "#3a2d4d",
+  alcoveInside: "#0a0710",
+  hiddenLadder: "#6b5a36",
+  trapdoorMark: "#f2e6a0",
   gridLine: "#222",
 } as const;
 
@@ -71,7 +77,9 @@ function drawPlayer(ctx: CanvasRenderingContext2D, p: Player, index: number, los
 
 /**
  * Draws a level grid as the editor shows it: tiles as in the game (exit locked), and
- * the player and monk start markers as the actors that will stand there.
+ * the player and monk start markers as the actors that will stand there. Tiles the game
+ * hides are shown to the maker: trapdoor turf has a mark, a hidden ladder is dim, a monk
+ * respawn point is a monk-coloured frame.
  */
 export function renderGrid(ctx: CanvasRenderingContext2D, grid: readonly string[]): void {
   const size = gridCanvasSize(grid);
@@ -81,7 +89,7 @@ export function renderGrid(ctx: CanvasRenderingContext2D, grid: readonly string[
     if (tile === TILE.runnerStart) drawRunner(ctx, x, y, 1, false, 0);
     else if (tile === TILE.player2Start) drawRunner(ctx, x, y, 1, false, 1);
     else if (tile === TILE.monkStart) drawMonkAt(ctx, x, y, -1, false);
-    else drawTile(ctx, tile, x, y, false);
+    else drawTile(ctx, tile, x, y, false, true);
   });
   // Faint cell lines, so empty cells can be aimed at.
   ctx.fillStyle = COLOR.gridLine;
@@ -130,32 +138,67 @@ function drawHole(ctx: CanvasRenderingContext2D, left: number, x: number, y: num
   ctx.fillRect(x, y + TILE_PX - h, TILE_PX, h);
 }
 
+/** A tile; `editor` shows the tiles the game hides (see `renderGrid`). */
 function drawTile(
   ctx: CanvasRenderingContext2D,
   tile: string,
   x: number,
   y: number,
   exitOpen: boolean,
+  editor = false,
 ): void {
   const s = TILE_PX;
   switch (tile) {
     case TILE.brick:
-      ctx.fillStyle = COLOR.brick;
+      drawBrick(ctx, x, y);
+      break;
+    case TILE.trapdoor:
+      // Looks like brick in the game: that is the trap.
+      drawBrick(ctx, x, y);
+      if (editor) {
+        ctx.fillStyle = COLOR.trapdoorMark;
+        for (let i = 2; i < s - 2; i += 5) ctx.fillRect(x + i, y + i, 3, 3);
+      }
+      break;
+    case TILE.gooeyTurf:
+      ctx.fillStyle = COLOR.goo;
       ctx.fillRect(x, y, s, s);
-      ctx.fillStyle = COLOR.mortar;
-      ctx.fillRect(x, y + s / 2 - 1, s, 2);
-      ctx.fillRect(x + s / 2 - 1, y, 2, s / 2);
-      ctx.fillRect(x, y + s / 2, 2, s / 2);
+      ctx.fillStyle = COLOR.gooDrip;
+      ctx.fillRect(x + 3, y + 6, 4, 8);
+      ctx.fillRect(x + 11, y + 4, 3, 12);
+      ctx.fillRect(x + 17, y + 8, 4, 7);
+      break;
+    case TILE.hiddenLadder:
+      // Invisible in the game until the gold is gone (it then becomes a ladder).
+      if (editor) drawLadder(ctx, x, y, COLOR.hiddenLadder);
+      break;
+    case TILE.alcove:
+      // A dark arched niche.
+      ctx.fillStyle = COLOR.alcove;
+      ctx.fillRect(x + 2, y + 6, s - 4, s - 6);
+      ctx.fillRect(x + 4, y + 3, s - 8, 3);
+      ctx.fillRect(x + 7, y + 1, s - 14, 2);
+      ctx.fillStyle = COLOR.alcoveInside;
+      ctx.fillRect(x + 5, y + 8, s - 10, s - 8);
+      ctx.fillRect(x + 8, y + 5, s - 16, 3);
+      break;
+    case TILE.monkRespawn:
+      // A marker only: nothing shows in the game.
+      if (editor) {
+        ctx.fillStyle = COLOR.monk;
+        ctx.fillRect(x + 2, y + 2, s - 4, 2);
+        ctx.fillRect(x + 2, y + s - 4, s - 4, 2);
+        ctx.fillRect(x + 2, y + 2, 2, s - 4);
+        ctx.fillRect(x + s - 4, y + 2, 2, s - 4);
+        ctx.fillRect(x + 9, y + 9, 6, 6);
+      }
       break;
     case TILE.bedrock:
       ctx.fillStyle = COLOR.bedrock;
       ctx.fillRect(x, y, s, s);
       break;
     case TILE.ladder:
-      ctx.fillStyle = COLOR.ladder;
-      ctx.fillRect(x + 4, y, 3, s);
-      ctx.fillRect(x + s - 7, y, 3, s);
-      for (let r = 3; r < s; r += 7) ctx.fillRect(x + 4, y + r, s - 8, 2);
+      drawLadder(ctx, x, y, COLOR.ladder);
       break;
     case TILE.bar:
       ctx.fillStyle = COLOR.bar;
@@ -178,6 +221,24 @@ function drawTile(
     default:
       break;
   }
+}
+
+function drawBrick(ctx: CanvasRenderingContext2D, x: number, y: number): void {
+  const s = TILE_PX;
+  ctx.fillStyle = COLOR.brick;
+  ctx.fillRect(x, y, s, s);
+  ctx.fillStyle = COLOR.mortar;
+  ctx.fillRect(x, y + s / 2 - 1, s, 2);
+  ctx.fillRect(x + s / 2 - 1, y, 2, s / 2);
+  ctx.fillRect(x, y + s / 2, 2, s / 2);
+}
+
+function drawLadder(ctx: CanvasRenderingContext2D, x: number, y: number, color: string): void {
+  const s = TILE_PX;
+  ctx.fillStyle = color;
+  ctx.fillRect(x + 4, y, 3, s);
+  ctx.fillRect(x + s - 7, y, 3, s);
+  for (let r = 3; r < s; r += 7) ctx.fillRect(x + 4, y + r, s - 8, 2);
 }
 
 /** A runner; player 2 (`index` 1) in its own colours. */

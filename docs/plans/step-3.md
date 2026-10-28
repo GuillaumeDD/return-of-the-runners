@@ -244,6 +244,10 @@ comes with the item slot (B-024)._
 
 ### B-022 — Terrain
 
+_Done. As built: the alcove also hides the player from the monks' sight (they chase
+another player or stand still; provisional), and a monk with every respawn point taken
+waits `MONK_TICKS.respawn` before trying again. `GOO_PERIOD` is 6._
+
 - Trapdoor turf: drawn like brick, behaves as empty for support and digging (cannot be
   dug, since there is nothing there).
 - Gooey turf: solid floor that cannot be dug; whoever walks on it moves at

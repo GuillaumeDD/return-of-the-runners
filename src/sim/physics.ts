@@ -10,17 +10,44 @@ import type { GameState } from "./state";
 export type Terrain = Pick<GameState, "width" | "height" | "tiles" | "holes" | "monks">;
 
 /**
- * Tile at a cell, as actors experience it: a dug-out brick reads as empty, and anything
- * outside the level reads as bedrock (a solid wall).
+ * Tiles actors move through as if the cell were empty: trapdoor turf (drawn like brick,
+ * but nothing is there), a hidden ladder not yet revealed (it becomes a ladder in
+ * `tiles` once the gold is gone, see `revealLadders`), an alcove (a hiding place with
+ * no support of its own) and a monk respawn point (a marker).
+ */
+const AS_EMPTY: ReadonlySet<string> = new Set([
+  TILE.trapdoor,
+  TILE.hiddenLadder,
+  TILE.alcove,
+  TILE.monkRespawn,
+]);
+
+/** A level tile as actors experience it (see `AS_EMPTY`); other tiles are themselves. */
+export function actorTile(tile: string): string {
+  return AS_EMPTY.has(tile) ? TILE.empty : tile;
+}
+
+/**
+ * Tile at a cell, as actors experience it: a dug-out brick reads as empty, so do the
+ * `AS_EMPTY` tiles, and anything outside the level reads as bedrock (a solid wall).
  */
 export function tileAt(t: Terrain, cx: number, cy: number): string {
   if (cx < 0 || cy < 0 || cx >= t.width || cy >= t.height) return TILE.bedrock;
   if (isDugOut(t.holes, cx, cy)) return TILE.empty;
-  return t.tiles[cy]?.charAt(cx) ?? TILE.bedrock;
+  return actorTile(t.tiles[cy]?.charAt(cx) ?? TILE.bedrock);
 }
 
+/** Walls and floors: brick, bedrock and gooey turf (only brick can be dug). */
 export function isSolid(tile: string): boolean {
-  return tile === TILE.brick || tile === TILE.bedrock;
+  return tile === TILE.brick || tile === TILE.bedrock || tile === TILE.gooeyTurf;
+}
+
+/**
+ * Whether an actor at `a` walks on gooey turf: the cell below its centre column is goo.
+ * It then walks at `GOO_PERIOD`.
+ */
+export function onGoo(t: Terrain, a: { readonly x: number; readonly y: number }): boolean {
+  return tileAt(t, cellOf(a.x + SUB / 2), cellOf(a.y) + 1) === TILE.gooeyTurf;
 }
 
 /** An actor may occupy any non-solid cell. */

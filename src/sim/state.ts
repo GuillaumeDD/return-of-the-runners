@@ -1,5 +1,5 @@
 import { TILE, type Level } from "../level/format";
-import { countGold } from "./gold";
+import { countGold, revealLadders } from "./gold";
 import type { Hole } from "./holes";
 import { START_LIVES, SUB } from "./rules";
 
@@ -157,13 +157,15 @@ export function createState(level: Level, seed: number, players: PlayerCount = 1
       .replaceAll(TILE.player2Start, TILE.empty)
       .replaceAll(TILE.monkStart, TILE.empty),
   );
+  const goldLeft = countGold(tiles);
   return {
     tick: 0,
     rng: seed >>> 0,
     width: level.width,
     height: level.height,
-    tiles,
-    goldLeft: countGold(tiles),
+    // A level without gold shows its hidden ladders from the start.
+    tiles: revealLadders(tiles, goldLeft),
+    goldLeft,
     holes: [],
     players:
       p2 === null ? [newPlayer(p1.cx, p1.cy)] : [newPlayer(p1.cx, p1.cy), newPlayer(p2.cx, p2.cy)],

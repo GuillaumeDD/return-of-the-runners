@@ -6,9 +6,10 @@ import {
   isPassable,
   isSupported,
   offsetOf,
+  onGoo,
   type Terrain,
 } from "./physics";
-import { SUB, type Period } from "./rules";
+import { GOO_PERIOD, SUB, type Period } from "./rules";
 import type { Actor, Facing } from "./state";
 
 /**
@@ -140,7 +141,7 @@ export function tryHorizontal(
     if (!isPassable(t, cx + dir, cy)) return { ...a, facing };
   }
   // Mid-tile: both neighbouring cells were checked when the move began, so the actor
-  // may continue or reverse freely.
-  const p = isBar(t, cellOf(a.x), cy) ? period.bar : period.walk;
+  // may continue or reverse freely. Gooey turf slows runners and monks alike.
+  const p = isBar(t, cellOf(a.x), cy) ? period.bar : onGoo(t, a) ? GOO_PERIOD : period.walk;
   return every(tick, p) ? { ...a, x: a.x + dir, facing } : { ...a, facing };
 }

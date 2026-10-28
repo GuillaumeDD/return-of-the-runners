@@ -34,6 +34,12 @@ export const MONK_PERIOD: Period = {
   fall: 2,
 };
 
+/**
+ * Walking on gooey turf, for runners and monks alike: one sub-unit every 6 ticks (a
+ * third of the runner's speed, half the monk's; provisional, S-002 only says it slows).
+ */
+export const GOO_PERIOD = 6;
+
 export const MONK_TICKS = {
   /** Stuck in a hole before climbing out (if the hole has not refilled by then). */
   trapped: 120,

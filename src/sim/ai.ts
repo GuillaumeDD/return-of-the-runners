@@ -1,5 +1,5 @@
 import { TILE } from "../level/format";
-import { monkAt, type Terrain } from "./physics";
+import { actorTile, monkAt, type Terrain } from "./physics";
 
 /**
  * Monk chase AI: the classic Lode Runner algorithm (from the 1982 game, as described in
@@ -33,18 +33,21 @@ export interface ChaseView {
   readonly runnerFalling: boolean;
 }
 
-/** Static tile: holes ignored, the exit reads as empty, outside the level as bedrock. */
+/**
+ * Static tile: holes ignored, the exit and the tiles actors pass through (`actorTile`)
+ * read as empty, outside the level as bedrock.
+ */
 function base(t: Terrain, x: number, y: number): string {
   if (x < 0 || y < 0 || x >= t.width || y >= t.height) return TILE.bedrock;
-  const c = t.tiles[y]?.charAt(x) ?? TILE.bedrock;
+  const c = actorTile(t.tiles[y]?.charAt(x) ?? TILE.bedrock);
   return c === TILE.exit ? TILE.empty : c;
 }
 
 function isFloor(c: string): boolean {
-  return c === TILE.brick || c === TILE.bedrock;
+  return c === TILE.brick || c === TILE.bedrock || c === TILE.gooeyTurf;
 }
 
-/** Floor a monk can stand or walk on: brick, bedrock or a ladder top. */
+/** Floor a monk can stand or walk on: brick, bedrock, gooey turf or a ladder top. */
 function isStandable(c: string): boolean {
   return isFloor(c) || c === TILE.ladder;
 }

@@ -1,5 +1,5 @@
 import { TILE } from "../level/format";
-import { centerCell, takeGold } from "./gold";
+import { centerCell, revealLadders, takeGold } from "./gold";
 import { HOLE_LIFETIME, holeAt, type Hole } from "./holes";
 import { NO_INPUT, type PlayerInput, type TickInput } from "./input";
 import { stepMonks } from "./monks";
@@ -14,7 +14,7 @@ import type { Actor, Facing, GameState, Player } from "./state";
  *
  * Order within a tick: each player in order acts (dig or move) on the current terrain
  * and picks up the gold it touches; a dead player counts down, then reappears at its
- * start. A player touching the open exit wins the level (`playersAtExit`). Unless it
+ * start. Once the last gold is taken, hidden ladders appear. A player touching the open exit wins the level (`playersAtExit`). Unless it
  * was won, the monks then act in order, and a monk touching a player catches it. Then
  * holes age: a player or monk inside a hole that just filled dies (no player dies on
  * the winning tick). Last, deaths are counted (see `die`).
@@ -46,6 +46,7 @@ export function step(state: GameState, inputs: TickInput): GameState {
     }
     players.push(p);
   }
+  tiles = revealLadders(tiles, goldLeft);
   const won = playersAtExit({ tiles, goldLeft, players }).length > 0;
 
   let monks = state.monks;
