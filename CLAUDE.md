@@ -36,7 +36,8 @@ you haven't read it.
 - **Pure, deterministic simulation.** Game logic never touches the DOM, time, audio
   or `Math.random` (ARCHITECTURE § Simulation).
 - **Versioned level format.** Every format change ships with a migration and fixtures
-  (ARCHITECTURE § Level format).
+  (ARCHITECTURE § Level format). The one exception so far: v1 was dropped before any
+  player used it.
 - **Level data is untrusted.** Validate at the boundary; never `innerHTML`/`eval`
   (ARCHITECTURE § Security).
 - **Public repo.** Every commit is published: apply §5 "Privacy, secrets &

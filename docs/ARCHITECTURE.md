@@ -30,7 +30,7 @@ index.html ── src/main.ts        entry point: wires DOM, screens, input, loo
               src/input/         keyboard → per-tick PlayerInput, via a bindings table
               src/render/        Canvas 2D rendering of a simulation state
               src/levels/        bundled levels (JSON, validated at load like any import)
-              src/level/         level format: types, validator, v1 → v2 migration
+              src/level/         level format: types, validator (migrations from v3 on)
               src/storage/       "My levels" in the browser (localStorage, validated)
               src/share/         share links: a level in the URL fragment
 tests/                           Vitest tests, mirroring src/
@@ -176,10 +176,12 @@ a stable `code`, translated in the UI).
 
 ### Version 2
 
-The current version, written by the game since B-019. Version 1 is still read: a v1
-document is checked against the v1 rules (its six fields, its nine tiles), then
-migrated (`level/migrate.ts`, `migrateV1`: the same grid with `version: 2` and no
-teleporters). Every v1 tile means the same in v2.
+The current and only version, since B-019. Version 1 (the same document without
+`teleports`, and only the nine tiles of the left column below) is **no longer read**:
+it is refused as `unsupported-version`. This is a one-time exception to the migration
+rule, decided by Guillaume on 2026-10-28 because no player had used v1 yet; it avoids
+carrying a migration for nobody. A v1 level stored in the browser is skipped as a
+damaged entry, and kept as it is.
 
 ```json
 {
@@ -193,7 +195,7 @@ teleporters). Every v1 tile means the same in v2.
 }
 ```
 
-The six fields of v1 are required; `teleports` is optional (written only when the
+The first six fields are required; `teleports` is optional (written only when the
 level has a teleporter); any other field is rejected. `grid` has `height` rows of
 exactly `width` tiles, top row first. Each `teleports` entry is a one-way link
 `[fromX, fromY, toX, toY]`, in cells, from an entrance `T` to an exit `t`: one grid
@@ -219,7 +221,7 @@ cell cannot hold a link, so links live beside the grid.
 |      |                                        | `g`         | gas spray                  |
 |      |                                        | `u`         | goo bucket                 |
 
-The left column is version 1. The right column is reserved by the format first: each
+The left column holds the tiles of the 1982 game (`TILE_BASE`). The right column is reserved by the format first: each
 tile gets its behavior, its drawing and its place in the editor palette with its own
 step 3 item (B-020 to B-028, see [`plans/step-3.md`](plans/step-3.md)). Until then the
 game does not draw it, and it is neither solid nor climbable: nothing in the editor
@@ -252,13 +254,13 @@ link problem is reported once. Keys and doors may exist without each other: the 
 tests the level.
 
 Structural errors (size, JSON, format, version) stop validation; all other errors are
-reported together, and a v1 document with errors reports them as v1 (it is not
-migrated). TLR levels are 28 × 16 (S-001, S-015); width and height stay per-level
+reported together. TLR levels are 28 × 16 (S-001, S-015); width and height stay per-level
 properties so makers can build other sizes.
 
 ### Versioning
 
-- Every format change bumps `version` and ships a migration from the previous version.
+- Every format change bumps `version` and ships a migration from the previous version
+  (exception: v1 → v2, see above).
 - Every version keeps fixture files in `tests/fixtures/levels/v<N>/` (`valid/` and
   `invalid/`; an invalid fixture is named after its expected error code, with an
   optional `--variant` suffix). Fixtures are excluded from Prettier so they stay
@@ -295,8 +297,7 @@ Code: `src/editor/` (pure modules, and `view.ts` / `library-view.ts` for the DOM
   `LIMITS`); the list refreshes on every edit until the level is valid.
 - Editor levels are stored in the browser (`storage/levels.ts`): one `localStorage` key,
   `rotr.levels.v1`, holding a versioned document (`return-of-the-runners/my-levels`)
-  with an id counter and the levels as v2 documents (a stored v1 level is migrated on
-  read and written back as v2 on the next save). They are **drafts**
+  with an id counter and the levels as v2 documents. They are **drafts**
   (`LevelDraft`, parsed with `parseLevel(text, { gameRules: false })`): the shape is
   checked, the game rules are not, so a level can be saved half-built. A draft has no
   `version` field, so the type system refuses to play one without a full `parseLevel`.
@@ -307,14 +308,14 @@ Code: `src/editor/` (pure modules, and `view.ts` / `library-view.ts` for the DOM
   thrown.
 - Levels are exported and imported as files (`level/file.ts`): `<name>.rotr.json`, the
   exact v2 document, pretty-printed (one grid row and one teleporter link per line).
-  Export needs a playable level; a v1 file still imports, migrated. An import is
+  Export needs a playable level. An import is
   untrusted input: over 64 KB it is rejected from `File.size` before a byte is read,
   then it goes through `parseLevel` with the game rules; a read failure is the
   `unreadable-file` error. The file name is plain ASCII (headless Chromium names a
   non-ASCII `download` "download"), and Windows device names get a `-level` suffix. A
   slow read is dropped if the editor changed or another import started meanwhile.
 - **Share links** (`share/link.ts`): `#level=<payload>`, where the payload is the
-  level's compact v2 JSON (a v1 link still opens, migrated), compressed with raw DEFLATE (`CompressionStream`, built
+  level's compact v2 JSON, compressed with raw DEFLATE (`CompressionStream`, built
   into the browsers and Node, so no dependency) and written in base64url. The fragment
   never reaches a server. Decoding is untrusted input, capped at each step: at most
   `MAX_SHARE_PAYLOAD` (16 K) characters, canonical base64url (spare bits must be zero),

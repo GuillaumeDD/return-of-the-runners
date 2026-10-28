@@ -33,7 +33,7 @@ describe("parseLevel fuzzing", () => {
     }
   });
 
-  it("mutated valid v1 and v2 levels: never throws, and anything accepted satisfies all invariants", () => {
+  it("mutated valid levels: never throws, and anything accepted satisfies all invariants", () => {
     const rng = makeRng(2);
     let accepted = 0;
     let acceptedWithLinks = 0;

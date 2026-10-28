@@ -2,8 +2,7 @@ import { LEVEL_FORMAT_ID, LEVEL_FORMAT_VERSION, type LevelDraft } from "./format
 
 /**
  * The v2 document of a level (or a draft), fields in their canonical order. `teleports`
- * is written only when the level has some, so a level without teleporters has the same
- * fields as in v1.
+ * is written only when the level has some.
  */
 export function levelDocument(level: LevelDraft): Record<string, unknown> {
   return {

@@ -6,7 +6,7 @@
     "seed": 15,
     "level": {
       "format": "return-of-the-runners/level",
-      "version": 1,
+      "version": 2,
       "name": "First steps",
       "width": 28,
       "height": 16,
