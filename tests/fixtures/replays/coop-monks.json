@@ -1,0 +1,72 @@
+{
+  "about": "Two players, one monk behind a wall with player 2: player 2 is caught three times and reappears at its start each time, on its own lives, while player 1 collects both gold and wins at the exit.",
+  "replay": {
+    "format": "return-of-the-runners/replay",
+    "version": 2,
+    "seed": 3,
+    "level": {
+      "format": "return-of-the-runners/level",
+      "version": 2,
+      "name": "Co-op",
+      "width": 14,
+      "height": 8,
+      "grid": [
+        "..............",
+        "..............",
+        "..............",
+        "..............",
+        "..$.H.....M...",
+        "####H#####..##",
+        "P..$H...E@...Q",
+        "@@@@@@@@@@@@@@"
+      ]
+    },
+    "inputs": [
+      [
+        [
+          100,
+          ""
+        ],
+        [
+          64,
+          "R"
+        ],
+        [
+          32,
+          "U"
+        ],
+        [
+          32,
+          "L"
+        ],
+        [
+          32,
+          "R"
+        ],
+        [
+          32,
+          "D"
+        ],
+        [
+          56,
+          "R"
+        ]
+      ],
+      [
+        [
+          30,
+          "L"
+        ],
+        [
+          318,
+          ""
+        ]
+      ]
+    ]
+  },
+  "expected": {
+    "tick": 348,
+    "status": "won",
+    "hash": 1416062495
+  }
+}

@@ -16,3 +16,6 @@ export const NO_INPUT: PlayerInput = {
   digLeft: false,
   digRight: false,
 };
+
+/** Every player's input for one tick, player 1 first; a missing entry is no input. */
+export type TickInput = readonly PlayerInput[];

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { hashState } from "../../src/sim/hash";
-import { newMonk, type GameState, type Monk } from "../../src/sim/state";
-import { press, run, stateFrom } from "./helpers";
+import { newMonk, type GameState, type Monk, type Player } from "../../src/sim/state";
+import { p1, press, run, stateFrom, withPlayer } from "./helpers";
 
 const rows = ["........", "...H....", "...H.-..", "P..H....", "########"];
 
@@ -16,10 +16,6 @@ describe("hashState", () => {
       { ...base, tick: base.tick + 1 },
       { ...base, rng: base.rng + 1 },
       { ...base, tiles: base.tiles.map((r, y) => (y === 0 ? "#" + r.slice(1) : r)) },
-      { ...base, runner: { ...base.runner, x: base.runner.x + 1 } },
-      { ...base, runner: { ...base.runner, y: base.runner.y + 1 } },
-      { ...base, runner: { ...base.runner, facing: -1 } },
-      { ...base, runner: { ...base.runner, busy: 1 } },
       { ...base, holes: [{ cx: 1, cy: 4, age: 0 }] },
       { ...base, goldLeft: base.goldLeft + 1 },
       { ...base, status: "dead" },
@@ -52,6 +48,28 @@ describe("hashState", () => {
     expect(hashState({ ...base, monks: [] })).not.toBe(hashState(a));
   });
 
+  it("distinguishes every player field, and player order", () => {
+    const base = stateFrom(["P......Q", "########"], 1, 2);
+    const p = p1(base);
+    const variants: Partial<Player>[] = [
+      { x: p.x + 1 },
+      { y: p.y + 1 },
+      { facing: -1 },
+      { busy: 1 },
+      { mode: "dead" },
+      { mode: "out" },
+      { timer: 1 },
+      { lives: p.lives - 1 },
+      { gold: 1 },
+      { startX: p.startX + 1 },
+      { startY: p.startY + 1 },
+    ];
+    for (const v of variants) expect(hashState(withPlayer(base, v))).not.toBe(hashState(base));
+    const swapped = { ...base, players: [...base.players].reverse() };
+    expect(hashState(swapped)).not.toBe(hashState(base));
+    expect(hashState({ ...base, players: [p] })).not.toBe(hashState(base));
+  });
+
   it("distinguishes hole fields", () => {
     const base = stateFrom(rows);
     const a = { ...base, holes: [{ cx: 1, cy: 4, age: 0 }] };
@@ -68,12 +86,20 @@ describe("hashState", () => {
     const base = stateFrom(rows);
     const reordered: GameState = {
       status: base.status,
-      runner: {
-        busy: base.runner.busy,
-        facing: base.runner.facing,
-        y: base.runner.y,
-        x: base.runner.x,
-      },
+      players: [
+        {
+          startY: p1(base).startY,
+          startX: p1(base).startX,
+          gold: p1(base).gold,
+          lives: p1(base).lives,
+          timer: p1(base).timer,
+          mode: p1(base).mode,
+          busy: p1(base).busy,
+          facing: p1(base).facing,
+          y: p1(base).y,
+          x: p1(base).x,
+        },
+      ],
       holes: base.holes,
       goldLeft: base.goldLeft,
       monks: base.monks,
@@ -96,7 +122,7 @@ describe("hashState", () => {
     s = run(s, press.none, 300);
     expect(s.tick).toBe(600);
     // Position first, so a movement regression is told apart from a serialization change.
-    expect(s.runner).toEqual({ x: 56, y: 24, facing: 1, busy: 0 });
+    expect(p1(s)).toMatchObject({ x: 56, y: 24, facing: 1, busy: 0 });
     expect(hashState(s)).toBe(COMMITTED_HASH);
   });
 });
@@ -124,5 +150,5 @@ describe("hashState with monks", () => {
   });
 });
 
-const COMMITTED_MONK_HASH = 3733748255;
-const COMMITTED_HASH = 3336778812;
+const COMMITTED_MONK_HASH = 1382849755;
+const COMMITTED_HASH = 2861219296;

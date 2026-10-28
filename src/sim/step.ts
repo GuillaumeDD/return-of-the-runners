@@ -1,54 +1,63 @@
 import { TILE } from "../level/format";
 import { centerCell, takeGold } from "./gold";
 import { HOLE_LIFETIME, holeAt, type Hole } from "./holes";
-import type { PlayerInput } from "./input";
+import { NO_INPUT, type PlayerInput, type TickInput } from "./input";
 import { stepMonks } from "./monks";
 import { isFalling, overlapsCell, stepActor } from "./move";
 import { cellOf, monkAt, tileAt, type Terrain } from "./physics";
-import { HOLE_TICKS, MONK_TICKS, RUNNER_PERIOD, SUB } from "./rules";
-import type { Actor, Facing, GameState } from "./state";
+import { HOLE_TICKS, MONK_TICKS, PLAYER_RESPAWN_TICKS, RUNNER_PERIOD, SUB } from "./rules";
+import type { Actor, Facing, GameState, Player } from "./state";
 
 /**
- * Advances the game by one tick. Pure: returns a new state.
+ * Advances the game by one tick. Pure: returns a new state. `inputs[i]` drives player i
+ * (missing: no input).
  *
- * Order within a tick: the runner acts (dig or move) on the current terrain, picks up
- * the gold it touches and wins if it touches the open exit. Unless it won, the monks then
- * act in order, and a monk touching the runner catches it. Then holes age: a runner or
- * monk inside a hole that just filled dies.
+ * Order within a tick: each player in order acts (dig or move) on the current terrain
+ * and picks up the gold it touches; a dead player counts down, then reappears at its
+ * start. A player touching the open exit wins the level. Unless it was won, the monks
+ * then act in order, and a monk touching a player catches it. Then holes age: a player
+ * or monk inside a hole that just filled dies. Last, deaths are counted (see `die`).
  */
-export function step(state: GameState, input: PlayerInput): GameState {
+export function step(state: GameState, inputs: TickInput): GameState {
   const tick = state.tick + 1;
   if (state.status !== "playing") return { ...state, tick };
 
-  let runner = state.runner;
-  let holes = state.holes;
-  if (runner.busy > 0) {
-    runner = { ...runner, busy: runner.busy - 1 };
-  } else {
-    const dig = tryDig(state, runner, input);
-    if (dig !== null) {
-      runner = dig.runner;
-      holes = [...holes, dig.hole];
-    } else {
-      runner = stepActor(state, runner, input, tick, RUNNER_PERIOD);
-    }
-  }
-
-  const { cx, cy } = centerCell(runner);
   let tiles = state.tiles;
   let goldLeft = state.goldLeft;
-  const taken = takeGold(tiles, cx, cy);
-  if (taken !== null) {
-    tiles = taken;
-    goldLeft -= 1;
+  let holes = state.holes;
+  const players: Player[] = [];
+  const anyAlive = state.players.some((p) => p.mode === "alive");
+  for (let i = 0; i < state.players.length; i++) {
+    const before = state.players[i];
+    if (before === undefined) continue;
+    const t: Terrain = { ...state, tiles, holes };
+    const acted = actPlayer(t, before, inputs[i] ?? NO_INPUT, tick, anyAlive);
+    let p = acted.player;
+    if (acted.hole !== null) holes = [...holes, acted.hole];
+    if (p.mode === "alive") {
+      const { cx, cy } = centerCell(p);
+      const taken = takeGold(tiles, cx, cy);
+      if (taken !== null) {
+        tiles = taken;
+        goldLeft -= 1;
+        p = { ...p, gold: p.gold + 1 };
+      }
+    }
+    players.push(p);
   }
-  const won = goldLeft === 0 && tiles[cy]?.charAt(cx) === TILE.exit;
+  const won =
+    goldLeft === 0 &&
+    players.some((p) => {
+      if (p.mode !== "alive") return false;
+      const { cx, cy } = centerCell(p);
+      return tiles[cy]?.charAt(cx) === TILE.exit;
+    });
 
   let monks = state.monks;
   let rng = state.rng;
-  let caught = false;
+  let caught: readonly boolean[] = players.map(() => false);
   if (!won) {
-    const after = stepMonks({ ...state, tiles, goldLeft, runner, holes }, tick);
+    const after = stepMonks({ ...state, tiles, goldLeft, players, holes }, tick);
     ({ monks, tiles, rng, caught } = after);
   }
 
@@ -60,27 +69,82 @@ export function step(state: GameState, input: PlayerInput): GameState {
       ? { ...m, mode: "dead", timer: MONK_TICKS.respawn, holeX: -1, holeY: -1 }
       : m,
   );
-  const dead = caught || buried(runner);
+  const solo = players.length === 1;
+  let died = false;
+  const final = players.map((p, i) => {
+    if (p.mode !== "alive" || !(caught[i] === true || buried(p))) return p;
+    died = true;
+    return die(p, solo);
+  });
+  let status: GameState["status"] = "playing";
+  if (won) status = "won";
+  else if (solo ? died : final.every((p) => p.mode === "out")) status = "dead";
   return {
     ...state,
     tick,
     rng,
     tiles,
     goldLeft,
-    runner,
+    players: final,
     monks,
     holes: aged.filter((h) => h.age < HOLE_LIFETIME),
-    status: won ? "won" : dead ? "dead" : "playing",
+    status,
   };
 }
 
 /**
- * Digs the brick diagonally below on the given side. The runner digs from the cell
+ * A player dies: it loses one of its own lives, and is out at 0. In a two-player game
+ * it waits `PLAYER_RESPAWN_TICKS`, then reappears at its start while the other plays
+ * on; in a one-player game the death ends the level instead (the session restarts it).
+ */
+function die(p: Player, solo: boolean): Player {
+  const lives = p.lives - 1;
+  if (lives <= 0) return { ...p, lives: 0, mode: "out", timer: 0, busy: 0 };
+  return { ...p, lives, mode: "dead", timer: solo ? 0 : PLAYER_RESPAWN_TICKS, busy: 0 };
+}
+
+/**
+ * One player's own action this tick: dig, move, or count down to reappearing.
+ * `anyAlive`: some player was in play at the start of the tick.
+ */
+function actPlayer(
+  t: Terrain,
+  p: Player,
+  input: PlayerInput,
+  tick: number,
+  anyAlive: boolean,
+): { player: Player; hole: Hole | null } {
+  switch (p.mode) {
+    case "out":
+      return { player: p, hole: null };
+    case "dead": {
+      if (p.timer > 1) return { player: { ...p, timer: p.timer - 1 }, hole: null };
+      // A monk on the start, even partly: wait until it leaves. Only while another
+      // player is in play: with nobody to chase, monks stand still and never would.
+      const cx = cellOf(p.startX);
+      const cy = cellOf(p.startY);
+      if (anyAlive && t.monks.some((m) => m.mode !== "dead" && overlapsCell(m, cx, cy))) {
+        return { player: p, hole: null };
+      }
+      const back: Player = { ...p, x: p.startX, y: p.startY, facing: 1, mode: "alive", timer: 0 };
+      return { player: back, hole: null };
+    }
+    case "alive": {
+      if (p.busy > 0) return { player: { ...p, busy: p.busy - 1 }, hole: null };
+      const dig = tryDig(t, p, input);
+      if (dig !== null) return { player: { ...p, ...dig.runner }, hole: dig.hole };
+      return { player: { ...p, ...stepActor(t, p, input, tick, RUNNER_PERIOD) }, hole: null };
+    }
+  }
+}
+
+/**
+ * Digs the brick diagonally below on the given side. The player digs from the cell
  * nearest to it and snaps onto it, since walking or climbing usually stops between two
  * tiles. It must not be falling; standing on a ladder or hanging on a bar is fine. The
  * target must be an undug brick whose cell above is empty or holds gold (TLR allows
  * digging under gold; the gold stays where it is). A brick, ladder, bar or monk above
- * blocks.
+ * blocks; another player does not.
  */
 function tryDig(t: Terrain, a: Actor, input: PlayerInput): { runner: Actor; hole: Hole } | null {
   if (input.digLeft === input.digRight) return null;

@@ -1,10 +1,12 @@
 import type { PlayerInput } from "../sim/input";
+import type { PlayerCount } from "../sim/state";
 
 export type Action = keyof PlayerInput;
 
 /** Key bindings use `KeyboardEvent.code` (physical keys), so layouts like AZERTY work. */
 export type Bindings = Readonly<Record<Action, readonly string[]>>;
 
+/** One player alone: arrows, and the two keys right of left Shift to dig. */
 export const DEFAULT_BINDINGS: Bindings = {
   left: ["ArrowLeft"],
   right: ["ArrowRight"],
@@ -14,6 +16,36 @@ export const DEFAULT_BINDINGS: Bindings = {
   digLeft: ["KeyZ"],
   digRight: ["KeyX"],
 };
+
+/**
+ * Two players on one keyboard, each on their own side. Player 1 (right) keeps the
+ * arrows and digs with the two keys left of right Shift: . and / on QWERTY, : and ! on
+ * AZERTY. Player 2 (left) moves with W A S D (Z Q S D on AZERTY) and digs with the keys
+ * above A and D: Q and E (A and E on AZERTY).
+ */
+export const TWO_PLAYER_BINDINGS: readonly [Bindings, Bindings] = [
+  {
+    left: ["ArrowLeft"],
+    right: ["ArrowRight"],
+    up: ["ArrowUp"],
+    down: ["ArrowDown"],
+    digLeft: ["Period"],
+    digRight: ["Slash"],
+  },
+  {
+    left: ["KeyA"],
+    right: ["KeyD"],
+    up: ["KeyW"],
+    down: ["KeyS"],
+    digLeft: ["KeyQ"],
+    digRight: ["KeyE"],
+  },
+];
+
+/** Every player's bindings for a game of `count` players, player 1 first. */
+export function bindingsFor(count: PlayerCount): readonly Bindings[] {
+  return count === 1 ? [DEFAULT_BINDINGS] : TWO_PLAYER_BINDINGS;
+}
 
 /** The set of currently held key codes. Plain data; updated by `keyDown` / `keyUp`. */
 export type HeldKeys = ReadonlySet<string>;
@@ -46,7 +78,15 @@ export function inputFrom(held: HeldKeys, bindings: Bindings = DEFAULT_BINDINGS)
   };
 }
 
-/** Whether a key is bound to any action (used to stop arrow keys scrolling the page). */
-export function isBound(code: string, bindings: Bindings = DEFAULT_BINDINGS): boolean {
-  return Object.values(bindings).some((codes) => codes.includes(code));
+/** Every player's input for one tick, from the held keys. */
+export function inputsFrom(held: HeldKeys, count: PlayerCount): PlayerInput[] {
+  return bindingsFor(count).map((b) => inputFrom(held, b));
+}
+
+/**
+ * Whether a key is bound to any action of a `count`-player game (used to stop arrow
+ * keys scrolling the page, and / opening Firefox's quick find).
+ */
+export function isBound(code: string, count: PlayerCount = 1): boolean {
+  return bindingsFor(count).some((b) => Object.values(b).some((codes) => codes.includes(code)));
 }

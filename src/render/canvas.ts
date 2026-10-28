@@ -1,7 +1,7 @@
 import { TILE } from "../level/format";
 import { holeAt, holePhase } from "../sim/holes";
 import { HOLE_TICKS, SUB } from "../sim/rules";
-import type { GameState, Monk } from "../sim/state";
+import type { GameState, Monk, Player } from "../sim/state";
 
 /** On-screen size of one tile, in canvas pixels. A multiple of SUB keeps motion crisp. */
 export const TILE_PX = 24;
@@ -20,6 +20,8 @@ const COLOR = {
   exitOpen: "#4caf50",
   runner: "#f5f5f5",
   runnerFace: "#3a7bd5",
+  runner2: "#7fd8f0",
+  runner2Face: "#1b3f8f",
   runnerDead: "#d64545",
   monk: "#e07b39",
   monkFace: "#2b1a0e",
@@ -52,25 +54,32 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState): void {
     else drawHole(ctx, brickLeft(hole.age), x, y);
   });
   for (const m of state.monks) drawMonk(ctx, m);
-  drawRunner(
-    ctx,
-    state.runner.x * PX_PER_SUB,
-    state.runner.y * PX_PER_SUB,
-    state.runner.facing,
-    state.status === "dead",
-  );
+  state.players.forEach((p, i) => {
+    drawPlayer(ctx, p, i, state.status === "dead");
+  });
+}
+
+/**
+ * A player: red while dead (waiting to reappear); a player who is out is not drawn,
+ * unless the level is lost, when everyone shows where they fell.
+ */
+function drawPlayer(ctx: CanvasRenderingContext2D, p: Player, index: number, lost: boolean): void {
+  if (p.mode === "out" && !lost) return;
+  const dead = p.mode !== "alive";
+  drawRunner(ctx, p.x * PX_PER_SUB, p.y * PX_PER_SUB, p.facing, dead, index);
 }
 
 /**
  * Draws a level grid as the editor shows it: tiles as in the game (exit locked), and
- * the runner and monk start markers as the actors that will stand there.
+ * the player and monk start markers as the actors that will stand there.
  */
 export function renderGrid(ctx: CanvasRenderingContext2D, grid: readonly string[]): void {
   const size = gridCanvasSize(grid);
   ctx.fillStyle = COLOR.background;
   ctx.fillRect(0, 0, size.width, size.height);
   drawTiles(grid, (tile, _cx, _cy, x, y) => {
-    if (tile === TILE.runnerStart) drawRunner(ctx, x, y, 1, false);
+    if (tile === TILE.runnerStart) drawRunner(ctx, x, y, 1, false, 0);
+    else if (tile === TILE.player2Start) drawRunner(ctx, x, y, 1, false, 1);
     else if (tile === TILE.monkStart) drawMonkAt(ctx, x, y, -1, false);
     else drawTile(ctx, tile, x, y, false);
   });
@@ -171,20 +180,23 @@ function drawTile(
   }
 }
 
+/** A runner; player 2 (`index` 1) in its own colours. */
 function drawRunner(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
   facing: -1 | 1,
   dead: boolean,
+  index: number,
 ): void {
   const s = TILE_PX;
-  ctx.fillStyle = dead ? COLOR.runnerDead : COLOR.runner;
+  const second = index === 1;
+  ctx.fillStyle = dead ? COLOR.runnerDead : second ? COLOR.runner2 : COLOR.runner;
   ctx.fillRect(x + 8, y + 2, 8, 7); // head
   ctx.fillRect(x + 6, y + 9, 12, 9); // body
   ctx.fillRect(x + 7, y + 18, 4, s - 18); // legs
   ctx.fillRect(x + 13, y + 18, 4, s - 18);
-  ctx.fillStyle = COLOR.runnerFace;
+  ctx.fillStyle = second ? COLOR.runner2Face : COLOR.runnerFace;
   ctx.fillRect(facing === 1 ? x + 13 : x + 9, y + 4, 2, 2); // eye shows facing
 }
 

@@ -26,7 +26,7 @@ index.html ── src/main.ts        entry point: wires DOM, screens, input, loo
               src/editor/        level editor (step 2)
               src/i18n/          UI strings (en, fr)
               src/sim/           pure, deterministic game simulation
-              src/game/loop.ts   fixed-timestep accumulator (real time → whole ticks)
+              src/game/          fixed-timestep loop, play session, two-player status line
               src/input/         keyboard → per-tick PlayerInput, via a bindings table
               src/render/        Canvas 2D rendering of a simulation state
               src/levels/        bundled levels (JSON, validated at load like any import)
@@ -41,8 +41,8 @@ e2e/                             Playwright: replays and share links in real bro
 
 ## Simulation
 
-Code: `src/sim/`. Entry points: `createState(level, seed)` and
-`step(state, input) → state`.
+Code: `src/sim/`. Entry points: `createState(level, seed, players)` (one or two
+players) and `step(state, inputs) → state` (one `PlayerInput` per player).
 
 - **Pure and deterministic.** Fixed timestep (`TICKS_PER_SECOND = 60`), integer ticks,
   integer positions, seeded PRNG (`prng.ts`, mulberry32, state stored in `GameState`).
@@ -53,9 +53,11 @@ Code: `src/sim/`. Entry points: `createState(level, seed)` and
   reads its state. This makes gameplay unit-testable and replayable.
 - **Engine-independent:** no transcendental `Math` functions, no reliance on the
   iteration order of objects keyed by numeric-looking strings.
-- **Replays** (`replay.ts`): a level, a seed and a run-length encoded input log
-  (`[ticks, keys]`, keys in the canonical order `LRUD<>`, `""` for no input) rebuild
-  the exact same game. `runReplay` returns the final state and a checkpoint hash every
+- **Replays** (`replay.ts`, format version 2): a level, a seed and one run-length
+  encoded input log per player (`[ticks, keys]`, keys in the canonical order `LRUD<>`,
+  `""` for no input; one or two logs, all covering the same number of ticks) rebuild
+  the exact same game. Version 1 (a single log) is no longer read: replays are test
+  fixtures only, and those were rewritten. `runReplay` returns the final state and a checkpoint hash every
   simulated second. `parseReplay` validates untrusted replays (known version, capped
   size, ticks and runs; the level goes through the level validator).
 - **Determinism evidence** (CLAUDE.md § Determinism): each replay in
@@ -95,39 +97,63 @@ Code: `src/sim/`. Entry points: `createState(level, seed)` and
   (both passable), then it is removed and the brick is back (`HOLE_TICKS`).
 - `tileAt()` reads an open or closing hole as empty, so movement, falling and support
   need no special case for holes.
-- **Digging** (`step.ts`, `tryDig`): exactly one dig key, the runner not falling (on
+- **Digging** (`step.ts`, `tryDig`): exactly one dig key, the player not falling (on
   the ground, on a ladder or hanging on a bar), the target diagonally below its nearest
   cell an undug brick, and the cell above the target empty or holding gold (a brick,
-  ladder or bar blocks; the gold stays in place). Walking or climbing usually stops between two tiles, so the runner snaps onto
+  ladder or bar blocks; the gold stays in place; another player does not block). Walking or climbing usually stops between two tiles, so the player snaps onto
   the nearest cell (up to half a tile), turns that way and is busy (frozen) while the
   hole is dug.
-- Order within a tick: the runner acts (dig or move), holes age, then a runner whose
-  box overlaps a hole that just filled dies. A dead state only counts ticks;
-  `game/session.ts` restarts the level `RESTART_DELAY_TICKS` later.
+- Order within a tick: the players act (dig or move), holes age, then a player whose
+  box overlaps a hole that just filled dies (see Players for what a death does). A
+  lost or won state only counts ticks; `game/session.ts` restarts the level
+  `RESTART_DELAY_TICKS` later.
 - **All tunable values live in `src/sim/rules.ts`** and are provisional until checked
   against the original (see the table below).
 
 ### Gold and exit
 
-- `GameState.goldLeft` counts the gold the runner has not collected yet (later, gold
-  carried by monks too). It starts at the number of `$` tiles (`gold.ts`).
+- `GameState.goldLeft` counts the gold no player has collected yet (gold carried by
+  monks included); it is shared by both players, and each player also counts the gold
+  it took (`Player.gold`). It starts at the number of `$` tiles (`gold.ts`).
 - An actor **touches** a cell once its centre is inside it (`centerCell`), so it need
-  not be aligned. The runner collects the gold it touches, which removes it from
+  not be aligned. A player collects the gold it touches, which removes it from
   `tiles`, also while falling. Gold is neither solid nor support.
 - The exit (`E`) is a door: passable, no support, locked while `goldLeft > 0`.
-  Touching it once the last gold is taken sets the status to `won`, which freezes the
-  state like `dead`, and takes precedence over a hole filling on the same tick.
-- Order within a tick: act (dig or move), collect gold, check the exit, age holes,
-  check for death. `game/session.ts` restarts the level after a win, since there is
+  A player in play touching it once the last gold is taken sets the status to `won`
+  (for both players), which freezes the state like `dead`, and takes precedence over a
+  hole filling on the same tick.
+- Order within a tick: each player acts (dig or move) and collects gold, then the exit
+  is checked, holes age, and deaths are counted. `game/session.ts` restarts the level after a win, since there is
   only one level until packs exist.
+
+### Players
+
+- `GameState.players`: player 1 from the `P` marker, then player 2 from `Q` in a
+  two-player game (`createState(level, seed, 2)`; with one player a `Q` is an empty
+  cell). This order is the update order. Each player is an actor plus `mode`
+  (`alive`, `dead` waiting `timer` ticks, or `out`), `lives` (`START_LIVES`), `gold`
+  and its start position.
+- Players never block each other: they share cells and holes, are not floor for each
+  other, and do not stop each other's digs.
+- **A death** (caught or buried) costs the player one of its own lives; at 0 it is
+  `out` for the rest of the level. With one player, a death ends the level (status
+  `dead`; the session restarts it). With two (co-op, S-100): the dead player waits
+  `PLAYER_RESPAWN_TICKS`, then reappears at its start (later, while a monk overlaps that
+  cell) while the other keeps playing; the level is lost only once both are `out`, and
+  won as soon as one player reaches the open exit.
+- Per-player lives and gold show in a status line under a two-player game
+  (`game/hud.ts`); lives across levels and scores come with level packs (step 4).
 
 ### Monks
 
 - `GameState.monks`, created from the `M` markers in reading order, which is also the
-  update order. They move with the runner's rules (`move.ts`, shared) at their own,
-  slower speed (`MONK_PERIOD`). A monk's body is floor: the runner and other monks can
+  update order. They move with the players' rules (`move.ts`, shared) at their own,
+  slower speed (`MONK_PERIOD`). A monk's body is floor: players and other monks can
   stand on it (`physics.ts`, `monkAt`). Monks never overlap: a move into another monk
   is cancelled.
+- **Target** (`monks.ts`, `targetOf`): each tick, a monk chases the nearest player in
+  play (`|dx| + |dy|` in sub-units; a tie goes to player 1). With no player in play
+  (both waiting to reappear) it stands still. Below, "the runner" is that player.
 - **Chase AI** (`ai.ts`): the classic 1982 algorithm, reimplemented. Same row and a
   walkable floor between them: go straight at the runner. Otherwise scan the monk's
   floor up to the walls and edges; from each column, see where falling or a ladder
@@ -147,9 +173,10 @@ Code: `src/sim/`. Entry points: `createState(level, seed)` and
   the next free floor cell; it waits one cell before picking gold up again. A trapped
   monk drops its gold on top of the hole and waits two cells, so it does not take it
   back while climbing out. Carried gold still counts in `goldLeft`.
-- **Catching**: a monk whose centre cell is the runner's catches it (status `dead`). A
-  monk standing over a dig target blocks the dig.
-- Order within a tick: runner, gold and exit as above, then each monk in order (move,
+- **Catching**: a monk whose centre cell is a player's catches that player (any player
+  in play, not only its target). A monk standing over a dig target blocks the dig.
+  A dead monk never reappears on a player's cell.
+- Order within a tick: players, gold and exit as above, then each monk in order (move,
   gold, trap, catch), then holes age and kill whoever they fill.
 
 ## Game loop, input and rendering
@@ -160,6 +187,13 @@ Code: `src/sim/`. Entry points: `createState(level, seed)` and
 - Input is sampled once per frame and applied to every tick of that frame. Keys are
   bound by `KeyboardEvent.code` (physical position, so AZERTY works). Held keys are
   cleared on window blur, since a key released while unfocused never fires `keyup`.
+- **Two players on one keyboard** (`input/keyboard.ts`): alone, the player uses the
+  arrows and Z / X (W / X on AZERTY). With two, player 1 (right) uses the arrows and
+  the two keys left of right Shift (`Period`, `Slash`), player 2 (left) `W A S D` and
+  `Q` / `E` (Z Q S D and A / E on AZERTY); the two sets share no key. Remapping and
+  gamepads: step 4.
+- A level with a `Q` shows a "1 player / 2 players" choice above the play and test
+  canvases; switching restarts the level. The last choice applies to the next game.
 - The renderer draws the state with placeholder shapes, `TILE_PX = 24` pixels per tile
   (3 per sub-unit); the canvas is sized to the level and scaled by CSS.
 - Bundled levels go through `parseLevel` like any imported level.
@@ -275,13 +309,13 @@ Code: `src/editor/` (pure modules, and `view.ts` / `library-view.ts` for the DOM
 - **Grid**: the editor draws the level grid with `renderGrid`: tiles as in the game, start
   markers as the actors, and faint cell lines.
 - **Editor model** (`editor/model.ts`): plain data and pure functions, like the
-  simulation. `paint` moves the runner start instead of adding a second one;
+  simulation. `paint` moves a player start (`P` or `Q`) instead of adding a second one;
   `paintLine` fills a segment (Bresenham) so a fast drag leaves no gaps. Undo covers
   the grid only (at most 100 steps); one mouse stroke (`beginStroke` … `endStroke`) is
   one step. `toLevel` runs the edited document through `parseLevel`, so the editor
   never hands the game a level an import would reject.
 - **Editor screen** (`editor/view.ts`, the only editor file that touches the DOM): a
-  palette (number keys 1–9 by `KeyboardEvent.code`, like the game keys), name and size
+  palette (number keys 1–9, then 0, by `KeyboardEvent.code`, like the game keys), name and size
   fields, undo and redo. `editor/pointer.ts` maps canvas pixels to cells at any CSS
   scale and turns pointer events into model operations: the left button paints, the
   right one erases, and release, cancel and lost capture all end the stroke, so letting
@@ -417,6 +451,9 @@ as gameplay is implemented.
 | Gas gun                         | cloud ≈ 2 tiles for ≈ 6 s; monks inside stuck; gun kept                                   | S-021 @ 0:54–1:04          |
 | Two-player race                 | mirrored halves, exits appear with the gold, first out wins                               | S-025                      |
 | Co-op end                       | won when one player exits; a dead player alone restarts, on their own lives               | S-100 (2026-10-27)         |
+| Lives at start (two players)    | 5 each (status bar shows 05 for both)                                                     | S-026 @ 0:01               |
+| Two-player respawn delay        | 90 ticks (1.5 s) at the player's start                                                    | **Provisional**            |
+| Monk target with two players    | the nearest player; players do not block each other                                       | **Provisional**, to check  |
 | Pickaxe                         | rubble buries the monk on the next cell; ≥ 7 s; tool kept                                 | S-021 @ 0:08–0:15.5        |
 | Goo bucket                      | goo 2–3 cells in front, rest of the level; one use; stops monks                           | S-022 @ 3:16, @ 3:36       |
 | Teleporter                      | step in, reappear at the linked spot ≈ 0.5–1 s later                                      | S-025 @ 0:04–0:05          |
@@ -426,7 +463,7 @@ as gameplay is implemented.
 | Monk speed                      | 2/3 of the runner's                                                                       | **Provisional**, 1982 feel |
 | Monk chase AI                   | classic floor scan (see Monks)                                                            | 1982 rule [^lrtr]          |
 | Monk stuck in a hole            | 120 ticks (2 s), then climbs out                                                          | **Provisional**            |
-| Runner standing on a hole       | the monk inside cannot climb out until the runner leaves                                  | S-100 (2026-10-28)         |
+| Runner standing on a hole       | the monk inside cannot climb out while a player in play stands there                      | S-100 (2026-10-28)         |
 | Monk respawn                    | after 60 ticks, second row, random                                                        | 1982 rule [^lrtr]          |
 | Monk carries gold               | 12 to 37 cells, then drops it                                                             | 1982 rule [^lrtr]          |
 | Caught by a monk                | same centre cell                                                                          | **Provisional**            |

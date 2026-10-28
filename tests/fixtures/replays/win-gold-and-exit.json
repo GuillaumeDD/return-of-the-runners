@@ -2,7 +2,7 @@
   "about": "Collects both gold pieces, climbs the ladder and wins.",
   "replay": {
     "format": "return-of-the-runners/replay",
-    "version": 1,
+    "version": 2,
     "seed": 1,
     "level": {
       "format": "return-of-the-runners/level",
@@ -22,15 +22,29 @@
       ]
     },
     "inputs": [
-      [120, "R"],
-      [60, "L"],
-      [100, "U"],
-      [56, "R"]
+      [
+        [
+          120,
+          "R"
+        ],
+        [
+          60,
+          "L"
+        ],
+        [
+          100,
+          "U"
+        ],
+        [
+          56,
+          "R"
+        ]
+      ]
     ]
   },
   "expected": {
     "tick": 336,
     "status": "won",
-    "hash": 2006433168
+    "hash": 2505821990
   }
 }

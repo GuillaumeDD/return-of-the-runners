@@ -187,13 +187,15 @@ _Done; the v1 migration below was removed afterwards (see key design decision 1)
 ### B-020 — Two players: co-op
 
 - `src/sim/state.ts`: `players: Player[]` built from `P` then `Q`; `src/sim/input.ts`:
-  `TickInput = PlayerInput[]`; `src/sim/replay.ts`: replay v2 with one log per player,
-  v1 replays migrated; `src/input/keyboard.ts`: bindings per player.
+  `TickInput = PlayerInput[]`; `src/sim/replay.ts`: replay v2 with one log per player
+  (as built: v1 replays are not migrated but rewritten, since replays are test fixtures
+  only); `src/input/keyboard.ts`: bindings per player.
 - Co-op rules (S-100, Guillaume, 2026-10-27): the level is won when **one** player
   reaches the exit; a player who dies loses one of **their own** lives (each player has
   a count in the status bar, S-025, S-026) and only that player restarts at their start
   after `RESTART_DELAY_TICKS`, while the other keeps playing; with no life left, that
-  player is out and the other plays on alone (S-100). Defaults to confirm: gold is shared; the exit appears when all gold is
+  player is out and the other plays on alone (S-100). Each player starts with 5 lives
+  (S-026 @ 0:01). Defaults to confirm: gold is shared; the exit appears when all gold is
   taken; players do not block each other. Monks chase the nearest player.
 - A level with a `Q` is offered in 1-player or 2-player mode; with one player, `Q` is
   ignored.
@@ -211,8 +213,9 @@ _Done; the v1 migration below was removed afterwards (see key design decision 1)
 `tests/sim/ai.test.ts`: a monk picks the nearer player (cross-checked against the naive
 reference on random two-player levels); ties go to P1.
 
-`tests/sim/replay.test.ts`: every v1 replay migrates and runs; a two-player fixture
-reaches its committed hash in Node and the three browsers.
+`tests/sim/replay.test.ts`: the replays rewritten as v2 keep their tick and status (only
+their hash changes); a two-player fixture reaches its committed hash in Node and the
+three browsers.
 
 `tests/input/keyboard.test.ts`: P1 and P2 default bindings share no key; each player's
 keys produce only that player's input.

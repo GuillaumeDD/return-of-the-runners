@@ -228,3 +228,24 @@ button.primary {
   border: 1px solid #444;
   padding: 2px 6px;
 }
+
+.players {
+  display: flex;
+  gap: 8px;
+}
+
+.players[hidden],
+.hud[hidden] {
+  display: none;
+}
+
+.players button[aria-pressed="true"] {
+  border-color: #f2c94c;
+  color: #f2c94c;
+}
+
+.hud {
+  margin: 0;
+  color: #ddd;
+  text-align: center;
+}
