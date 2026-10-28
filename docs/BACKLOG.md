@@ -4,7 +4,8 @@ Scoped work items. Ideas start in the Growth section of `docs/PRD.md`.
 Each item lands in its own commit, which also flips its status here.
 Step 1 (B-004 to B-010) is planned in [`plans/step-1.md`](plans/step-1.md), step 2 (B-011 to
 B-017) in [`plans/step-2.md`](plans/step-2.md), step 3 (B-019 to B-029) in
-[`plans/step-3.md`](plans/step-3.md), each with its delivery order.
+[`plans/step-3.md`](plans/step-3.md), step 4 part A, the look (B-030 to B-036), in
+[`plans/step-4.md`](plans/step-4.md), each with its delivery order.
 
 Statuses: `todo` / `in-progress` / `done`.
 
@@ -39,3 +40,10 @@ Statuses: `todo` / `in-progress` / `done`.
 | B-027 | Snare and gas                                           | Snare holds the first actor that steps on it; gas dazes the first monk in range, not on ladders or bars; replay fixture                                     | todo   |
 | B-028 | Goo bucket                                              | Turns the floor in front into gooey turf; slows players and monks; replay fixture                                                                           | todo   |
 | B-029 | Fix: a runner on a hole holds the monk in it            | A trapped monk cannot climb while the runner stands in the cell above its hole; it climbs out once the runner leaves; regression test                       | done   |
+| B-030 | Art direction                                           | Three mockups (neo-pixel, illustrated, flat glow) of one level in two worlds; Guillaume picks one; style guide in ARCHITECTURE; nothing extracted           | todo   |
+| B-031 | Sprite renderer                                         | Sprite sheets from `'self'`; DPR-aware canvas; placeholder fallback; every tile has art or a placeholder (tested); all replay hashes unchanged              | todo   |
+| B-032 | Runners and monks                                       | Two distinct runners and monks, animated for every action (run, climb, bar, fall, dig, die, trapped, snared…); one animation per action (tested)            | todo   |
+| B-033 | Terrain and items (Moss world)                          | Every v2 tile and step 3 item drawn; hole refill stages shown; keys and doors differ by shape and colour                                                    | todo   |
+| B-034 | Effects                                                 | Dust, sparkle, blasts, gas, teleport, death; capped (randomized); off or reduced under `prefers-reduced-motion`                                             | todo   |
+| B-035 | Worlds and day/night                                    | Ten world sets and backdrops, night variant; format v3 `world`/`night` with v2 → v3 migration and fixtures; editor picker (EN + FR)                         | todo   |
+| B-036 | Frame, HUD and editor                                   | Framed playfield and status bar per player in the chosen style; editor palette shows the art; strings EN + FR                                               | todo   |
