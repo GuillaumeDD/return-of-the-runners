@@ -27,6 +27,8 @@ const AS_EMPTY: ReadonlySet<string> = new Set([
   TILE.keyBlue,
   TILE.jackhammer,
   TILE.pickaxe,
+  TILE.snare,
+  TILE.gasSpray,
   TILE.smallBomb,
   TILE.bigBomb,
   TILE.teleportEntrance,
@@ -97,13 +99,14 @@ export function isSupported(t: Terrain, cx: number, cy: number): boolean {
 }
 
 /**
- * Whether a monk's body (its centre cell) is in cell (cx, cy). Dead monks and monks in
- * transit through a teleporter are not.
+ * Whether a monk's body (its centre cell) is in cell (cx, cy). Dead monks, monks in
+ * transit through a teleporter and snared monks (hanging, `snares.ts`) are not.
  */
 export function monkAt(t: Pick<Terrain, "monks">, cx: number, cy: number): boolean {
   return t.monks.some(
     (m) =>
       m.mode !== "dead" &&
+      m.mode !== "snared" &&
       m.warp === 0 &&
       cellOf(m.x + SUB / 2) === cx &&
       cellOf(m.y + SUB / 2) === cy,

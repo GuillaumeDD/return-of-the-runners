@@ -39,6 +39,8 @@ describe("hashState", () => {
       { ...m, mode: "trapped" },
       { ...m, mode: "escaping" },
       { ...m, mode: "dead" },
+      { ...m, mode: "snared" },
+      { ...m, mode: "dazed" },
       { ...m, timer: 1 },
       { ...m, carry: 1 },
       { ...m, carry: -1 },
@@ -125,6 +127,24 @@ describe("hashState", () => {
     for (const v of variants) expect(hashState(v)).not.toBe(hashState(a));
   });
 
+  it("distinguishes snare and cloud fields", () => {
+    const base = stateFrom(rows);
+    const n = { cx: 1, cy: 3 };
+    const c = { cx: 2, cy: 3, width: 3, left: 5 };
+    const a = { ...base, snares: [n], clouds: [c] };
+    const variants: GameState[] = [
+      { ...a, snares: [{ ...n, cx: 2 }] },
+      { ...a, snares: [{ ...n, cy: 2 }] },
+      { ...a, snares: [] },
+      { ...a, clouds: [{ ...c, cx: 1 }] },
+      { ...a, clouds: [{ ...c, cy: 2 }] },
+      { ...a, clouds: [{ ...c, width: 2 }] },
+      { ...a, clouds: [{ ...c, left: 6 }] },
+      { ...a, clouds: [] },
+    ];
+    for (const v of variants) expect(hashState(v)).not.toBe(hashState(a));
+  });
+
   it("distinguishes hole fields", () => {
     const base = stateFrom(rows);
     const a = { ...base, holes: [{ cx: 1, cy: 4, age: 0 }] };
@@ -162,6 +182,8 @@ describe("hashState", () => {
           x: p1(base).x,
         },
       ],
+      clouds: base.clouds,
+      snares: base.snares,
       blasts: base.blasts,
       fuses: base.fuses,
       craters: base.craters,
@@ -217,5 +239,5 @@ describe("hashState with monks", () => {
   });
 });
 
-const COMMITTED_MONK_HASH = 334771771;
-const COMMITTED_HASH = 3446247744;
+const COMMITTED_MONK_HASH = 872502939;
+const COMMITTED_HASH = 4039276864;

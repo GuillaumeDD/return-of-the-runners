@@ -377,19 +377,34 @@ bombs on one tick resolve in creation order.
 
 ### B-027 — Snare and gas
 
-- Snare: laid in the player's cell; the first monk to walk into it hangs there,
-  harmless, for the rest of the level (S-018 @ 0:26–0:48, S-100); other monks walk past
-  it. Only a blast that destroys its cell frees or kills it (to confirm: S-100 guess). A player can be caught too (S-007, to confirm).
-- Gas: each use puts a cloud about 2 tiles wide in front of the player for `GAS_TICKS`
-  (about 6 s); monks inside are stuck, then dazed for a moment (S-021 @ 0:54–1:04). The
-  gun stays in the slot and can be used again right away. Monks on ladders or bars are
-  immune (S-005, to confirm).
+- Snare: an item, laid in the player's cell (an empty one) and used up; the first monk
+  to walk into it hangs there, harmless, for the rest of the level (S-018 @ 0:22–0:48,
+  S-100); other monks walk past it. Only its death frees it (a blast, rubble, a refilled
+  hole). Whether a player can be caught too (S-007) is put to Guillaume; until then,
+  players walk over snares.
+- Gas: each use puts a cloud about 3 cells wide in front of the player for `GAS_TICKS`
+  (6.5 s); every monk inside is stuck, then dazed for 2.5 s more (S-021 @ 0:53–1:05).
+  The gun stays in the slot and can be used again once the player is free. Monks on
+  ladders or bars are immune (S-005, to confirm).
 
-`tests/sim/snare-gas.test.ts`: a snared monk does not move or catch, and is still held
-any number of ticks later; a player can snare
-itself; a cloud covers its cells for `GAS_TICKS` and every monk inside stops, not one on
-a ladder or bar; two clouds can exist at once; a stuck monk does not catch a player
-walking into it (to confirm); using the gun never empties the slot.
+Done (2026-10-29), measured on S-018 and S-021 at 2 frames per second.
+
+`tests/sim/snare-gas.test.ts`:
+
+- snare: picked up and swapped like any item; laid in the player's (empty) cell, which
+  empties the slot; not while falling, not twice in a cell, not on a ladder, a bar or
+  gold; the first monk walking in hangs there, aligned, and is still held 3000 ticks
+  later; other monks walk past it; it catches nobody and is no body; the runner walks
+  over an armed snare; a blast kills a snared monk, which reappears free; a monk
+  snared with gold drops it; a snared monk blocks neither a start nor a teleporter
+  exit;
+- gas: a cloud over the 3 cells in front for `GAS_TICKS`, the way the player faces,
+  stopping at a wall; the gun is kept and fires again, two clouds at once; a monk
+  walking in stops, dazed, and does not catch the runner walking through; it stays
+  dazed `DAZE_TICKS` after the cloud, then chases again; not on a ladder or a bar; a
+  dazed monk still falls, and is trapped in a hole it falls into.
+
+`tests/fixtures/replays/snare-gas.json`: a snare and two clouds, then the runner wins.
 
 ### B-028 — Goo bucket
 

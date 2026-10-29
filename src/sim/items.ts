@@ -7,7 +7,7 @@ import type { Player } from "./state";
  * gold, and actors pass through them. Each player has one slot (`Player.item`, `""`
  * when empty). The pick-up key acts once per press: on an item, the player takes it and
  * leaves the item it held there (a swap); on an empty cell, it drops the held item. The
- * items are the keys and the tools (`tools.ts`).
+ * items are the keys and the tools (`tools.ts`), the snare and the gas gun among them.
  *
  * A door is solid. A player carrying the key of its colour that stands next to it
  * (left, right, above or below its centre cell) opens it for good, and the key is used
@@ -21,6 +21,8 @@ export const ITEMS: ReadonlySet<string> = new Set([
   TILE.keyBlue,
   TILE.jackhammer,
   TILE.pickaxe,
+  TILE.snare,
+  TILE.gasSpray,
 ]);
 
 export function isItem(tile: string): boolean {

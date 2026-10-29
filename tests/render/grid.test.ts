@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { gridCanvasSize, render, renderGrid, TILE_PX } from "../../src/render/canvas";
 import { HOLE_TICKS } from "../../src/sim/rules";
+import { newMonk } from "../../src/sim/state";
 import { stateFrom, withPlayer } from "../sim/helpers";
 
 /** Records the colour of every filled rectangle, keyed by its top-left pixel. */
@@ -279,5 +280,80 @@ describe("bombs, blasts and craters", () => {
     const closing = recorder();
     render(closing.ctx, { ...s, craters: [{ cx: 1, cy: 1, left: 10 }] });
     expect(fillsIn(closing.fills, 1, 1)).toEqual([BRICK]);
+  });
+});
+
+describe("snares and gas", () => {
+  const ROPE = "#c8a165";
+  const GUN = "#3f7f5f";
+  const MONK = "#e07b39";
+  const DAZE = "#ffd84a";
+  const GAS = "rgba(120, 210, 110, 0.45)";
+  const GAS_THIN = "rgba(120, 210, 110, 0.22)";
+
+  it("a snare and a gas gun are drawn, in the game and the editor", () => {
+    const rows = ["Ps.g", "@@@@"];
+    for (const draw of [
+      (c: CanvasRenderingContext2D) => {
+        render(c, stateFrom(rows));
+      },
+      (c: CanvasRenderingContext2D) => {
+        renderGrid(c, rows);
+      },
+    ]) {
+      const { ctx, fills } = recorder();
+      draw(ctx);
+      expect(fillsIn(fills, 1, 0)).toContain(ROPE);
+      expect(fillsIn(fills, 3, 0)).toContain(GUN);
+    }
+  });
+
+  it("the snare or gun a player holds is drawn in its hand", () => {
+    for (const [item, color] of [
+      ["s", ROPE],
+      ["g", GUN],
+    ] as const) {
+      const { ctx, fills } = recorder();
+      render(ctx, withPlayer(stateFrom(["P...", "@@@@"]), { item }));
+      expect(fillsIn(fills, 0, 0), item).toContain(color);
+    }
+  });
+
+  it("an armed snare shows as rope; a snared monk hangs from it", () => {
+    const s = stateFrom(["P...", "@@@@"]);
+    const armed = recorder();
+    render(armed.ctx, { ...s, snares: [{ cx: 2, cy: 0 }] });
+    expect(fillsIn(armed.fills, 2, 0)).toContain(ROPE);
+    const held = recorder();
+    render(held.ctx, { ...s, monks: [{ ...newMonk(2, 0), mode: "snared" }] });
+    expect(fillsIn(held.fills, 2, 0)).toEqual(expect.arrayContaining([ROPE, MONK]));
+  });
+
+  it("a cloud covers its cells, thinner at the end; a dazed monk has stars", () => {
+    const s = stateFrom(["P.....", "@@@@@@"]);
+    const thick = recorder();
+    render(thick.ctx, {
+      ...s,
+      clouds: [{ cx: 2, cy: 0, width: 3, left: 300 }],
+      monks: [{ ...newMonk(3, 0), mode: "dazed", timer: 40 }],
+    });
+    for (const x of [2, 3, 4]) expect(fillsIn(thick.fills, x, 0)).toContain(GAS);
+    expect(fillsIn(thick.fills, 5, 0)).not.toContain(GAS);
+    expect([...thick.fills.values()].flat()).toContain(DAZE);
+    // Regression (self-review): the stars stood still while the cloud kept resetting
+    // the daze; they turn with the tick.
+    const starsAt = (tick: number): string[] => {
+      const r = recorder();
+      render(r.ctx, {
+        ...s,
+        tick,
+        monks: [{ ...newMonk(3, 0), mode: "dazed", timer: 150 }],
+      });
+      return [...r.fills.entries()].filter(([, c]) => c.includes(DAZE)).map(([k]) => k);
+    };
+    expect(starsAt(0)).not.toEqual(starsAt(8));
+    const thin = recorder();
+    render(thin.ctx, { ...s, clouds: [{ cx: 2, cy: 0, width: 3, left: 10 }] });
+    expect(fillsIn(thin.fills, 2, 0)).toContain(GAS_THIN);
   });
 });

@@ -1,11 +1,13 @@
 import { TILE } from "../level/format";
 import { collectBomb, layBomb, stepBombs, type Fuse } from "./bombs";
+import { stepClouds, type Cloud } from "./gas";
 import { centerCell, revealLadders, takeGold } from "./gold";
 import { HOLE_LIFETIME, holeAt, type Hole } from "./holes";
 import { NO_INPUT, type PlayerInput, type TickInput } from "./input";
 import { openDoor, pickUp } from "./items";
 import { inSight, stepMonks } from "./monks";
 import { inTransit, tryTeleport } from "./teleport";
+import type { Snare } from "./snares";
 import { keepDrilling, rubbleHits, stepRubble, useTool, type Rubble } from "./tools";
 import { isFalling, overlapsCell, stepActor } from "./move";
 import { cellOf, monkAt, tileAt, type Terrain } from "./physics";
@@ -20,12 +22,13 @@ import type { Actor, Facing, GameState, Monk, Player } from "./state";
  * a dead player counts down, then reappears at its start; a player that ends its move
  * on a teleporter entrance jumps (see `teleport.ts`). A player in play then picks up,
  * swaps or drops an item if it just pressed the pick-up key, opens a door next to it
- * that its key fits (`items.ts`), uses its tool if it just pressed the use key, or goes
- * on drilling down (`tools.ts`), picks up the gold and the bombs it touches, and lays a
+ * that its key fits (`items.ts`), uses its tool if it just pressed the use key (laying a
+ * snare or firing gas among them), or goes on drilling down (`tools.ts`), picks up the gold and the bombs it touches, and lays a
  * bomb if it just pressed the bomb key (`bombs.ts`).
  * Once the last gold is taken, hidden ladders appear. A player touching the open exit
- * wins the level (`playersAtExit`). Unless it was won, the monks then act in order, and
- * a monk touching a player catches it. Then holes age: a player or monk inside a hole
+ * wins the level (`playersAtExit`). Unless it was won, the monks then act in order: a
+ * monk walking into a snare hangs in it, one in a gas cloud is dazed, and a monk
+ * touching a player catches it (`monks.ts`). Gas clouds then thin out. Then holes age: a player or monk inside a hole
  * that just filled dies (no player dies on the winning tick). Bombs then burn and
  * explode, killing whoever is in a blast or in a crater that filled. Rubble then falls
  * or crumbles, and falling rubble crushes the monks and players it touches. Last,
@@ -40,6 +43,8 @@ export function step(state: GameState, inputs: TickInput): GameState {
   let holes = state.holes;
   let rubble: readonly Rubble[] = state.rubble;
   let laid: readonly Fuse[] = [];
+  let snares: readonly Snare[] = state.snares;
+  let clouds: readonly Cloud[] = state.clouds;
   const players: Player[] = [];
   // Monks only move while they can see someone: hiding players do not count (players
   // in transit do: they are seen at their exit).
@@ -70,12 +75,14 @@ export function step(state: GameState, inputs: TickInput): GameState {
       const falling = isFalling(here, p);
       const used =
         input.use && !before.useHeld && p.busy === 0
-          ? useTool(here, p, falling)
+          ? useTool(here, p, falling, snares)
           : keepDrilling(here, p, falling);
       if (used !== null) {
         p = used.player;
         if (used.hole !== null) holes = [...holes, used.hole];
         if (used.rubble !== null) rubble = [...rubble, used.rubble];
+        if (used.snare !== undefined) snares = [...snares, used.snare];
+        if (used.cloud !== undefined) clouds = [...clouds, used.cloud];
       }
       const { cx, cy } = centerCell(p);
       const taken = takeGold(tiles, cx, cy);
@@ -102,9 +109,13 @@ export function step(state: GameState, inputs: TickInput): GameState {
   let rng = state.rng;
   let caught: readonly boolean[] = players.map(() => false);
   if (!won) {
-    const after = stepMonks({ ...state, tiles, goldLeft, players, holes, rubble }, tick);
-    ({ monks, tiles, rng, caught } = after);
+    const after = stepMonks(
+      { ...state, tiles, goldLeft, players, holes, rubble, snares, clouds },
+      tick,
+    );
+    ({ monks, tiles, rng, caught, snares } = after);
   }
+  clouds = stepClouds(clouds);
 
   const aged = holes.map((h) => ({ ...h, age: h.age + 1 }));
   const filled = aged.filter((h) => h.age >= HOLE_LIFETIME);
@@ -159,6 +170,8 @@ export function step(state: GameState, inputs: TickInput): GameState {
     craters,
     fuses: bombs.fuses,
     blasts: bombs.blasts,
+    snares,
+    clouds,
     status,
   };
 }
@@ -213,8 +226,9 @@ function actPlayer(
       // never would.
       const cx = cellOf(p.startX);
       const cy = cellOf(p.startY);
+      // A snared monk never leaves, and is not a body: it does not block.
       const onStart = (m: Monk): boolean =>
-        m.mode !== "dead" && !inTransit(m) && overlapsCell(m, cx, cy);
+        m.mode !== "dead" && m.mode !== "snared" && !inTransit(m) && overlapsCell(m, cx, cy);
       if (anyAlive && t.monks.some(onStart)) {
         return { player: p, hole: null };
       }
