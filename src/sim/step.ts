@@ -2,11 +2,12 @@ import { TILE } from "../level/format";
 import { centerCell, revealLadders, takeGold } from "./gold";
 import { HOLE_LIFETIME, holeAt, type Hole } from "./holes";
 import { NO_INPUT, type PlayerInput, type TickInput } from "./input";
-import { isHidden, stepMonks } from "./monks";
+import { inSight, stepMonks } from "./monks";
+import { inTransit, tryTeleport } from "./teleport";
 import { isFalling, overlapsCell, stepActor } from "./move";
 import { cellOf, monkAt, tileAt, type Terrain } from "./physics";
 import { HOLE_TICKS, MONK_TICKS, PLAYER_RESPAWN_TICKS, RUNNER_PERIOD, SUB } from "./rules";
-import type { Actor, Facing, GameState, Player } from "./state";
+import type { Actor, Facing, GameState, Monk, Player } from "./state";
 
 /**
  * Advances the game by one tick. Pure: returns a new state. `inputs[i]` drives player i
@@ -14,7 +15,8 @@ import type { Actor, Facing, GameState, Player } from "./state";
  *
  * Order within a tick: each player in order acts (dig or move) on the current terrain
  * and picks up the gold it touches; a dead player counts down, then reappears at its
- * start. Once the last gold is taken, hidden ladders appear. A player touching the open exit wins the level (`playersAtExit`). Unless it
+ * start; a player that ends its move on a teleporter entrance jumps (see `teleport.ts`).
+ * Once the last gold is taken, hidden ladders appear. A player touching the open exit wins the level (`playersAtExit`). Unless it
  * was won, the monks then act in order, and a monk touching a player catches it. Then
  * holes age: a player or monk inside a hole that just filled dies (no player dies on
  * the winning tick). Last, deaths are counted (see `die`).
@@ -27,8 +29,9 @@ export function step(state: GameState, inputs: TickInput): GameState {
   let goldLeft = state.goldLeft;
   let holes = state.holes;
   const players: Player[] = [];
-  // Monks only move while they can see someone: hiding players do not count.
-  const anyAlive = state.players.some((p) => p.mode === "alive" && !isHidden(state.tiles, p));
+  // Monks only move while they can see someone: hiding players do not count (players
+  // in transit do: they are seen at their exit).
+  const anyAlive = state.players.some((p) => inSight(state.tiles, p));
   for (let i = 0; i < state.players.length; i++) {
     const before = state.players[i];
     if (before === undefined) continue;
@@ -36,7 +39,8 @@ export function step(state: GameState, inputs: TickInput): GameState {
     const acted = actPlayer(t, before, inputs[i] ?? NO_INPUT, tick, anyAlive);
     let p = acted.player;
     if (acted.hole !== null) holes = [...holes, acted.hole];
-    if (p.mode === "alive") {
+    if (p.mode === "alive") p = tryTeleport(state, p, state.monks);
+    if (p.mode === "alive" && !inTransit(p)) {
       const { cx, cy } = centerCell(p);
       const taken = takeGold(tiles, cx, cy);
       if (taken !== null) {
@@ -140,13 +144,17 @@ function actPlayer(
       // never would.
       const cx = cellOf(p.startX);
       const cy = cellOf(p.startY);
-      if (anyAlive && t.monks.some((m) => m.mode !== "dead" && overlapsCell(m, cx, cy))) {
+      const onStart = (m: Monk): boolean =>
+        m.mode !== "dead" && !inTransit(m) && overlapsCell(m, cx, cy);
+      if (anyAlive && t.monks.some(onStart)) {
         return { player: p, hole: null };
       }
       const back: Player = { ...p, x: p.startX, y: p.startY, facing: 1, mode: "alive", timer: 0 };
       return { player: back, hole: null };
     }
     case "alive": {
+      // In a teleporter: waits at the exit until it appears.
+      if (inTransit(p)) return { player: { ...p, warp: p.warp - 1 }, hole: null };
       if (p.busy > 0) return { player: { ...p, busy: p.busy - 1 }, hole: null };
       const dig = tryDig(t, p, input);
       if (dig !== null) return { player: { ...p, ...dig.runner }, hole: dig.hole };

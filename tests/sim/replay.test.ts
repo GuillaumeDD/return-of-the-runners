@@ -26,6 +26,7 @@ describe("committed replays (Node)", () => {
       "coop-monks",
       "first-steps-random",
       "monk-trap-respawn",
+      "teleport",
       "terrain",
       "versus-race",
       "win-gold-and-exit",
@@ -45,6 +46,21 @@ describe("committed replays (Node)", () => {
     const end = runReplay(f.replay).state;
     expect(end.tiles.map((r) => r.charAt(12)).slice(1, 7)).toEqual(Array(6).fill("H"));
     expect(end.status).toBe("won");
+  });
+
+  it("teleport: the monk, then the runner, go through a teleporter", () => {
+    const f = fixtures.find((x) => x.name === "teleport");
+    if (f === undefined) throw new Error("missing teleport");
+    const at = (ticks: number) =>
+      runReplay({
+        ...f.replay,
+        inputs: f.replay.inputs.map((log) => encodeInputs(decodeInputs(log).slice(0, ticks))),
+      }).state;
+    const monkIn = at(30);
+    expect(monkIn.monks.map((m) => [m.x, m.y, m.warp > 0])).toEqual([[11 * 8, 5 * 8, true]]);
+    const runnerIn = at(60);
+    expect(runnerIn.players.map((p) => [p.x, p.y, p.warp > 0])).toEqual([[0, 0, true]]);
+    expect(runReplay(f.replay).state.status).toBe("won");
   });
 
   it("versus-race is won by player 1 alone, player 2 having its own gold", () => {

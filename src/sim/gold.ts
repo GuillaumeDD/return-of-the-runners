@@ -14,7 +14,7 @@ export function countGold(tiles: readonly string[]): number {
  * The cell holding the actor's centre. An actor "touches" a cell (gold, exit) once its
  * centre is inside it, so it does not need to be aligned (provisional, see ARCHITECTURE).
  */
-export function centerCell(a: Actor): { cx: number; cy: number } {
+export function centerCell(a: Pick<Actor, "x" | "y">): { cx: number; cy: number } {
   return { cx: cellOf(a.x + SUB / 2), cy: cellOf(a.y + SUB / 2) };
 }
 

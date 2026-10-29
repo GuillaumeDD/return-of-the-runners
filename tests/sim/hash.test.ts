@@ -18,6 +18,8 @@ describe("hashState", () => {
       { ...base, tiles: base.tiles.map((r, y) => (y === 0 ? "#" + r.slice(1) : r)) },
       { ...base, holes: [{ cx: 1, cy: 4, age: 0 }] },
       { ...base, goldLeft: base.goldLeft + 1 },
+      { ...base, teleports: [[0, 0, 1, 0]] },
+      { ...base, teleports: [[0, 0, 2, 0]] },
       { ...base, status: "dead" },
       { ...base, status: "won" },
     ];
@@ -33,6 +35,7 @@ describe("hashState", () => {
       { ...m, y: m.y + 1 },
       { ...m, facing: 1 },
       { ...m, busy: 1 },
+      { ...m, warp: 1 },
       { ...m, mode: "trapped" },
       { ...m, mode: "escaping" },
       { ...m, mode: "dead" },
@@ -56,6 +59,7 @@ describe("hashState", () => {
       { y: p.y + 1 },
       { facing: -1 },
       { busy: 1 },
+      { warp: 1 },
       { mode: "dead" },
       { mode: "out" },
       { timer: 1 },
@@ -94,6 +98,7 @@ describe("hashState", () => {
           lives: p1(base).lives,
           timer: p1(base).timer,
           mode: p1(base).mode,
+          warp: p1(base).warp,
           busy: p1(base).busy,
           facing: p1(base).facing,
           y: p1(base).y,
@@ -102,6 +107,7 @@ describe("hashState", () => {
       ],
       holes: base.holes,
       goldLeft: base.goldLeft,
+      teleports: base.teleports,
       monks: base.monks,
       tiles: base.tiles,
       height: base.height,
@@ -150,5 +156,5 @@ describe("hashState with monks", () => {
   });
 });
 
-const COMMITTED_MONK_HASH = 1382849755;
-const COMMITTED_HASH = 2861219296;
+const COMMITTED_MONK_HASH = 371611291;
+const COMMITTED_HASH = 2917665088;

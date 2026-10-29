@@ -1,5 +1,5 @@
 import { TILE } from "../level/format";
-import { beginStroke, endStroke, erase, paint, paintLine, type EditorState } from "./model";
+import { beginStroke, endStroke, erase, linkAt, paint, paintLine, type EditorState } from "./model";
 
 /**
  * Mouse painting, as pure functions: the DOM layer turns pointer events into
@@ -89,7 +89,11 @@ export interface PointerResult {
   readonly drag: Drag | null;
 }
 
-/** Applies one pointer input: a whole press, drag and release is one undo step. */
+/**
+ * Applies one pointer input: a whole press, drag and release is one undo step. With the
+ * link tool, a left click links teleporters (`linkAt`) and starts no drag; the right
+ * button still erases.
+ */
 export function onPointer(
   editor: EditorState,
   drag: Drag | null,
@@ -103,6 +107,10 @@ export function onPointer(
       const action = actionFor(input.button);
       // A second button during a drag, or a button that does nothing: ignored.
       if (!startsDrag(drag, input.button) || action === null) return { editor, drag };
+      if (action === "paint" && editor.tool === "link") {
+        if (input.cell === null) return { editor, drag };
+        return { editor: linkAt(editor, input.cell.x, input.cell.y), drag };
+      }
       let s = beginStroke(editor);
       if (input.cell !== null) s = apply(s, action, input.cell, input.cell);
       const next = { pointer: input.pointer, button: input.button, action, last: input.cell };

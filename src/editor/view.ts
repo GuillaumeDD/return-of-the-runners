@@ -1,11 +1,11 @@
 import { translate, type Locale } from "../i18n";
 import { levelErrorMessage } from "../i18n/level-errors";
 import type { LevelErrorCode } from "../level/format";
-import { LIMITS } from "../level/format";
+import { LIMITS, TILE } from "../level/format";
 import { context2d, gridCanvasSize, renderGrid } from "../render/canvas";
 import { parseSize, relabelName } from "./fields";
 import { PALETTE, shortcutFor, tileForKey } from "./keys";
-import { redo, rename, resize, selectTile, undo, type EditorState } from "./model";
+import { redo, rename, resize, selectLinkTool, selectTile, undo, type EditorState } from "./model";
 import { startTest, testErrors, type TestStart } from "./test-play";
 import { cellAt, onPointer, startsDrag, type Drag, type PointerInput } from "./pointer";
 
@@ -94,6 +94,22 @@ export function createEditorView(els: EditorElements, options: EditorOptions): E
     return { button, label, tile };
   });
 
+  // The link tool, after the tiles: its swatch is an entrance linked to an exit.
+  const linkButton = document.createElement("button");
+  linkButton.type = "button";
+  const linkSwatch = document.createElement("canvas");
+  const linkTiles = [`${TILE.teleportEntrance}${TILE.teleportExit}`];
+  const linkSize = gridCanvasSize(linkTiles);
+  linkSwatch.width = linkSize.width;
+  linkSwatch.height = linkSize.height;
+  renderGrid(context2d(linkSwatch), linkTiles, [[0, 0, 1, 0]]);
+  const linkLabel = document.createElement("span");
+  linkButton.append(linkSwatch, linkLabel);
+  linkButton.addEventListener("click", () => {
+    update(selectLinkTool(editor));
+  });
+  els.palette.append(linkButton);
+
   els.width.min = String(LIMITS.minWidth);
   els.width.max = String(LIMITS.maxWidth);
   els.height.min = String(LIMITS.minHeight);
@@ -103,7 +119,7 @@ export function createEditorView(els: EditorElements, options: EditorOptions): E
     const size = gridCanvasSize(editor.grid);
     if (els.canvas.width !== size.width) els.canvas.width = size.width;
     if (els.canvas.height !== size.height) els.canvas.height = size.height;
-    renderGrid(ctx, editor.grid);
+    renderGrid(ctx, editor.grid, editor.teleports, editor.linkFrom);
   }
 
   function syncFields(): void {
@@ -111,12 +127,20 @@ export function createEditorView(els: EditorElements, options: EditorOptions): E
     els.height.value = String(editor.grid.length);
     els.undo.disabled = editor.undo.length === 0;
     els.redo.disabled = editor.redo.length === 0;
-    for (const s of swatches) s.button.setAttribute("aria-pressed", String(s.tile === editor.tile));
+    const painting = editor.tool === "paint";
+    for (const s of swatches) {
+      s.button.setAttribute("aria-pressed", String(painting && s.tile === editor.tile));
+    }
+    linkButton.setAttribute("aria-pressed", String(!painting));
   }
 
   function update(next: EditorState): void {
-    const redraw = next.grid !== editor.grid;
-    const revalidate = redraw || next.name !== editor.name;
+    const redraw =
+      next.grid !== editor.grid ||
+      next.teleports !== editor.teleports ||
+      next.linkFrom !== editor.linkFrom;
+    const revalidate =
+      next.grid !== editor.grid || next.teleports !== editor.teleports || next.name !== editor.name;
     editor = next;
     if (redraw) draw();
     if (revalidate && errors !== null) showErrors(testErrors(editor));
@@ -154,6 +178,8 @@ export function createEditorView(els: EditorElements, options: EditorOptions): E
       const s = swatches[i];
       if (s) s.label.textContent = translate(locale, name);
     });
+    linkLabel.textContent = translate(locale, "editorLinkTool");
+    linkButton.title = translate(locale, "editorLinkHint");
   }
 
   // Pointer: painting with the mouse (or a finger).

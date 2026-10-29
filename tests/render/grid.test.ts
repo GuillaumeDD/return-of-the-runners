@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { gridCanvasSize, render, renderGrid, TILE_PX } from "../../src/render/canvas";
-import { stateFrom } from "../sim/helpers";
+import { stateFrom, withPlayer } from "../sim/helpers";
 
 /** Records the colour of every filled rectangle, keyed by its top-left pixel. */
 function recorder(): { ctx: CanvasRenderingContext2D; fills: Map<string, string[]> } {
@@ -77,5 +77,37 @@ describe("terrain the game hides", () => {
     expect(fillsIn(fills, 1, 0).length).toBeGreaterThan(fillsIn(fills, 1, 1).length);
     expect(fillsIn(fills, 2, 0).length).toBeGreaterThan(0);
     expect(fillsIn(fills, 3, 0).length).toBeGreaterThan(0);
+  });
+});
+
+describe("teleporters", () => {
+  const SPARKLE = "#fff6c8";
+  const LINK = "#7fd8f0";
+
+  it("a player in transit is not drawn; a sparkle shows at the exit instead", () => {
+    const rows = ["P..t", "@@@@"];
+    const still = recorder();
+    render(still.ctx, stateFrom(rows));
+    expect(fillsIn(still.fills, 0, 0)).not.toContain(SPARKLE);
+    const moving = recorder();
+    render(moving.ctx, withPlayer(stateFrom(rows), { x: 3 * 8, warp: 10 }));
+    expect(fillsIn(moving.fills, 3, 0)).toContain(SPARKLE);
+    // No runner drawn anywhere: its head colour is absent.
+    expect([...moving.fills.values()].flat()).not.toContain("#f5f5f5");
+  });
+
+  it("in the editor: links are drawn from entrance to exit, and the picked entrance is framed", () => {
+    const rows = ["T...t", "@@@@@"];
+    const none = recorder();
+    renderGrid(none.ctx, rows);
+    expect(fillsIn(none.fills, 2, 0)).not.toContain(LINK);
+    const linked = recorder();
+    renderGrid(linked.ctx, rows, [[0, 0, 4, 0]]);
+    // The dotted line crosses the empty cells between them.
+    expect(fillsIn(linked.fills, 2, 0)).toContain(LINK);
+    expect(fillsIn(linked.fills, 0, 0)).not.toContain(SPARKLE);
+    const picked = recorder();
+    renderGrid(picked.ctx, rows, [[0, 0, 4, 0]], { cx: 0, cy: 0 });
+    expect(fillsIn(picked.fills, 0, 0)).toContain(SPARKLE);
   });
 });

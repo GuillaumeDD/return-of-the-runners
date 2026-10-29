@@ -39,6 +39,8 @@ export function hashState(s: GameState): number {
     int(row.length);
     for (let i = 0; i < row.length; i++) int(row.charCodeAt(i));
   }
+  int(s.teleports.length);
+  for (const link of s.teleports) for (const n of link) int(n);
   int(s.goldLeft);
   int(s.players.length);
   for (const p of s.players) {
@@ -46,6 +48,7 @@ export function hashState(s: GameState): number {
     int(p.y);
     int(p.facing);
     int(p.busy);
+    int(p.warp);
     int(PLAYER_MODE_CODE[p.mode]);
     int(p.timer);
     int(p.lives);
@@ -65,6 +68,7 @@ export function hashState(s: GameState): number {
     int(m.y);
     int(m.facing);
     int(m.busy);
+    int(m.warp);
     int(MONK_MODE_CODE[m.mode]);
     int(m.timer);
     int(m.carry);

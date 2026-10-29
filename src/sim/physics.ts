@@ -13,9 +13,12 @@ export type Terrain = Pick<GameState, "width" | "height" | "tiles" | "holes" | "
  * Tiles actors move through as if the cell were empty: trapdoor turf (drawn like brick,
  * but nothing is there), a hidden ladder not yet revealed (it becomes a ladder in
  * `tiles` once the gold is gone, see `revealLadders`), an alcove (a hiding place with
- * no support of its own) and a monk respawn point (a marker).
+ * no support of its own), a monk respawn point (a marker) and both teleporter ends
+ * (the jump itself is in `teleport.ts`).
  */
 const AS_EMPTY: ReadonlySet<string> = new Set([
+  TILE.teleportEntrance,
+  TILE.teleportExit,
   TILE.trapdoor,
   TILE.hiddenLadder,
   TILE.alcove,
@@ -74,10 +77,17 @@ export function isSupported(t: Terrain, cx: number, cy: number): boolean {
   return isSolid(below) || below === TILE.ladder || monkAt(t, cx, cy + 1);
 }
 
-/** Whether a monk's body (its centre cell) is in cell (cx, cy). Dead monks are not. */
+/**
+ * Whether a monk's body (its centre cell) is in cell (cx, cy). Dead monks and monks in
+ * transit through a teleporter are not.
+ */
 export function monkAt(t: Pick<Terrain, "monks">, cx: number, cy: number): boolean {
   return t.monks.some(
-    (m) => m.mode !== "dead" && cellOf(m.x + SUB / 2) === cx && cellOf(m.y + SUB / 2) === cy,
+    (m) =>
+      m.mode !== "dead" &&
+      m.warp === 0 &&
+      cellOf(m.x + SUB / 2) === cx &&
+      cellOf(m.y + SUB / 2) === cy,
   );
 }
 

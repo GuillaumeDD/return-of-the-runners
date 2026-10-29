@@ -272,6 +272,12 @@ both choices (monks' sight, goo speed) on 2026-10-29: not checked against the or
 
 ### B-023 — Teleporters
 
+_Done. As built: the jump is not on the next tick but after `TELEPORT_TICKS` (0.75 s),
+the delay seen in S-025 @ 0:04–0:05; the actor waits at the exit, unseen and safe. A
+chain cannot happen (an exit cell is never an entrance), so its test was dropped.
+Monks use teleporters; the AI does not plan through them. The link tool is in the
+palette, after the tiles._
+
 - Stepping fully into an entrance moves the actor to its linked exit on the next tick;
   exits do nothing when entered. Monks use them too (to confirm), the AI does not plan
   through them.

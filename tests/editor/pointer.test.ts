@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { TILE } from "../../src/level/format";
-import { newEditor, paint, selectTile, undo, type EditorState } from "../../src/editor/model";
+import {
+  newEditor,
+  paint,
+  selectLinkTool,
+  selectTile,
+  undo,
+  type EditorState,
+} from "../../src/editor/model";
 import {
   actionFor,
   cellAt,
@@ -193,5 +200,38 @@ describe("drags", () => {
     ]);
     expect(editor.undo).toHaveLength(2);
     expect(editor.stroke).toBe("none");
+  });
+});
+
+describe("the link tool", () => {
+  const level = (): EditorState => {
+    let s = newEditor("Links");
+    s = paint(s, 2, 3, TILE.teleportExit);
+    s = paint(s, 9, 3, TILE.teleportExit);
+    s = paint(s, 5, 3, TILE.teleportEntrance);
+    return selectLinkTool(s);
+  };
+
+  it("a left click links instead of painting, and starts no drag", () => {
+    const s = level();
+    const picked = run(s, [down(0, cell(5, 3))]);
+    expect(picked.drag).toBeNull();
+    expect(picked.editor.linkFrom).toEqual({ cx: 5, cy: 3 });
+    expect(picked.editor.grid).toEqual(s.grid);
+    const linked = run(s, [down(0, cell(5, 3)), end(), down(0, cell(9, 3)), end()]);
+    expect(linked.editor.teleports).toEqual([[5, 3, 9, 3]]);
+    expect(linked.editor.grid).toEqual(s.grid);
+    // Dragging across cells with the link tool paints nothing.
+    const dragged = run(s, [down(0, cell(0, 0)), move(cell(6, 0)), end()]);
+    expect(dragged.editor.grid).toEqual(s.grid);
+    // A click off the grid does nothing.
+    expect(run(s, [down(0, null)]).editor).toEqual(s);
+  });
+
+  it("the right button still erases", () => {
+    const s = level();
+    const erased = run(s, [down(2, cell(5, 3)), end()]);
+    expect(count(erased.editor, TILE.teleportEntrance)).toBe(0);
+    expect(erased.editor.teleports).toEqual([]);
   });
 });

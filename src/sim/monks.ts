@@ -6,6 +6,7 @@ import { NO_INPUT, type PlayerInput } from "./input";
 import { every, isFalling, overlapsCell, stepActor, tryHorizontal } from "./move";
 import { cellOf, isPassable, isSolid, offsetOf, type Terrain } from "./physics";
 import { prngInt } from "./prng";
+import { inTransit, tryTeleport } from "./teleport";
 import { MONK_CARRY, MONK_PERIOD, MONK_TICKS, SUB } from "./rules";
 import type { Actor, Facing, GameState, Monk, Player } from "./state";
 
@@ -44,6 +45,15 @@ function sameCell(a: Actor, b: Actor): boolean {
 export function isHidden(tiles: readonly string[], p: Actor): boolean {
   const { cx, cy } = centerCell(p);
   return tiles[cy]?.charAt(cx) === TILE.alcove;
+}
+
+/**
+ * Whether monks can see a player: in play and not hiding in an alcove. A player in
+ * transit through a teleporter is seen where it will appear (at the exit), but cannot
+ * be caught until it does.
+ */
+export function inSight(tiles: readonly string[], p: Player): boolean {
+  return p.mode === "alive" && !isHidden(tiles, p);
 }
 
 function aligned(a: Actor): boolean {
@@ -95,6 +105,11 @@ export function stepMonks(state: GameState, tick: number): MonksResult {
     const others = monks.filter((_, j) => j !== i);
     const t: Terrain = { ...state, tiles, monks: others };
     let m: Monk = before;
+    // In a teleporter: waits at the exit until it appears.
+    if (inTransit(m)) {
+      monks[i] = { ...m, warp: m.warp - 1 };
+      continue;
+    }
 
     switch (m.mode) {
       case "dead": {
@@ -128,6 +143,7 @@ export function stepMonks(state: GameState, tick: number): MonksResult {
 
     // Monks never overlap: a move into another monk is cancelled, mode change included.
     if (m.mode !== "dead" && (m.x !== before.x || m.y !== before.y)) {
+      // A monk in transit counts: it is already on its exit.
       if (others.some((o) => o.mode !== "dead" && overlaps(m, o))) m = before;
     }
 
@@ -146,10 +162,11 @@ export function stepMonks(state: GameState, tick: number): MonksResult {
         tiles = trapped.tiles;
       }
     }
+    if (m.mode === "free") m = tryTeleport({ ...state, tiles }, m, others);
 
-    if (m.mode !== "dead") {
+    if (m.mode !== "dead" && !inTransit(m)) {
       state.players.forEach((p, j) => {
-        if (p.mode === "alive" && sameCell(m, p) && !isHidden(tiles, p)) caught[j] = true;
+        if (inSight(tiles, p) && !inTransit(p) && sameCell(m, p)) caught[j] = true;
       });
     }
     monks[i] = m;
@@ -167,7 +184,7 @@ export function stepMonks(state: GameState, tick: number): MonksResult {
 function view(state: GameState, m: Monk): ChaseView | null {
   const target = targetOf(
     m,
-    state.players.filter((p) => !isHidden(state.tiles, p)),
+    state.players.filter((p) => inSight(state.tiles, p)),
   );
   if (target === null) return null;
   const { cx, cy } = centerCell(m);
@@ -201,7 +218,11 @@ function escape(
   const topY = (m.holeY - 1) * SUB;
   if (m.y > topY) {
     if (!isPassable(t, m.holeX, m.holeY - 1)) return m;
-    if (players.some((p) => p.mode === "alive" && overlapsCell(p, m.holeX, m.holeY - 1))) {
+    if (
+      players.some(
+        (p) => p.mode === "alive" && !inTransit(p) && overlapsCell(p, m.holeX, m.holeY - 1),
+      )
+    ) {
       return m;
     }
     return every(tick, MONK_PERIOD.climb) ? { ...m, y: m.y - 1 } : m;
