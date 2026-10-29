@@ -1,5 +1,5 @@
 import { TILE } from "../level/format";
-import { monkAt, type Terrain } from "./physics";
+import { actorTile, isSolid, monkAt, type Terrain } from "./physics";
 
 /**
  * Monk chase AI: the classic Lode Runner algorithm (from the 1982 game, as described in
@@ -33,20 +33,19 @@ export interface ChaseView {
   readonly runnerFalling: boolean;
 }
 
-/** Static tile: holes ignored, the exit reads as empty, outside the level as bedrock. */
+/**
+ * Static tile: holes ignored, the exit and the tiles actors pass through (`actorTile`)
+ * read as empty, outside the level as bedrock.
+ */
 function base(t: Terrain, x: number, y: number): string {
   if (x < 0 || y < 0 || x >= t.width || y >= t.height) return TILE.bedrock;
-  const c = t.tiles[y]?.charAt(x) ?? TILE.bedrock;
+  const c = actorTile(t.tiles[y]?.charAt(x) ?? TILE.bedrock);
   return c === TILE.exit ? TILE.empty : c;
 }
 
-function isFloor(c: string): boolean {
-  return c === TILE.brick || c === TILE.bedrock;
-}
-
-/** Floor a monk can stand or walk on: brick, bedrock or a ladder top. */
+/** Floor a monk can stand or walk on: a solid tile or a ladder top. */
 function isStandable(c: string): boolean {
-  return isFloor(c) || c === TILE.ladder;
+  return isSolid(c) || c === TILE.ladder;
 }
 
 /**
@@ -96,7 +95,7 @@ function scanFloor(t: Terrain, v: ChaseView): MonkMove {
     let x = v.cx;
     while (dir === -1 ? x > 0 : x < maxX) {
       const next = base(t, x + dir, y);
-      if (isFloor(next)) break;
+      if (isSolid(next)) break;
       x += dir;
       const held = next === TILE.ladder || next === TILE.bar || y >= maxY;
       if (!held && !isStandable(base(t, x, y + 1))) break;
@@ -107,12 +106,12 @@ function scanFloor(t: Terrain, v: ChaseView): MonkMove {
   const rightEnd = end(1);
 
   const scanColumn = (x: number, move: MonkMove): void => {
-    if (y < maxY && !isFloor(base(t, x, y + 1))) scanDown(t, v, x, move, best);
+    if (y < maxY && !isSolid(base(t, x, y + 1))) scanDown(t, v, x, move, best);
     if (base(t, x, y) === TILE.ladder) scanUp(t, v, x, move, best);
   };
 
   // From the monk's own column, going down or up; then the columns to each side.
-  if (y < maxY && !isFloor(base(t, v.cx, y + 1))) scanDown(t, v, v.cx, "down", best);
+  if (y < maxY && !isSolid(base(t, v.cx, y + 1))) scanDown(t, v, v.cx, "down", best);
   if (base(t, v.cx, y) === TILE.ladder) scanUp(t, v, v.cx, "up", best);
 
   for (let x = leftEnd; x < v.cx; x++) scanColumn(x, "left");
@@ -141,7 +140,7 @@ function rate(v: ChaseView, x: number, y: number, move: MonkMove, best: Best): v
 function scanDown(t: Terrain, v: ChaseView, x: number, move: MonkMove, best: Best): void {
   const maxY = t.height - 1;
   let y = v.cy;
-  while (y < maxY && !isFloor(base(t, x, y + 1))) {
+  while (y < maxY && !isSolid(base(t, x, y + 1))) {
     // Only when held up here (not in free fall) can the monk leave sideways.
     if (base(t, x, y) !== TILE.empty) {
       if ((canLeave(t, x, y, -1) || canLeave(t, x, y, 1)) && y >= v.ry) break;

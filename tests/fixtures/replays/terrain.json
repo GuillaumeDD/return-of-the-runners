@@ -1,0 +1,70 @@
+{
+  "about": "Terrain (B-022): the runner crosses gooey turf (slow), takes the gold, falls through trapdoor turf onto the second gold, digs a hole the monk falls into and stands on it until it refills; the monk reappears at the respawn point (R). With the gold gone, the hidden ladder appears; the runner climbs it to the exit.",
+  "replay": {
+    "format": "return-of-the-runners/replay",
+    "version": 2,
+    "seed": 5,
+    "level": {
+      "format": "return-of-the-runners/level",
+      "version": 2,
+      "name": "Terrain",
+      "width": 14,
+      "height": 8,
+      "grid": [
+        "R............E",
+        "@@@@@@@@@@@@h@",
+        "............h.",
+        "P..$...n....h.",
+        "~~~~~~%#####h.",
+        "......$....Mh.",
+        "@@@@@@@#####h@",
+        "@@@@@@@@@@@@@@"
+      ]
+    },
+    "inputs": [
+      [
+        [
+          273,
+          "R"
+        ],
+        [
+          15,
+          ""
+        ],
+        [
+          1,
+          ">"
+        ],
+        [
+          123,
+          ""
+        ],
+        [
+          16,
+          "R"
+        ],
+        [
+          205,
+          ""
+        ],
+        [
+          79,
+          "R"
+        ],
+        [
+          80,
+          "U"
+        ],
+        [
+          8,
+          "R"
+        ]
+      ]
+    ]
+  },
+  "expected": {
+    "tick": 800,
+    "status": "won",
+    "hash": 1214776499
+  }
+}

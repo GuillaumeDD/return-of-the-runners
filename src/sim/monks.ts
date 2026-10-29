@@ -37,11 +37,20 @@ function sameCell(a: Actor, b: Actor): boolean {
   return ca.cx === cb.cx && ca.cy === cb.cy;
 }
 
+/**
+ * A player hiding in an alcove (its centre in the cell): monks neither see it nor catch
+ * it (S-018 @ 0:02–0:19, S-100). Seeing: provisional (see ARCHITECTURE).
+ */
+export function isHidden(tiles: readonly string[], p: Actor): boolean {
+  const { cx, cy } = centerCell(p);
+  return tiles[cy]?.charAt(cx) === TILE.alcove;
+}
+
 function aligned(a: Actor): boolean {
   return offsetOf(a.x) === 0 && offsetOf(a.y) === 0;
 }
 
-/** Free floor for gold: an empty tile (not dug) with brick, bedrock or a ladder below. */
+/** Free floor for gold: an empty tile (not dug) with a solid tile or a ladder below. */
 function canHoldGold(t: Terrain, cx: number, cy: number): boolean {
   if (t.tiles[cy]?.charAt(cx) !== TILE.empty || holeAt(t.holes, cx, cy) !== undefined) {
     return false;
@@ -54,7 +63,7 @@ function canHoldGold(t: Terrain, cx: number, cy: number): boolean {
 /**
  * The player a monk chases: the nearest one in play, by the distance between their
  * positions (|dx| + |dy|, in sub-units); a tie goes to the lower index (player 1).
- * Null when no player is in play.
+ * Null when no player is in play. (Callers pass the players in sight, see `view`.)
  */
 export function targetOf(m: Pick<Actor, "x" | "y">, players: readonly Player[]): Player | null {
   let best: Player | null = null;
@@ -108,7 +117,7 @@ export function stepMonks(state: GameState, tick: number): MonksResult {
         m = escape(t, m, view(state, m), tick, state.players);
         break;
       case "free": {
-        // No player in play: the monk waits (it still falls if unsupported).
+        // No player in play and in sight: the monk waits (it still falls if unsupported).
         const v = view(state, m);
         const move = v === null ? "none" : chooseMove(t, v);
         const moved = stepActor(t, m, INPUT[move], tick, MONK_PERIOD);
@@ -140,7 +149,7 @@ export function stepMonks(state: GameState, tick: number): MonksResult {
 
     if (m.mode !== "dead") {
       state.players.forEach((p, j) => {
-        if (p.mode === "alive" && sameCell(m, p)) caught[j] = true;
+        if (p.mode === "alive" && sameCell(m, p) && !isHidden(tiles, p)) caught[j] = true;
       });
     }
     monks[i] = m;
@@ -150,12 +159,16 @@ export function stepMonks(state: GameState, tick: number): MonksResult {
 }
 
 /**
- * What the chase AI sees of a monk and the player it chases; null without a player.
+ * What the chase AI sees of a monk and the player it chases; null without a player in
+ * sight (players hiding in an alcove are not).
  * Whether that player falls is judged on the state at the start of the tick, so it
  * does not depend on which monks moved before this one.
  */
 function view(state: GameState, m: Monk): ChaseView | null {
-  const target = targetOf(m, state.players);
+  const target = targetOf(
+    m,
+    state.players.filter((p) => !isHidden(state.tiles, p)),
+  );
   if (target === null) return null;
   const { cx, cy } = centerCell(m);
   const r = centerCell(target);
@@ -173,7 +186,7 @@ function view(state: GameState, m: Monk): ChaseView | null {
 /**
  * Climbing out of a hole: straight up to the row above it, then sideways in the
  * direction the AI picks (or the way the monk faces, when it picks none or no player is
- * in play). Above the hole it does not fall
+ * in play and in sight). Above the hole it does not fall
  * back in, until it has left the hole's column. Walled in on both sides, it gives up
  * and falls back in. A player standing on the hole holds it down: it cannot climb
  * while a player in play is in the cell above (S-100).
@@ -256,17 +269,34 @@ function carryGold(
 }
 
 /**
- * Where a dead monk reappears (1982 rule): on the second row, from a random column
- * onward (wrapping), the first empty cell free of monks and of players in play; if the
- * row is full, the next row down.
+ * Where a dead monk reappears. A level with monk respawn points (`R`) uses one of them,
+ * drawn from the PRNG among those free of monks and of players in play; with all taken,
+ * none (the monk waits). Without any, the 1982 rule: on the second row, from a random
+ * column onward (wrapping), the first empty cell free of monks and of players in play;
+ * if the row is full, the next row down.
  */
 export function respawnCell(
   t: Terrain,
   players: readonly Player[],
   rng: number,
 ): { cell: { cx: number; cy: number } | null; rng: number } {
-  const start = prngInt(rng, t.width);
   const playerCells = players.filter((p) => p.mode === "alive").map(centerCell);
+  const taken = (cx: number, cy: number): boolean =>
+    t.monks.some((o) => o.mode !== "dead" && overlaps(o, { x: cx * SUB, y: cy * SUB })) ||
+    playerCells.some((c) => c.cx === cx && c.cy === cy);
+  const points: { cx: number; cy: number }[] = [];
+  t.tiles.forEach((row, cy) => {
+    for (let cx = 0; cx < row.length; cx++) {
+      if (row.charAt(cx) === TILE.monkRespawn) points.push({ cx, cy });
+    }
+  });
+  if (points.length > 0) {
+    const free = points.filter((c) => !taken(c.cx, c.cy));
+    if (free.length === 0) return { cell: null, rng };
+    const pick = prngInt(rng, free.length);
+    return { cell: free[pick.value] ?? null, rng: pick.state };
+  }
+  const start = prngInt(rng, t.width);
   const holes: readonly Hole[] = t.holes;
   for (let cy = Math.min(1, t.height - 1); cy < t.height; cy++) {
     for (let i = 0; i < t.width; i++) {
@@ -274,8 +304,7 @@ export function respawnCell(
       const free =
         t.tiles[cy]?.charAt(cx) === TILE.empty &&
         holeAt(holes, cx, cy) === undefined &&
-        !t.monks.some((o) => o.mode !== "dead" && overlaps(o, { x: cx * SUB, y: cy * SUB })) &&
-        !playerCells.some((c) => c.cx === cx && c.cy === cy);
+        !taken(cx, cy);
       if (free) return { cell: { cx, cy }, rng: start.state };
     }
   }

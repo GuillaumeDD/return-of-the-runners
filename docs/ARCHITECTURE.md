@@ -80,7 +80,7 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
 - An actor is between two tiles on at most one axis at a time. To change axis (turn
   onto a ladder, step off one), it first **snaps** toward the nearest aligned position.
 - **Support** (`physics.ts`): an aligned actor is held up by a ladder or bar in its own
-  cell, or by brick, bedrock, a ladder or the level floor below it. Otherwise it falls,
+  cell, or by brick, bedrock, gooey turf, a ladder or the level floor below it. Otherwise it falls,
   and input is ignored until it lands or catches a bar.
 - **Up** needs a ladder in the current cell; **down** works onto or along a ladder, and
   lets go of a bar. Moving along a bar usually stops between two columns: down then
@@ -89,6 +89,23 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
 - Outside the level reads as bedrock (walls and ceiling); the bottom row stands on the
   level floor.
 - Speeds are periods: an actor moves one sub-unit every `RUNNER_PERIOD.*` ticks.
+
+### Terrain
+
+- `physics.ts`, `actorTile`: trapdoor turf (`%`), a hidden ladder not yet revealed
+  (`h`), an alcove (`n`) and a monk respawn point (`R`) read as **empty** for movement,
+  support and digging (so trapdoor turf cannot be dug, and the brick under it can). The
+  chase AI reads them the same way.
+- **Trapdoor turf** is drawn exactly like brick in the game; the editor adds a mark.
+- **Gooey turf** (`~`) is solid floor that cannot be dug. Whoever walks on it (the cell
+  below its centre column) moves one sub-unit every `GOO_PERIOD` ticks, runners and
+  monks alike.
+- **Hidden ladders** stay `h` in `tiles` (not drawn) until `goldLeft` reaches 0; on that
+  tick, after the players collect gold, `revealLadders` turns every `h` into a ladder
+  (`H`). A level without gold starts with them revealed.
+- **Alcove**: a player whose centre is in one is hidden: monks neither catch it nor see
+  it (`monks.ts`, `isHidden`), so with no other player in sight they stand still.
+- **Monk respawn points** (`R`): not drawn in the game. See Monks.
 
 ### Digging and holes
 
@@ -160,8 +177,8 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
   stand on it (`physics.ts`, `monkAt`). Monks never overlap: a move into another monk
   is cancelled.
 - **Target** (`monks.ts`, `targetOf`): each tick, a monk chases the nearest player in
-  play (`|dx| + |dy|` in sub-units; a tie goes to player 1). With no player in play
-  (both waiting to reappear) it stands still. Below, "the runner" is that player.
+  play and in sight, not hiding in an alcove (`|dx| + |dy|` in sub-units; a tie goes to
+  player 1). With none (waiting to reappear, or hiding) it stands still. Below, "the runner" is that player.
 - **Chase AI** (`ai.ts`): the classic 1982 algorithm, reimplemented. Same row and a
   walkable floor between them: go straight at the runner. Otherwise scan the monk's
   floor up to the walls and edges; from each column, see where falling or a ladder
@@ -174,8 +191,10 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
   `MONK_TICKS.trapped`, then `escaping`: it climbs to the row above and walks off
   sideways, without falling back in (walled in on both sides, it falls back in). It
   cannot climb while the runner stands in the cell above the hole (S-100). If the hole refills on it, it is `dead` for
-  `MONK_TICKS.respawn`, then reappears on the second row from a PRNG-chosen column (the
-  first empty cell from there, wrapping, else the next row down).
+  `MONK_TICKS.respawn`, then reappears: at a monk respawn point (`R`) drawn by the PRNG
+  among those free of monks and players in play (all taken: it waits another
+  `MONK_TICKS.respawn`); in a level without one, on the second row from a PRNG-chosen
+  column (the first empty cell from there, wrapping, else the next row down).
 - **Gold**: a monk with nothing picks up the gold it touches and carries it for
   `MONK_CARRY.min` plus a PRNG draw in `[0, MONK_CARRY.spread)` cells, then drops it on
   the next free floor cell; it waits one cell before picking gold up again. A trapped
@@ -268,9 +287,10 @@ cell cannot hold a link, so links live beside the grid.
 
 The left column holds the tiles of the 1982 game (`TILE_BASE`). The right column is reserved by the format first: each
 tile gets its behavior, its drawing and its place in the editor palette with its own
-step 3 item (B-020 to B-028, see [`plans/step-3.md`](plans/step-3.md)). Until then the
-game does not draw it, and it is neither solid nor climbable: nothing in the editor
-palette places one, but an imported v2 file may hold some.
+step 3 item (B-020 to B-028, see [`plans/step-3.md`](plans/step-3.md)). Done so far:
+`Q` (B-020) and the terrain `% ~ h R n` (B-022, see Terrain). Until then the game does
+not draw a tile, and it is neither solid nor climbable: nothing in the editor palette
+places one, but an imported v2 file may hold some.
 
 | Rule              | Limit                                                             | Error code                                  |
 | ----------------- | ----------------------------------------------------------------- | ------------------------------------------- |
@@ -325,7 +345,7 @@ Code: `src/editor/` (pure modules, and `view.ts` / `library-view.ts` for the DOM
   one step. `toLevel` runs the edited document through `parseLevel`, so the editor
   never hands the game a level an import would reject.
 - **Editor screen** (`editor/view.ts`, the only editor file that touches the DOM): a
-  palette (number keys 1–9, then 0, by `KeyboardEvent.code`, like the game keys), name and size
+  palette (number keys 1–9, then 0 for the first ten entries, by `KeyboardEvent.code`, like the game keys), name and size
   fields, undo and redo. `editor/pointer.ts` maps canvas pixels to cells at any CSS
   scale and turns pointer events into model operations: the left button paints, the
   right one erases, and release, cancel and lost capture all end the stroke, so letting
@@ -461,7 +481,7 @@ as gameplay is implemented.
 | Gas gun                         | cloud ≈ 2 tiles for ≈ 6 s; monks inside stuck; gun kept                                   | S-021 @ 0:54–1:04          |
 | Two-player race                 | mirrored halves, exits appear with the gold, first out wins                               | S-025                      |
 | Versus end                      | first player out wins                                                                     | S-025 @ 0:04–1:24          |
-| Versus gold and exits           | shared, as in co-op (any gold, any exit); both out on the same tick: draw                 | **Provisional**, to check  |
+| Versus gold and exits           | shared, as in co-op (any gold, any exit); both out on the same tick: draw                 | Guillaume, 2026-10-29      |
 | Versus deaths                   | as in co-op: own lives, respawn at the start; a player can bury the other                 | **Provisional**, to check  |
 | Co-op end                       | won when one player exits; a dead player alone restarts, on their own lives               | S-100 (2026-10-27)         |
 | Lives at start (two players)    | 5 each (status bar shows 05 for both)                                                     | S-026 @ 0:01               |
@@ -473,6 +493,11 @@ as gameplay is implemented.
 | Big bomb                        | same counter; round blast ≈ 5 cells, permanent; chain reactions                           | S-025 @ 1:04–1:15          |
 | Snare                           | holds the first monk that walks in for good; others walk past                             | S-018 @ 0:23–0:48          |
 | Alcove                          | hiding place: a player inside cannot be caught                                            | S-018 @ 0:02–0:19, S-100   |
+| Alcove: monks' sight            | monks do not see a hiding player (they chase another, or stand still)                     | Guillaume, 2026-10-29      |
+| Trapdoor turf                   | drawn like brick; actors fall through; cannot be dug                                      | S-002, S-008               |
+| Gooey turf speed                | 1 sub-unit per 6 ticks for runners and monks (3× slower runner, 2× slower monk)           | S-002; Guillaume, 10-29    |
+| Hidden ladder                   | appears when the last gold is taken                                                       | S-001, S-025 @ 0:00–0:04   |
+| Monk respawn points             | a dead monk reappears at a free `R`, picked at random                                     | S-001, pick to check       |
 | Monk speed                      | 2/3 of the runner's                                                                       | **Provisional**, 1982 feel |
 | Monk chase AI                   | classic floor scan (see Monks)                                                            | 1982 rule [^lrtr]          |
 | Monk stuck in a hole            | 120 ticks (2 s), then climbs out                                                          | **Provisional**            |

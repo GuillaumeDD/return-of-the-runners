@@ -13,6 +13,11 @@ export const PALETTE: readonly { readonly tile: TileChar; readonly name: Message
   { tile: TILE.monkStart, name: "tileMonk" },
   { tile: TILE.empty, name: "tileEmpty" },
   { tile: TILE.player2Start, name: "tileRunner2" },
+  { tile: TILE.trapdoor, name: "tileTrapdoor" },
+  { tile: TILE.gooeyTurf, name: "tileGooeyTurf" },
+  { tile: TILE.hiddenLadder, name: "tileHiddenLadder" },
+  { tile: TILE.alcove, name: "tileAlcove" },
+  { tile: TILE.monkRespawn, name: "tileMonkRespawn" },
 ];
 
 /**

@@ -6,7 +6,7 @@
 export const LEVEL_FORMAT_ID = "return-of-the-runners/level";
 export const LEVEL_FORMAT_VERSION = 2;
 
-/** The tiles of the original 1982 game, the ones the editor palette offers so far. */
+/** The tiles of the original 1982 game. */
 export const TILE_BASE = {
   empty: ".",
   brick: "#",
@@ -22,8 +22,8 @@ export const TILE_BASE = {
 /**
  * Every tile of version 2. The tiles added in v2 are reserved by the format first
  * (B-019); each gets its behavior, its drawing and its place in the editor palette in
- * a later step 3 item. Until then the game does not draw them, and they are neither
- * solid nor climbable.
+ * a later step 3 item (so far: `Q`, and the terrain of B-022). Until then the game does
+ * not draw them, and they are neither solid nor climbable.
  */
 export const TILE = {
   ...TILE_BASE,
