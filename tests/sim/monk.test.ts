@@ -64,6 +64,28 @@ describe("monks: setup and movement", () => {
     expect(s.status).toBe("dead");
   });
 
+  // Regression (B-038): a monk whose way down was a pit stopped at its edge for good.
+  it.each([
+    ["a pit", ".", "......M.....", ".........P.."],
+    ["a pit, from the left", ".", "M...........", "........P..."],
+    ["trapdoor turf", "%", "......M.....", ".........P.."],
+    ["trapdoor turf, from the left", "%", "M...........", "........P..."],
+  ])("walk to the column of %s and drop through it to the runner below", (_, gap, top, low) => {
+    let s = stateFrom([top, `@@${gap}@@@@@@@@@`, "............", low, "@@@@@@@@@@@@"]);
+    let dropped = false;
+    for (let t = 0; t < 600 && s.status === "playing"; t++) {
+      s = stepOne(s, press.none);
+      if (monk(s).y > SUB) {
+        dropped = true;
+        expect(monk(s).x).toBe(2 * SUB);
+        break;
+      }
+    }
+    expect(dropped).toBe(true);
+    s = run(s, press.none, 600);
+    expect(s.status).toBe("dead");
+  });
+
   it("never overlap each other", () => {
     let s = stateFrom(["P.........MMM", "#############"]);
     for (let t = 0; t < 300; t++) {

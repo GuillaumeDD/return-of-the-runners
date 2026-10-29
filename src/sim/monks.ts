@@ -4,7 +4,7 @@ import { centerCell, setTile, takeGold } from "./gold";
 import { craterAt, holeAt, isDugOut, type Hole } from "./holes";
 import { NO_INPUT, type PlayerInput } from "./input";
 import { every, isFalling, overlapsCell, stepActor, tryHorizontal } from "./move";
-import { cellOf, isPassable, isSolid, offsetOf, type Terrain } from "./physics";
+import { cellOf, isBar, isLadder, isPassable, isSolid, offsetOf, type Terrain } from "./physics";
 import { prngInt } from "./prng";
 import { inTransit, tryTeleport } from "./teleport";
 import { rubbleAt, rubbleIn } from "./tools";
@@ -141,7 +141,7 @@ export function stepMonks(state: GameState, tick: number): MonksResult {
         // No player in play and in sight: the monk waits (it still falls if unsupported).
         const v = view(state, m);
         const move = v === null ? "none" : chooseMove(t, v);
-        const moved = stepActor(t, m, INPUT[move], tick, MONK_PERIOD);
+        const moved = stepActor(t, m, INPUT[toColumn(t, m, move)], tick, MONK_PERIOD);
         m = { ...m, ...moved };
         break;
       }
@@ -179,6 +179,19 @@ export function stepMonks(state: GameState, tick: number): MonksResult {
   }
 
   return { monks, tiles, rng, caught };
+}
+
+/**
+ * The AI picks "down" from the monk's centre column. Without a ladder or bar there, the
+ * runner's rules would not move a monk off the column's grid line (it would stand at
+ * the edge of a pit forever): it walks to the column instead, and falls once there.
+ */
+function toColumn(t: Terrain, m: Monk, move: MonkMove): MonkMove {
+  if (move !== "down" || offsetOf(m.x) === 0 || offsetOf(m.y) !== 0) return move;
+  const { cx, cy } = centerCell(m);
+  if (isLadder(t, cx, cy) || isLadder(t, cx, cy + 1) || isBar(t, cx, cy)) return move;
+  if (isBar(t, cellOf(m.x), cy)) return move;
+  return cx * SUB > m.x ? "right" : "left";
 }
 
 /**
