@@ -1,7 +1,7 @@
 import { TILE } from "../level/format";
 import { chooseMove, type ChaseView, type MonkMove } from "./ai";
 import { centerCell, setTile, takeGold } from "./gold";
-import { holeAt, isDugOut, type Hole } from "./holes";
+import { craterAt, holeAt, isDugOut, type Hole } from "./holes";
 import { NO_INPUT, type PlayerInput } from "./input";
 import { every, isFalling, overlapsCell, stepActor, tryHorizontal } from "./move";
 import { cellOf, isPassable, isSolid, offsetOf, type Terrain } from "./physics";
@@ -63,7 +63,7 @@ function aligned(a: Actor): boolean {
 
 /**
  * Free floor for gold: an empty tile (not dug, no rubble) with a solid tile, a ladder or
- * landed rubble below.
+ * landed rubble below; not over a crater (`bombs.ts`).
  */
 function canHoldGold(t: Terrain, cx: number, cy: number): boolean {
   const here = t.tiles[cy]?.charAt(cx);
@@ -71,6 +71,7 @@ function canHoldGold(t: Terrain, cx: number, cy: number): boolean {
     return false;
   }
   if (cy + 1 >= t.height || rubbleAt(t.rubble, cx, cy + 1)) return true;
+  if (craterAt(t.craters, cx, cy + 1) !== undefined) return false;
   const below = t.tiles[cy + 1]?.charAt(cx) ?? TILE.bedrock;
   return isSolid(below) || below === TILE.ladder;
 }

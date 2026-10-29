@@ -191,7 +191,6 @@ function createGame(
   function showPlayers(): void {
     els.group.hidden = maxPlayers(level) < 2;
     for (const m of PLAY_MODES) els.buttons[m].setAttribute("aria-pressed", String(m === mode));
-    els.hud.hidden = count < 2;
     shown = null; // the next frame shows the message and status line again
     hudText = null;
   }
@@ -211,6 +210,7 @@ function createGame(
     if (text !== hudText) {
       hudText = text;
       els.hud.textContent = text;
+      els.hud.hidden = text === "";
     }
     render(context, session.state);
     frameId = requestAnimationFrame(frame);

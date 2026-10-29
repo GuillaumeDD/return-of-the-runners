@@ -224,3 +224,60 @@ describe("tools and rubble", () => {
     expect(fillsIn(fills, 1, 1)).toEqual([BRICK]);
   });
 });
+
+describe("bombs, blasts and craters", () => {
+  const BOMB = "#2b2b33";
+  const RING = "#c9a227";
+  const SPARK = "#ffd84a";
+  const BLAST = "#ff7a2f";
+  const BLAST_BIG = "#ffe38a";
+  const BRICK = "#a0522d";
+
+  it("a small and a big bomb are drawn, in the game and the editor; only the big one has a ring", () => {
+    const rows = ["Po.O", "@@@@"];
+    for (const draw of [
+      (c: CanvasRenderingContext2D) => {
+        render(c, stateFrom(rows));
+      },
+      (c: CanvasRenderingContext2D) => {
+        renderGrid(c, rows);
+      },
+    ]) {
+      const { ctx, fills } = recorder();
+      draw(ctx);
+      expect(fillsIn(fills, 1, 0)).toContain(BOMB);
+      expect(fillsIn(fills, 1, 0)).not.toContain(RING);
+      expect(fillsIn(fills, 3, 0)).toContain(RING);
+    }
+  });
+
+  it("a lit bomb is drawn with a spark", () => {
+    const s = stateFrom(["P...", "@@@@"]);
+    const { ctx, fills } = recorder();
+    render(ctx, { ...s, fuses: [{ cx: 2, cy: 0, big: false, left: 30 }] });
+    expect(fillsIn(fills, 2, 0)).toContain(BOMB);
+    expect(fillsIn(fills, 2, 0)).toContain(SPARK);
+  });
+
+  it("a blast lights up every cell it covers, in its size's colour", () => {
+    const s = stateFrom(["P.......", "........", "@@@@@@@@"]);
+    const small = recorder();
+    render(small.ctx, { ...s, blasts: [{ cx: 3, cy: 0, big: false, age: 0 }] });
+    for (const x of [1, 2, 3, 4, 5]) expect(fillsIn(small.fills, x, 0)).toContain(BLAST);
+    expect(fillsIn(small.fills, 6, 0)).not.toContain(BLAST);
+    const big = recorder();
+    render(big.ctx, { ...s, blasts: [{ cx: 3, cy: 1, big: true, age: 5 }] });
+    expect(fillsIn(big.fills, 3, 0)).toContain(BLAST_BIG);
+  });
+
+  it("an open crater shows no brick; the brick grows back at the end", () => {
+    const s = stateFrom(["P...", "####", "@@@@"]);
+    const open = recorder();
+    render(open.ctx, { ...s, craters: [{ cx: 1, cy: 1, left: 500 }] });
+    expect(fillsIn(open.fills, 1, 1)).toEqual([]);
+    expect(fillsIn(open.fills, 2, 1)).toContain(BRICK);
+    const closing = recorder();
+    render(closing.ctx, { ...s, craters: [{ cx: 1, cy: 1, left: 10 }] });
+    expect(fillsIn(closing.fills, 1, 1)).toEqual([BRICK]);
+  });
+});

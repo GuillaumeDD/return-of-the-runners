@@ -10,6 +10,8 @@ export interface PlayerInput {
   readonly pickUp: boolean;
   /** Use the held tool (`tools.ts`); acts once per press. */
   readonly use: boolean;
+  /** Lay a bomb (`bombs.ts`); acts once per press. */
+  readonly bomb: boolean;
 }
 
 export const NO_INPUT: PlayerInput = {
@@ -21,6 +23,7 @@ export const NO_INPUT: PlayerInput = {
   digRight: false,
   pickUp: false,
   use: false,
+  bomb: false,
 };
 
 /** Every player's input for one tick, player 1 first; a missing entry is no input. */

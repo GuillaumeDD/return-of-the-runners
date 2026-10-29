@@ -59,6 +59,9 @@ export function hashState(s: GameState): number {
     int(p.pickHeld ? 1 : 0);
     int(p.useHeld ? 1 : 0);
     int(p.drill ? 1 : 0);
+    int(p.bombs.length);
+    for (let i = 0; i < p.bombs.length; i++) int(p.bombs.charCodeAt(i));
+    int(p.bombHeld ? 1 : 0);
   }
   int(s.holes.length);
   for (const h of s.holes) {
@@ -71,6 +74,26 @@ export function hashState(s: GameState): number {
     int(r.cx);
     int(r.y);
     int(r.landed);
+  }
+  int(s.craters.length);
+  for (const c of s.craters) {
+    int(c.cx);
+    int(c.cy);
+    int(c.left);
+  }
+  int(s.fuses.length);
+  for (const f of s.fuses) {
+    int(f.cx);
+    int(f.cy);
+    int(f.big ? 1 : 0);
+    int(f.left);
+  }
+  int(s.blasts.length);
+  for (const b of s.blasts) {
+    int(b.cx);
+    int(b.cy);
+    int(b.big ? 1 : 0);
+    int(b.age);
   }
   int(s.monks.length);
   for (const m of s.monks) {

@@ -59,24 +59,27 @@ describe("statusMessage", () => {
 });
 
 describe("playerStatusText", () => {
-  it("is empty for one player", () => {
+  it("is empty for one player without bombs; shows the bombs one carries", () => {
     expect(playerStatusText("en", stateFrom(twoRows))).toBe("");
+    const s = withPlayer(stateFrom(twoRows), { bombs: "oOo" });
+    expect(playerStatusText("en", s)).toBe("Bombs: 3");
+    expect(playerStatusText("fr", s)).toBe("Bombes : 3");
   });
 
-  it("shows each player's lives and gold, in both languages", () => {
-    const s = withPlayer(stateFrom(twoRows, 1, 2), { gold: 3, lives: 2 }, 1);
+  it("shows each player's lives, gold and bombs, in both languages", () => {
+    const s = withPlayer(stateFrom(twoRows, 1, 2), { gold: 3, lives: 2, bombs: "o" }, 1);
     expect(playerStatusText("en", s)).toBe(
-      `Player 1: lives ${String(START_LIVES)}, gold 0 · Player 2: lives 2, gold 3`,
+      `Player 1: lives ${String(START_LIVES)}, gold 0, bombs 0 · Player 2: lives 2, gold 3, bombs 1`,
     );
     expect(playerStatusText("fr", s)).toBe(
-      `Joueur 1 : vies ${String(START_LIVES)}, or 0 · Joueur 2 : vies 2, or 3`,
+      `Joueur 1 : vies ${String(START_LIVES)}, or 0, bombes 0 · Joueur 2 : vies 2, or 3, bombes 1`,
     );
   });
 
   it("says when a player is out", () => {
     const s = withPlayer(stateFrom(twoRows, 1, 2), { mode: "out", lives: 0 }, 0);
     expect(playerStatusText("en", s)).toBe(
-      `Player 1: out · Player 2: lives ${String(START_LIVES)}, gold 0`,
+      `Player 1: out · Player 2: lives ${String(START_LIVES)}, gold 0, bombs 0`,
     );
   });
 });

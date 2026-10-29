@@ -1,6 +1,7 @@
 import { TILE, type Level, type Teleport } from "../level/format";
 import { countGold, revealLadders } from "./gold";
-import type { Hole } from "./holes";
+import type { Crater, Hole } from "./holes";
+import type { Blast, Fuse } from "./bombs";
 import type { Rubble } from "./tools";
 import { START_LIVES, SUB } from "./rules";
 
@@ -65,6 +66,13 @@ export interface Player extends Actor {
   readonly useHeld: boolean;
   /** Drilling down with a jackhammer (`tools.ts`): goes on after each fall. */
   readonly drill: boolean;
+  /**
+   * The bombs this player carries (`bombs.ts`), one bomb tile each, in the order they
+   * were picked up; `""` for none. Its length is the bomb counter.
+   */
+  readonly bombs: string;
+  /** The bomb key was held last tick (as `pickHeld`). */
+  readonly bombHeld: boolean;
 }
 
 /**
@@ -98,6 +106,12 @@ export interface GameState {
   readonly holes: readonly Hole[];
   /** Pickaxe rubble, falling or landed, ordered by creation (`tools.ts`). */
   readonly rubble: readonly Rubble[];
+  /** Bricks blown away by small bombs, ordered by creation (`bombs.ts`). */
+  readonly craters: readonly Crater[];
+  /** Lit bombs, ordered by when they were lit (`bombs.ts`). */
+  readonly fuses: readonly Fuse[];
+  /** Blasts still drawn, ordered by when they went off (`bombs.ts`). */
+  readonly blasts: readonly Blast[];
   /** Player 1, then player 2 in a two-player game; this order is the update order. */
   readonly players: readonly Player[];
   /** Monks in level reading order (row by row); this order is the update order. */
@@ -152,6 +166,8 @@ export function newPlayer(cx: number, cy: number): Player {
     pickHeld: false,
     useHeld: false,
     drill: false,
+    bombs: "",
+    bombHeld: false,
   };
 }
 
@@ -193,6 +209,9 @@ export function createState(level: Level, seed: number, players: PlayerCount = 1
     goldLeft,
     holes: [],
     rubble: [],
+    craters: [],
+    fuses: [],
+    blasts: [],
     players:
       p2 === null ? [newPlayer(p1.cx, p1.cy)] : [newPlayer(p1.cx, p1.cy), newPlayer(p2.cx, p2.cy)],
     monks,

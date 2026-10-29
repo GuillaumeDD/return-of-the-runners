@@ -40,12 +40,15 @@ export function statusMessage(
 const PLAYER_NAME: readonly MessageKey[] = ["playerName1", "playerName2"];
 
 /**
- * The status line under a two-player game: each player's lives and gold, or that the
- * player is out. Empty for one player (lives and scores for one player come with level
- * packs, in step 4).
+ * The status line under a game. With two players: each player's lives, gold and bombs,
+ * or that the player is out. Alone: the bombs it carries, if any, else nothing (lives
+ * and scores for one player come with level packs, in step 4).
  */
 export function playerStatusText(locale: Locale, state: Pick<GameState, "players">): string {
-  if (state.players.length < 2) return "";
+  if (state.players.length < 2) {
+    const n = state.players[0]?.bombs.length ?? 0;
+    return n === 0 ? "" : translate(locale, "hudBombs").replace("{bombs}", String(n));
+  }
   return state.players
     .map((p, i) => {
       const player = translate(locale, PLAYER_NAME[i] ?? "playerName1");
@@ -54,7 +57,8 @@ export function playerStatusText(locale: Locale, state: Pick<GameState, "players
           ? translate(locale, "hudOut")
           : translate(locale, "hudPlayer")
               .replace("{lives}", String(p.lives))
-              .replace("{gold}", String(p.gold));
+              .replace("{gold}", String(p.gold))
+              .replace("{bombs}", String(p.bombs.length));
       return line.replace("{player}", player);
     })
     .join(" · ");

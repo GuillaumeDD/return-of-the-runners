@@ -30,3 +30,26 @@ export function isDugOut(holes: readonly Hole[], cx: number, cy: number): boolea
   const phase = holePhase(h.age);
   return phase === "open" || phase === "closing";
 }
+
+/**
+ * A brick blown away by a small bomb (`bombs.ts`): empty for `left` more ticks, then the
+ * brick comes back. Kept in `GameState.craters` in creation order.
+ */
+export interface Crater {
+  readonly cx: number;
+  readonly cy: number;
+  readonly left: number;
+}
+
+export function craterAt(craters: readonly Crater[], cx: number, cy: number): Crater | undefined {
+  return craters.find((c) => c.cx === cx && c.cy === cy);
+}
+
+/** Whether the cell (cx, cy) is opened for now: a dug-out hole or a crater. */
+export function isOpened(
+  t: { readonly holes: readonly Hole[]; readonly craters: readonly Crater[] },
+  cx: number,
+  cy: number,
+): boolean {
+  return isDugOut(t.holes, cx, cy) || craterAt(t.craters, cx, cy) !== undefined;
+}

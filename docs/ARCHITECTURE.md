@@ -26,7 +26,7 @@ index.html ── src/main.ts        entry point: wires DOM, screens, input, loo
               src/editor/        level editor (step 2)
               src/i18n/          UI strings (en, fr)
               src/sim/           pure, deterministic game simulation
-              src/game/          fixed-timestep loop, play session, two-player status line
+              src/game/          fixed-timestep loop, play session, status line
               src/input/         keyboard → per-tick PlayerInput, via a bindings table
               src/render/        Canvas 2D rendering of a simulation state
               src/levels/        bundled levels (JSON, validated at load like any import)
@@ -54,7 +54,7 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
 - **Engine-independent:** no transcendental `Math` functions, no reliance on the
   iteration order of objects keyed by numeric-looking strings.
 - **Replays** (`replay.ts`, format version 2): a level, a seed and one run-length
-  encoded input log per player (`[ticks, keys]`, keys in the canonical order `LRUD<>IX`, `I` being pick up and `X` use,
+  encoded input log per player (`[ticks, keys]`, keys in the canonical order `LRUD<>IXB`, `I` being pick up, `X` use and `B` bomb,
   `""` for no input; one or two logs, all covering the same number of ticks) rebuild
   the exact same game. Version 1 (a single log) is no longer read: replays are test
   fixtures only, and those were rewritten. `runReplay` returns the final state and a checkpoint hash every
@@ -73,7 +73,8 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
   with an intentional rules change, and say so in the PR (the failing test prints the
   new values). A new state field also changes every hash while tick and status stay
   the same (B-023 added `teleports` and `warp`, B-025 `rubble`, `useHeld` and
-  `drill`); say so in the PR as well.
+  `drill`, B-026 `craters`, `fuses`, `blasts`, `bombs` and `bombHeld`); say so in the PR
+  as well.
 
 ### Movement model
 
@@ -180,6 +181,40 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
   in front of the swing is buried at once (S-021 @ 0:08). A crushed monk is dead as if
   buried (it keeps its gold); a crushed player dies as if caught (agreed by Guillaume, 2026-10-29).
 
+### Bombs
+
+- `bombs.ts`: small bombs `o` and big bombs `O` lie in cells of `tiles` and read as
+  **empty** for movement, support and digging. A player in play whose centre enters
+  one picks it up into its **bomb counter** (`Player.bombs`, one tile per bomb in
+  pick-up order; empty at the start of each level, S-015; kept when the player dies).
+  Monks walk past bombs. The status line shows the counter (alone: only while it is
+  not empty).
+- The bomb key (`PlayerInput.bomb`, once per press, `Player.bombHeld`) lays the
+  **first bomb picked up**, lit, in the player's centre cell (`GameState.fuses`); not
+  while falling or busy, nor where a bomb already lies or burns. It explodes
+  `FUSE_TICKS` (150, 2.5 s, S-015 @ 1:05–1:07.5) later. Lit bombs are passable and do
+  not fall.
+- **Small blast** (`blastCells`): the bomb's row two cells either side, and one cell
+  either side in the rows above and below (11 cells; a bomb two cells away is lit,
+  S-015 @ 1:07.5). Brick in it is blown away into a **crater** (`GameState.craters`)
+  for `CRATER_TICKS` (780, 13 s, S-015 @ 1:07.5–1:21): `tileAt` reads it as empty,
+  then the brick comes back over the last `HOLE_TICKS.closing` ticks (drawn like a
+  closing hole) and whoever is in it then dies, as in a refilled hole. Bedrock and all
+  other tiles are unharmed. A hole in a blasted brick is gone.
+- **Big blast**: the cells with `dx² + dy² ≤ 5` (21 cells, about five across, S-025 @
+  1:04–1:15). The terrain in it (brick, bedrock, goo, trapdoor turf, ladders, hidden
+  ladders, bars, alcoves, doors) is destroyed **for good** (`tiles`), with any hole or
+  crater there; the exit, gold, items, teleporters and respawn points are spared.
+- Every blast kills each monk and player in play whose centre cell is in it (a monk as
+  if buried, keeping its gold), clears the rubble in it, and **lights the bombs lying
+  in it**: each explodes a fuse later (a chain reaction, S-015 @ 1:07.5–1:12); a bomb
+  already burning keeps its fuse. Bombs
+  whose fuse runs out on the same tick explode in the order they were lit. Order in a
+  tick: after the holes age, before the rubble falls. A blast is drawn for
+  `BLAST_TICKS` (`GameState.blasts`).
+- The chase AI ignores craters, as it ignores holes; it sees what a big blast
+  destroyed. Monks do not drop gold over a crater.
+
 ### Digging and holes
 
 - `holes.ts`: a hole is `{ cx, cy, age }`, kept in `GameState.holes` in creation order.
@@ -243,8 +278,9 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
   differs. In co-op the level is complete; in versus the player `playersAtExit` names
   wins, and both on the same tick is a draw (`game/hud.ts`, `statusMessage`). The
   simulation never sees the mode, so replays do not record it.
-- Per-player lives and gold show in a status line under a two-player game
-  (`game/hud.ts`); lives across levels and scores come with level packs (step 4).
+- Per-player lives, gold and bombs show in a status line under a two-player game
+  (`game/hud.ts`); alone, the line shows only the bombs carried. Lives across levels
+  and scores come with level packs (step 4).
 
 ### Monks
 
@@ -292,12 +328,12 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
   bound by `KeyboardEvent.code` (physical position, so AZERTY works). Held keys are
   cleared on window blur, since a key released while unfocused never fires `keyup`.
 - **Two players on one keyboard** (`input/keyboard.ts`): alone, the player uses the
-  arrows, Z / X to dig (W / X on AZERTY), C to pick up and V to use a tool. With two,
-  player 1 (right) uses the arrows, the two keys left of right Shift to dig (`Period`,
-  `Slash`), the one before them to pick up (`Comma`, ; on AZERTY) and the one before
-  that to use a tool (`KeyM`, , on AZERTY), player 2 (left) `W A S D`, `Q` / `E` to dig,
-  `R` to pick up and `F` to use a tool (Z Q S D and A / E on AZERTY); the two sets share
-  no key. Remapping and
+  arrows, Z / X to dig (W / X on AZERTY), C to pick up, V to use a tool and B to lay
+  a bomb. With two, player 1 (right) uses the arrows, the two keys left of right Shift
+  to dig (`Period`, `Slash`), the one before them to pick up (`Comma`, ; on AZERTY),
+  the one before that to use a tool (`KeyM`, , on AZERTY) and `N` to lay a bomb;
+  player 2 (left) `W A S D`, `Q` / `E` to dig, `R` to pick up, `F` to use a tool and
+  `G` to lay a bomb (Z Q S D and A / E on AZERTY); the two sets share no key. Remapping and
   gamepads: step 4.
 - A level with a `Q` shows a "1 player / 2 players: co-op / 2 players: versus" choice
   above the play and test canvases; switching restarts the level. The last choice
@@ -370,7 +406,8 @@ tile gets its behavior, its drawing and its place in the editor palette with its
 step 3 item (B-020 to B-028, see [`plans/step-3.md`](plans/step-3.md)). Done so far:
 `Q` (B-020), the terrain `% ~ h R n` (B-022, see Terrain), the teleporters `T t`
 (B-023, see Teleporters), the keys and doors `a b c A B C` (B-024, see Items, keys
-and doors) and the tools `j k` (B-025, see Tools). Until then the game does
+and doors), the tools `j k` (B-025, see Tools) and the bombs `o O` (B-026, see
+Bombs). Until then the game does
 not draw a tile, and it is neither solid nor climbable: nothing in the editor palette
 places one, but an imported v2 file may hold some.
 
@@ -571,6 +608,11 @@ as gameplay is implemented.
 | Opening a door                  | the key holder next to it (side, above, below), not diagonal                              | Guillaume, 2026-10-29      |
 | Item of a player who dies       | kept while it waits to reappear                                                           | Guillaume, 2026-10-29      |
 | Bombs                           | collected into a counter, fuse ≈ 2.5 s, chain reactions, blasted blocks back after ≈ 13 s | S-015 @ 1:05–1:24          |
+| Bomb counter                    | one per player, for small and big bombs alike (one icon per bomb in the status bar)       | S-025 @ 0:04–1:20          |
+| Which bomb is laid              | the first picked up                                                                       | **Provisional**, to check  |
+| Small blast                     | its row ± 2 cells, rows above and below ± 1; brick only, back after 780 ticks (13 s)      | **Provisional**, S-015     |
+| Big blast                       | round, dx² + dy² ≤ 5; destroys all terrain for good, bedrock included, not the exit       | **Provisional**, S-025     |
+| Bomb victims                    | every monk and player in play whose centre is in the blast                                | **Provisional**            |
 | Jackhammer                      | rides straight down through brick, ≈ 5 tiles in 9 s; tool kept                            | S-019 @ 2:33–2:43          |
 | Jackhammer through bedrock      | drills bedrock too, as brick                                                              | Guillaume, 2026-10-29      |
 | Jackhammer timing               | 100 ticks a cell, then falls in; the shaft refills like a dug hole                        | **Provisional**, to check  |
