@@ -609,7 +609,7 @@ as gameplay is implemented.
 | Item of a player who dies       | kept while it waits to reappear                                                           | Guillaume, 2026-10-29      |
 | Bombs                           | collected into a counter, fuse ≈ 2.5 s, chain reactions, blasted blocks back after ≈ 13 s | S-015 @ 1:05–1:24          |
 | Bomb counter                    | one per player, for small and big bombs alike (one icon per bomb in the status bar)       | S-025 @ 0:04–1:20          |
-| Which bomb is laid              | the first picked up                                                                       | **Provisional**, to check  |
+| Which bomb is laid              | the first picked up                                                                       | Guillaume, 2026-10-29      |
 | Small blast                     | its row ± 2 cells, rows above and below ± 1; brick only, back after 780 ticks (13 s)      | **Provisional**, S-015     |
 | Big blast                       | round, dx² + dy² ≤ 5; destroys all terrain for good, bedrock included, not the exit       | **Provisional**, S-025     |
 | Bomb victims                    | every monk and player in play whose centre is in the blast                                | **Provisional**            |

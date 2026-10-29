@@ -351,7 +351,7 @@ item or the exit._
 ### B-026 — Bombs
 
 _Done. As built: a new bomb key (B alone; N and G with two players). One counter per
-player holds both kinds, laid in pick-up order (to confirm with Guillaume). Small
+player holds both kinds, laid in pick-up order (agreed by Guillaume, 2026-10-29). Small
 blast: its row ± 2 cells and the rows above and below ± 1, brick only, back after
 13 s; big blast: dx² + dy² ≤ 5, all terrain for good except the exit, gold, items and
 teleporters. Shapes are provisional. Blasts kill actors whose centre is in them and
