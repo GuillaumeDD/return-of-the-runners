@@ -170,7 +170,7 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
   than monks) until a solid tile, a ladder, landed rubble or the level floor holds it
   up, then lands; pieces are moved lowest first, so one falling on another that lands
   stacks on it. Rubble that comes to rest in any other cell (gold, an item, the exit, a
-  teleporter…) crumbles at once rather than seal it. Landed rubble reads as **bedrock**
+  teleporter…) crumbles at once rather than seal it (agreed by Guillaume, 2026-10-29). Landed rubble reads as **bedrock**
   for movement, support, digging and the chase AI; monks neither reappear nor drop
   gold in a rubble cell. It falls again if a hole opens under it, and crumbles
   `RUBBLE_TICKS` (420, 7 s) after landing, or at once when its cell turns back into
@@ -178,7 +178,7 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
 - **Crushing**: rubble that is falling, or lands this tick, kills every monk and player
   in play that it touches (their boxes overlap), after the holes age, so a monk right
   in front of the swing is buried at once (S-021 @ 0:08). A crushed monk is dead as if
-  buried (it keeps its gold); a crushed player dies as if caught (provisional).
+  buried (it keeps its gold); a crushed player dies as if caught (agreed by Guillaume, 2026-10-29).
 
 ### Digging and holes
 
@@ -572,7 +572,8 @@ as gameplay is implemented.
 | Item of a player who dies       | kept while it waits to reappear                                                           | Guillaume, 2026-10-29      |
 | Bombs                           | collected into a counter, fuse ≈ 2.5 s, chain reactions, blasted blocks back after ≈ 13 s | S-015 @ 1:05–1:24          |
 | Jackhammer                      | rides straight down through brick, ≈ 5 tiles in 9 s; tool kept                            | S-019 @ 2:33–2:43          |
-| Jackhammer: bedrock, timing     | drills bedrock too; 100 ticks a cell, then falls in; the shaft refills like a dug hole    | **Provisional**, to check  |
+| Jackhammer through bedrock      | drills bedrock too, as brick                                                              | Guillaume, 2026-10-29      |
+| Jackhammer timing               | 100 ticks a cell, then falls in; the shaft refills like a dug hole                        | **Provisional**, to check  |
 | Gas gun                         | cloud ≈ 2 tiles for ≈ 6 s; monks inside stuck; gun kept                                   | S-021 @ 0:54–1:04          |
 | Two-player race                 | mirrored halves, exits appear with the gold, first out wins                               | S-025                      |
 | Versus end                      | first player out wins                                                                     | S-025 @ 0:04–1:24          |
@@ -584,7 +585,8 @@ as gameplay is implemented.
 | Monk target with two players    | the nearest player; players do not block each other                                       | **Provisional**, to check  |
 | Pickaxe                         | rubble buries the monk on the next cell; ≥ 7 s; tool kept                                 | S-021 @ 0:08–0:15.5        |
 | Pickaxe rubble                  | falls 1 sub-unit a tick, lands solid as bedrock, crumbles after 420 ticks (7 s)           | **Provisional**, to check  |
-| Rubble on a player              | crushes it, like a monk                                                                   | **Provisional**, to check  |
+| Rubble on a player              | crushes it, like a monk                                                                   | Guillaume, 2026-10-29      |
+| Rubble on gold, items, exit     | never rests there: crumbles instead of sealing them                                       | Guillaume, 2026-10-29      |
 | Goo bucket                      | goo 2–3 cells in front, rest of the level; one use; stops monks                           | S-022 @ 3:16, @ 3:36       |
 | Teleporter                      | step in, reappear at the linked spot ≈ 0.5–1 s later (45 ticks, 0.75 s)                   | S-025; Guillaume, 10-29    |
 | Teleporter: monks, blocked exit | monks use them; a monk on the exit delays the jump                                        | **Provisional**, to check  |
