@@ -65,6 +65,18 @@ describe("keyboard input", () => {
     ]);
   });
 
+  it("maps the bomb key: B alone; N for player 1 and G for player 2 together", () => {
+    expect(inputFrom(keyDown(new Set(), "KeyB"))).toEqual({ ...NO_INPUT, bomb: true });
+    expect(inputsFrom(keyDown(new Set(), "KeyN"), 2)).toEqual([
+      { ...NO_INPUT, bomb: true },
+      NO_INPUT,
+    ]);
+    expect(inputsFrom(keyDown(new Set(), "KeyG"), 2)).toEqual([
+      NO_INPUT,
+      { ...NO_INPUT, bomb: true },
+    ]);
+  });
+
   it("ignores unbound keys", () => {
     expect(inputFrom(keyDown(new Set(), "KeyQ"))).toEqual(NO_INPUT);
     expect(isBound("KeyQ")).toBe(false);
@@ -81,6 +93,7 @@ describe("keyboard input", () => {
       digRight: ["KeyE"],
       pickUp: ["KeyF"],
       use: ["KeyG"],
+      bomb: ["KeyH"],
     };
     expect(inputFrom(keyDown(new Set(), "KeyA"), wasd)).toEqual({ ...NO_INPUT, left: true });
     expect(inputFrom(keyDown(new Set(), "ArrowLeft"), wasd)).toEqual(NO_INPUT);

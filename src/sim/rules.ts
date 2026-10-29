@@ -59,6 +59,18 @@ export const PICK_TICKS = 15;
 /** Ticks landed rubble stays before it crumbles (7 s; S-021 shows at least 7 s; provisional). */
 export const RUBBLE_TICKS = 420;
 
+/** Ticks a lit bomb burns before it explodes (2.5 s, S-015 @ 1:05–1:07.5). */
+export const FUSE_TICKS = 150;
+
+/**
+ * Ticks a brick blown away by a small bomb stays open before it comes back (13 s,
+ * S-015 @ 1:07.5–1:21; provisional).
+ */
+export const CRATER_TICKS = 780;
+
+/** Ticks a blast is drawn after it goes off (drawing only, but kept in the state). */
+export const BLAST_TICKS = 20;
+
 export const MONK_TICKS = {
   /** Stuck in a hole before climbing out (if the hole has not refilled by then). */
   trapped: 120,

@@ -1,0 +1,74 @@
+{
+  "about": "Bombs (B-026): the runner picks up a small and a big bomb, lays the small one against a brick wall and runs back. The blast blows the wall away and lights the bomb lying behind it, which explodes a fuse later. The runner goes through the crater, lays the big bomb on the bedrock floor and steps away; the blast opens the floor for good. It drops to the gold below and leaves by the exit.",
+  "replay": {
+    "format": "return-of-the-runners/replay",
+    "version": 2,
+    "seed": 5,
+    "level": {
+      "format": "return-of-the-runners/level",
+      "version": 2,
+      "name": "Bombs",
+      "width": 16,
+      "height": 8,
+      "grid": [
+        "................",
+        "................",
+        "................",
+        "P.o.O..#o.......",
+        "@@@@@@@@@@@@@@@@",
+        "............$..E",
+        "@@@@@@@@@@@@@@@@",
+        "@@@@@@@@@@@@@@@@"
+      ]
+    },
+    "inputs": [
+      [
+        [
+          96,
+          "R"
+        ],
+        [
+          1,
+          "B"
+        ],
+        [
+          64,
+          "L"
+        ],
+        [
+          240,
+          ""
+        ],
+        [
+          160,
+          "R"
+        ],
+        [
+          1,
+          "B"
+        ],
+        [
+          48,
+          "R"
+        ],
+        [
+          110,
+          ""
+        ],
+        [
+          60,
+          "L"
+        ],
+        [
+          36,
+          "R"
+        ]
+      ]
+    ]
+  },
+  "expected": {
+    "tick": 816,
+    "status": "won",
+    "hash": 3277022325
+  }
+}

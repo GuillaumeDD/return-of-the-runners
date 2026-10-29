@@ -1,5 +1,5 @@
 import { DOOR_KEY, TILE } from "../level/format";
-import { isDugOut } from "./holes";
+import { isOpened } from "./holes";
 import { rubbleAt } from "./tools";
 import { SUB } from "./rules";
 import type { GameState } from "./state";
@@ -8,14 +8,18 @@ import type { GameState } from "./state";
  * What movement needs to know: the terrain, the holes, the rubble (`tools.ts`), and the
  * monks, whose bodies hold up whoever stands on them. When moving a monk, `monks` holds the other monks only.
  */
-export type Terrain = Pick<GameState, "width" | "height" | "tiles" | "holes" | "monks" | "rubble">;
+export type Terrain = Pick<
+  GameState,
+  "width" | "height" | "tiles" | "holes" | "craters" | "monks" | "rubble"
+>;
 
 /**
  * Tiles actors move through as if the cell were empty: trapdoor turf (drawn like brick,
  * but nothing is there), a hidden ladder not yet revealed (it becomes a ladder in
  * `tiles` once the gold is gone, see `revealLadders`), an alcove (a hiding place with
  * no support of its own), a monk respawn point (a marker), both teleporter ends
- * (the jump itself is in `teleport.ts`) and the items lying in a cell (`items.ts`).
+ * (the jump itself is in `teleport.ts`), the items lying in a cell (`items.ts`) and the
+ * bombs lying in one (`bombs.ts`).
  */
 const AS_EMPTY: ReadonlySet<string> = new Set([
   TILE.keyRed,
@@ -23,6 +27,8 @@ const AS_EMPTY: ReadonlySet<string> = new Set([
   TILE.keyBlue,
   TILE.jackhammer,
   TILE.pickaxe,
+  TILE.smallBomb,
+  TILE.bigBomb,
   TILE.teleportEntrance,
   TILE.teleportExit,
   TILE.trapdoor,
@@ -44,7 +50,7 @@ export function actorTile(tile: string): string {
 export function tileAt(t: Terrain, cx: number, cy: number): string {
   if (cx < 0 || cy < 0 || cx >= t.width || cy >= t.height) return TILE.bedrock;
   if (rubbleAt(t.rubble, cx, cy)) return TILE.bedrock;
-  if (isDugOut(t.holes, cx, cy)) return TILE.empty;
+  if (isOpened(t, cx, cy)) return TILE.empty;
   return actorTile(t.tiles[cy]?.charAt(cx) ?? TILE.bedrock);
 }
 

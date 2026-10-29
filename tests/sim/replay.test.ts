@@ -23,6 +23,7 @@ const fixtures = replayFixtures();
 describe("committed replays (Node)", () => {
   it("there are replays to check", () => {
     expect(fixtures.map((f) => f.name)).toEqual([
+      "bombs",
       "coop-monks",
       "first-steps-random",
       "keys",
@@ -63,6 +64,27 @@ describe("committed replays (Node)", () => {
     expect([stopped.players[0]?.item, stopped.tiles[5]]).toEqual(["a", "....b.B.$.A.E."]);
     const end = runReplay(f.replay).state;
     expect([end.status, end.players[0]?.item, end.tiles[5]]).toEqual(["won", "", "............E."]);
+  });
+
+  it("bombs: the wall is blown away, the chain goes off, the big bomb opens the floor", () => {
+    const f = fixtures.find((x) => x.name === "bombs");
+    if (f === undefined) throw new Error("missing bombs");
+    const at = (ticks: number) =>
+      runReplay({
+        ...f.replay,
+        inputs: f.replay.inputs.map((log) => encodeInputs(decodeInputs(log).slice(0, ticks))),
+      }).state;
+    // Both bombs picked up, the small one laid first.
+    expect(at(96).players[0]?.bombs).toBe("oO");
+    expect(at(97).fuses).toEqual([{ cx: 6, cy: 3, big: false, left: 150 }]);
+    // The wall is a crater, and the bomb lying behind it burns.
+    const chain = at(300);
+    expect(chain.craters.map((c) => [c.cx, c.cy])).toEqual([[7, 3]]);
+    expect(chain.fuses.map((x) => [x.cx, x.big])).toEqual([[8, false]]);
+    expect(chain.tiles[3]).toBe(".......#........");
+    const end = runReplay(f.replay).state;
+    expect(end.status).toBe("won");
+    expect(end.tiles[4]).toBe("@@@@@@@@@@.....@");
   });
 
   it("tools: the rubble walls the monk out while the runner drills down and wins", () => {
@@ -149,7 +171,7 @@ function dropLastTick(log: InputLog): InputLog {
   return [...log.slice(0, -1), ...(last[0] > 1 ? [[last[0] - 1, last[1]] as const] : [])];
 }
 
-const ALL_INPUTS: PlayerInput[] = Array.from({ length: 256 }, (_, bits) => ({
+const ALL_INPUTS: PlayerInput[] = Array.from({ length: 512 }, (_, bits) => ({
   left: (bits & 1) !== 0,
   right: (bits & 2) !== 0,
   up: (bits & 4) !== 0,
@@ -158,6 +180,7 @@ const ALL_INPUTS: PlayerInput[] = Array.from({ length: 256 }, (_, bits) => ({
   digRight: (bits & 32) !== 0,
   pickUp: (bits & 64) !== 0,
   use: (bits & 128) !== 0,
+  bomb: (bits & 256) !== 0,
 }));
 
 describe("runReplay", () => {
@@ -199,14 +222,14 @@ describe("runReplay", () => {
 });
 
 describe("input log encoding", () => {
-  it("encodes keys in canonical order, and decodes them back, for all 256 inputs", () => {
+  it("encodes keys in canonical order, and decodes them back, for all 512 inputs", () => {
     expect(encodeKeys(NO_INPUT)).toBe("");
-    expect(encodeKeys(ALL_INPUTS[255] ?? NO_INPUT)).toBe("LRUD<>IX");
+    expect(encodeKeys(ALL_INPUTS[511] ?? NO_INPUT)).toBe("LRUD<>IXB");
     for (const input of ALL_INPUTS) expect(decodeKeys(encodeKeys(input))).toEqual(input);
   });
 
   it("rejects unknown, repeated or out-of-order keys", () => {
-    for (const bad of ["x", "LL", "RL", "><", "L ", "l", "UD<>R", "XI"]) {
+    for (const bad of ["x", "LL", "RL", "><", "L ", "l", "UD<>R", "XI", "BX"]) {
       expect(decodeKeys(bad), bad).toBeNull();
     }
   });
@@ -222,7 +245,7 @@ describe("input log encoding", () => {
     for (let i = 0; i < 200; i++) {
       const inputs = Array.from(
         { length: randInt(rng, 300) },
-        () => ALL_INPUTS[randInt(rng, 4) === 0 ? randInt(rng, 256) : 0] ?? NO_INPUT,
+        () => ALL_INPUTS[randInt(rng, 4) === 0 ? randInt(rng, 512) : 0] ?? NO_INPUT,
       );
       expect(decodeInputs(encodeInputs(inputs))).toEqual(inputs);
     }
@@ -364,7 +387,7 @@ describe("parseReplay", () => {
   it("never throws on random mutations of a valid replay", () => {
     const valid = text({});
     const rng = makeRng(11);
-    const chars = '{}[]",:0123456789-.LRUD<>IXaZ ';
+    const chars = '{}[]",:0123456789-.LRUD<>IXBaZ ';
     for (let i = 0; i < 2000; i++) {
       let s = valid;
       for (let k = 0; k <= randInt(rng, 4); k++) {

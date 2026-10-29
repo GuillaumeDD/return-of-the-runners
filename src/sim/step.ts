@@ -1,4 +1,5 @@
 import { TILE } from "../level/format";
+import { collectBomb, layBomb, stepBombs, type Fuse } from "./bombs";
 import { centerCell, revealLadders, takeGold } from "./gold";
 import { HOLE_LIFETIME, holeAt, type Hole } from "./holes";
 import { NO_INPUT, type PlayerInput, type TickInput } from "./input";
@@ -20,13 +21,15 @@ import type { Actor, Facing, GameState, Monk, Player } from "./state";
  * on a teleporter entrance jumps (see `teleport.ts`). A player in play then picks up,
  * swaps or drops an item if it just pressed the pick-up key, opens a door next to it
  * that its key fits (`items.ts`), uses its tool if it just pressed the use key, or goes
- * on drilling down (`tools.ts`), and picks up the gold it touches.
+ * on drilling down (`tools.ts`), picks up the gold and the bombs it touches, and lays a
+ * bomb if it just pressed the bomb key (`bombs.ts`).
  * Once the last gold is taken, hidden ladders appear. A player touching the open exit
  * wins the level (`playersAtExit`). Unless it was won, the monks then act in order, and
  * a monk touching a player catches it. Then holes age: a player or monk inside a hole
- * that just filled dies (no player dies on the winning tick). Rubble then falls or
- * crumbles, and falling rubble crushes the monks and players it touches. Last, deaths
- * are counted (see `die`).
+ * that just filled dies (no player dies on the winning tick). Bombs then burn and
+ * explode, killing whoever is in a blast or in a crater that filled. Rubble then falls
+ * or crumbles, and falling rubble crushes the monks and players it touches. Last,
+ * deaths are counted (see `die`).
  */
 export function step(state: GameState, inputs: TickInput): GameState {
   const tick = state.tick + 1;
@@ -36,6 +39,7 @@ export function step(state: GameState, inputs: TickInput): GameState {
   let goldLeft = state.goldLeft;
   let holes = state.holes;
   let rubble: readonly Rubble[] = state.rubble;
+  let laid: readonly Fuse[] = [];
   const players: Player[] = [];
   // Monks only move while they can see someone: hiding players do not count (players
   // in transit do: they are seen at their exit).
@@ -46,7 +50,12 @@ export function step(state: GameState, inputs: TickInput): GameState {
     const t: Terrain = { ...state, tiles, holes, rubble };
     const input = inputs[i] ?? NO_INPUT;
     const acted = actPlayer(t, before, input, tick, anyAlive);
-    let p: Player = { ...acted.player, pickHeld: input.pickUp, useHeld: input.use };
+    let p: Player = {
+      ...acted.player,
+      pickHeld: input.pickUp,
+      useHeld: input.use,
+      bombHeld: input.bomb,
+    };
     if (acted.hole !== null) holes = [...holes, acted.hole];
     if (p.mode === "alive") p = tryTeleport(state, p, state.monks);
     if (inTransit(p)) p = { ...p, drill: false };
@@ -75,6 +84,14 @@ export function step(state: GameState, inputs: TickInput): GameState {
         goldLeft -= 1;
         p = { ...p, gold: p.gold + 1 };
       }
+      ({ tiles, player: p } = collectBomb(tiles, p));
+      if (input.bomb && !before.bombHeld && p.busy === 0 && !falling) {
+        const lay = layBomb(tiles, [...state.fuses, ...laid], p);
+        if (lay !== null) {
+          p = lay.player;
+          laid = [...laid, lay.fuse];
+        }
+      }
     }
     players.push(p);
   }
@@ -92,13 +109,22 @@ export function step(state: GameState, inputs: TickInput): GameState {
   const aged = holes.map((h) => ({ ...h, age: h.age + 1 }));
   const filled = aged.filter((h) => h.age >= HOLE_LIFETIME);
   const buried = (a: Actor): boolean => filled.some((h) => overlapsCell(a, h.cx, h.cy));
-  const kept = aged.filter((h) => h.age < HOLE_LIFETIME);
-  rubble = stepRubble({ ...state, tiles, holes: kept, monks, rubble });
+  const bombs = stepBombs({
+    ...state,
+    tiles,
+    holes: aged.filter((h) => h.age < HOLE_LIFETIME),
+    rubble,
+    laid,
+  });
+  tiles = bombs.tiles;
+  const kept = bombs.holes;
+  const { craters } = bombs;
+  rubble = stepRubble({ ...state, tiles, holes: kept, craters, monks, rubble: bombs.rubble });
   // Rubble crushes while it falls, and on the tick it lands.
   const falling = rubble.filter((r) => r.landed <= 0);
   const crushed = (a: Actor): boolean => !inTransit(a) && falling.some((r) => rubbleHits(r, a));
   monks = monks.map((m) =>
-    m.mode !== "dead" && (buried(m) || crushed(m))
+    m.mode !== "dead" && (buried(m) || crushed(m) || bombs.kills(m))
       ? { ...m, mode: "dead", timer: MONK_TICKS.respawn, holeX: -1, holeY: -1 }
       : m,
   );
@@ -107,7 +133,13 @@ export function step(state: GameState, inputs: TickInput): GameState {
   // A won level ends as it is: nobody dies on the winning tick (a hole filling under
   // the winner would otherwise remove it from `playersAtExit`).
   const final = players.map((p, i) => {
-    if (won || p.mode !== "alive" || !(caught[i] === true || buried(p) || crushed(p))) return p;
+    if (
+      won ||
+      p.mode !== "alive" ||
+      !(caught[i] === true || buried(p) || crushed(p) || bombs.kills(p))
+    ) {
+      return p;
+    }
     died = true;
     return die(p, solo);
   });
@@ -124,6 +156,9 @@ export function step(state: GameState, inputs: TickInput): GameState {
     monks,
     holes: kept,
     rubble,
+    craters,
+    fuses: bombs.fuses,
+    blasts: bombs.blasts,
     status,
   };
 }

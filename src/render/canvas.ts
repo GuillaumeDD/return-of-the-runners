@@ -1,6 +1,7 @@
 import { DOOR_KEY, TILE, type Teleport } from "../level/format";
-import { holeAt, holePhase } from "../sim/holes";
-import { HOLE_TICKS, SUB } from "../sim/rules";
+import { blastCells, type Blast, type Fuse } from "../sim/bombs";
+import { craterAt, holeAt, holePhase } from "../sim/holes";
+import { BLAST_TICKS, HOLE_TICKS, SUB } from "../sim/rules";
 import type { GameState, Monk, Player } from "../sim/state";
 import type { Rubble } from "../sim/tools";
 
@@ -45,6 +46,13 @@ const COLOR = {
   handle: "#8b5a2b",
   rubble: "#8a7866",
   rubbleDark: "#4e4237",
+  bomb: "#2b2b33",
+  bombShine: "#6b6b7a",
+  bombBigRing: "#c9a227",
+  fuse: "#d9b36c",
+  spark: "#ffd84a",
+  blast: "#ff7a2f",
+  blastBig: "#ffe38a",
   gridLine: "#222",
 } as const;
 
@@ -70,10 +78,13 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState): void {
   const exitOpen = state.goldLeft === 0;
   drawTiles(state.tiles, (tile, cx, cy, x, y) => {
     const hole = holeAt(state.holes, cx, cy);
-    if (hole === undefined) drawTile(ctx, tile, x, y, exitOpen);
+    const crater = craterAt(state.craters, cx, cy);
+    if (crater !== undefined) drawHole(ctx, tile, craterLeft(crater.left), x, y);
+    else if (hole === undefined) drawTile(ctx, tile, x, y, exitOpen);
     else drawHole(ctx, tile, brickLeft(hole.age), x, y);
   });
   for (const r of state.rubble) drawRubble(ctx, r);
+  for (const f of state.fuses) drawLitBomb(ctx, f);
   for (const m of state.monks) drawMonk(ctx, m);
   // Actors in a teleporter show as a sparkle at the exit.
   for (const a of [...state.monks, ...state.players]) {
@@ -82,6 +93,59 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState): void {
   state.players.forEach((p, i) => {
     drawPlayer(ctx, p, i, state.status === "dead");
   });
+  for (const b of state.blasts) drawBlast(ctx, b, state.width, state.height);
+}
+
+/**
+ * How much of a blown-away brick is visible: none while the crater is open, then it
+ * grows back over the last `HOLE_TICKS.closing` ticks, as a hole does.
+ */
+export function craterLeft(left: number): number {
+  return Math.min(1, Math.max(0, 1 - left / HOLE_TICKS.closing));
+}
+
+/** A bomb lying in a cell: a round body with a fuse; a big one is larger, with a ring. */
+function drawBomb(ctx: CanvasRenderingContext2D, x: number, y: number, big: boolean): void {
+  const s = TILE_PX;
+  const r = big ? 9 : 6; // half the body's width
+  const cx = x + s / 2;
+  const bottom = y + s - 1;
+  ctx.fillStyle = COLOR.bomb;
+  ctx.fillRect(cx - r, bottom - 2 * r + 2, 2 * r, 2 * r - 4);
+  ctx.fillRect(cx - r + 2, bottom - 2 * r, 2 * r - 4, 2 * r);
+  ctx.fillStyle = COLOR.bombShine;
+  ctx.fillRect(cx - r + 3, bottom - 2 * r + 3, 3, 3);
+  if (big) {
+    ctx.fillStyle = COLOR.bombBigRing;
+    ctx.fillRect(cx - r, bottom - r - 1, 2 * r, 2);
+  }
+  ctx.fillStyle = COLOR.fuse;
+  ctx.fillRect(cx + 1, bottom - 2 * r - 4, 2, 4);
+}
+
+/** A lit bomb: as it lies, with a spark on its fuse that flickers as it burns. */
+function drawLitBomb(ctx: CanvasRenderingContext2D, f: Fuse): void {
+  const x = f.cx * TILE_PX;
+  const y = f.cy * TILE_PX;
+  drawBomb(ctx, x, y, f.big);
+  const r = f.big ? 9 : 6;
+  ctx.fillStyle = COLOR.spark;
+  const size = (f.left >> 3) % 2 === 0 ? 4 : 2;
+  ctx.fillRect(x + TILE_PX / 2 + 2 - size / 2, y + TILE_PX - 1 - 2 * r - 4 - size, size, size);
+}
+
+/** A blast: every cell it covers is lit up, fading as it ages. */
+function drawBlast(ctx: CanvasRenderingContext2D, b: Blast, width: number, height: number): void {
+  const inset = Math.floor((b.age * (TILE_PX / 2)) / BLAST_TICKS);
+  ctx.fillStyle = b.big ? COLOR.blastBig : COLOR.blast;
+  for (const c of blastCells(b.cx, b.cy, b.big, width, height)) {
+    ctx.fillRect(
+      c.cx * TILE_PX + inset,
+      c.cy * TILE_PX + inset,
+      TILE_PX - 2 * inset,
+      TILE_PX - 2 * inset,
+    );
+  }
 }
 
 /**
@@ -369,6 +433,10 @@ function drawTile(
       ctx.fillRect(x + s - 6, y + 7, 3, 3);
       ctx.fillRect(x + 2, y + 10, 2, 2);
       ctx.fillRect(x + s - 4, y + 10, 2, 2);
+      break;
+    case TILE.smallBomb:
+    case TILE.bigBomb:
+      drawBomb(ctx, x, y, tile === TILE.bigBomb);
       break;
     case TILE.doorRed:
     case TILE.doorGreen:

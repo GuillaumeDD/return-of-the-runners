@@ -72,6 +72,11 @@ describe("hashState", () => {
       { pickHeld: true },
       { useHeld: true },
       { drill: true },
+      { bombs: "o" },
+      { bombs: "O" },
+      { bombs: "oO" },
+      { bombs: "Oo" },
+      { bombHeld: true },
     ];
     for (const v of variants) expect(hashState(withPlayer(base, v))).not.toBe(hashState(base));
     const swapped = { ...base, players: [...base.players].reverse() };
@@ -95,6 +100,31 @@ describe("hashState", () => {
     expect(hashState(base)).not.toBe(hashState(a));
   });
 
+  it("distinguishes crater, fuse and blast fields", () => {
+    const base = stateFrom(rows);
+    const c = { cx: 1, cy: 4, left: 5 };
+    const f = { cx: 1, cy: 3, big: false, left: 5 };
+    const b = { cx: 1, cy: 3, big: false, age: 2 };
+    const a = { ...base, craters: [c], fuses: [f], blasts: [b] };
+    const variants: GameState[] = [
+      { ...a, craters: [{ ...c, cx: 2 }] },
+      { ...a, craters: [{ ...c, cy: 3 }] },
+      { ...a, craters: [{ ...c, left: 6 }] },
+      { ...a, craters: [] },
+      { ...a, fuses: [{ ...f, cx: 2 }] },
+      { ...a, fuses: [{ ...f, cy: 2 }] },
+      { ...a, fuses: [{ ...f, big: true }] },
+      { ...a, fuses: [{ ...f, left: 6 }] },
+      { ...a, fuses: [] },
+      { ...a, blasts: [{ ...b, cx: 2 }] },
+      { ...a, blasts: [{ ...b, cy: 2 }] },
+      { ...a, blasts: [{ ...b, big: true }] },
+      { ...a, blasts: [{ ...b, age: 3 }] },
+      { ...a, blasts: [] },
+    ];
+    for (const v of variants) expect(hashState(v)).not.toBe(hashState(a));
+  });
+
   it("distinguishes hole fields", () => {
     const base = stateFrom(rows);
     const a = { ...base, holes: [{ cx: 1, cy: 4, age: 0 }] };
@@ -113,6 +143,8 @@ describe("hashState", () => {
       status: base.status,
       players: [
         {
+          bombHeld: p1(base).bombHeld,
+          bombs: p1(base).bombs,
           drill: p1(base).drill,
           useHeld: p1(base).useHeld,
           pickHeld: p1(base).pickHeld,
@@ -130,6 +162,9 @@ describe("hashState", () => {
           x: p1(base).x,
         },
       ],
+      blasts: base.blasts,
+      fuses: base.fuses,
+      craters: base.craters,
       rubble: base.rubble,
       holes: base.holes,
       goldLeft: base.goldLeft,
@@ -182,5 +217,5 @@ describe("hashState with monks", () => {
   });
 });
 
-const COMMITTED_MONK_HASH = 3592541515;
-const COMMITTED_HASH = 3701550400;
+const COMMITTED_MONK_HASH = 334771771;
+const COMMITTED_HASH = 3446247744;

@@ -15,18 +15,20 @@ export const DEFAULT_BINDINGS: Bindings = {
   // Physical positions: the two keys right of left Shift. Labelled Z/X on QWERTY, W/X on AZERTY.
   digLeft: ["KeyZ"],
   digRight: ["KeyX"],
-  // The next keys along: C, then V, on QWERTY and AZERTY.
+  // The next keys along: C, V, then B, on QWERTY and AZERTY.
   pickUp: ["KeyC"],
   use: ["KeyV"],
+  bomb: ["KeyB"],
 };
 
 /**
  * Two players on one keyboard, each on their own side. Player 1 (right) keeps the
  * arrows and digs with the two keys left of right Shift: . and / on QWERTY, : and ! on
  * AZERTY; it picks up with the key before them (, on QWERTY, ; on AZERTY) and uses a
- * tool with the one before that (M on QWERTY, , on AZERTY). Player 2 (left) moves with
- * W A S D (Z Q S D on AZERTY), digs with the keys above A and D: Q and E (A and E on
- * AZERTY), picks up with R and uses a tool with F.
+ * tool with the one before that (M on QWERTY, , on AZERTY), and lays a bomb with N.
+ * Player 2 (left) moves with W A S D (Z Q S D on AZERTY), digs with the keys above A
+ * and D: Q and E (A and E on AZERTY), picks up with R, uses a tool with F and lays a
+ * bomb with G.
  */
 export const TWO_PLAYER_BINDINGS: readonly [Bindings, Bindings] = [
   {
@@ -38,6 +40,7 @@ export const TWO_PLAYER_BINDINGS: readonly [Bindings, Bindings] = [
     digRight: ["Slash"],
     pickUp: ["Comma"],
     use: ["KeyM"],
+    bomb: ["KeyN"],
   },
   {
     left: ["KeyA"],
@@ -48,6 +51,7 @@ export const TWO_PLAYER_BINDINGS: readonly [Bindings, Bindings] = [
     digRight: ["KeyE"],
     pickUp: ["KeyR"],
     use: ["KeyF"],
+    bomb: ["KeyG"],
   },
 ];
 
@@ -86,6 +90,7 @@ export function inputFrom(held: HeldKeys, bindings: Bindings = DEFAULT_BINDINGS)
     digRight: pressed("digRight"),
     pickUp: pressed("pickUp"),
     use: pressed("use"),
+    bomb: pressed("bomb"),
   };
 }
 

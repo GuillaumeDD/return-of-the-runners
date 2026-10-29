@@ -1,5 +1,5 @@
 import { TILE } from "../level/format";
-import { holeAt, isDugOut, type Hole } from "./holes";
+import { craterAt, holeAt, isOpened, type Hole } from "./holes";
 import { isFalling, overlapsCell } from "./move";
 import { cellOf, isSolid, offsetOf, tileAt, type Terrain } from "./physics";
 import { DRILL_TICKS, HOLE_TICKS, PICK_TICKS, RUBBLE_TICKS, SUB } from "./rules";
@@ -67,17 +67,20 @@ function footing(t: Terrain, p: Player, falling: boolean): { cx: number; cy: num
 
 /**
  * A drill into the cell below (cx, cy): brick or bedrock, inside the level, not already
- * dug, no monk on it. The player snaps onto (cx, cy) and waits `DRILL_TICKS`. The hole
- * starts younger than a dug one (a negative age), so it stays in its "digging" phase,
- * still solid, for `DRILL_TICKS` instead of `HOLE_TICKS.digging`, then lives on as a
- * dug hole.
+ * dug or blown open, no monk on it. The player snaps onto (cx, cy) and waits
+ * `DRILL_TICKS`. The hole starts younger than a dug one (a negative age), so it stays in
+ * its "digging" phase, still solid, for `DRILL_TICKS` instead of `HOLE_TICKS.digging`,
+ * then lives on as a dug hole.
  */
 function drill(t: Terrain, p: Player, cx: number, cy: number): ToolResult | null {
   const below = cy + 1;
   if (below >= t.height) return null;
   const raw = t.tiles[below]?.charAt(cx) ?? "";
   if (raw !== TILE.brick && raw !== TILE.bedrock) return null;
-  if (holeAt(t.holes, cx, below) !== undefined || rubbleAt(t.rubble, cx, below)) return null;
+  if (holeAt(t.holes, cx, below) !== undefined || craterAt(t.craters, cx, below) !== undefined) {
+    return null;
+  }
+  if (rubbleAt(t.rubble, cx, below)) return null;
   if (t.monks.some((m) => m.mode !== "dead" && overlapsCell(m, cx, below))) return null;
   return {
     player: { ...p, x: cx * SUB, y: cy * SUB, busy: DRILL_TICKS, drill: true },
@@ -120,12 +123,13 @@ export function keepDrilling(t: Terrain, p: Player, falling: boolean): ToolResul
 }
 
 /**
- * Whether rubble may sit in the cell (cx, cy): an empty cell, or a dug-out hole. Not in
- * gold, an item, the exit, a teleporter or any other tile, which it would seal.
+ * Whether rubble may sit in the cell (cx, cy): an empty cell, or an opened one (a hole
+ * or a crater). Not in gold, an item, the exit, a teleporter or any other tile, which it
+ * would seal.
  */
 function canRest(t: Terrain, cx: number, cy: number): boolean {
   if (cx < 0 || cy < 0 || cx >= t.width || cy >= t.height) return false;
-  return t.tiles[cy]?.charAt(cx) === TILE.empty || isDugOut(t.holes, cx, cy);
+  return t.tiles[cy]?.charAt(cx) === TILE.empty || isOpened(t, cx, cy);
 }
 
 /** Whether rubble is held up at its place: aligned, over solid ground or landed rubble. */
@@ -144,7 +148,8 @@ function supported(t: Terrain, r: Rubble): boolean {
  * faster than a monk) until it is held up, then lands; landed rubble that loses its
  * support (a hole opens under it) falls again. Rubble that comes to rest where it may
  * not (`canRest`) crumbles at once; landed rubble crumbles after `RUBBLE_TICKS`, or as
- * soon as its cell turns solid (a hole refilled). Returns the rubble in creation order.
+ * soon as its cell turns solid (a hole refilled, a crater filled). Returns the rubble in
+ * creation order.
  */
 export function stepRubble(t: Terrain): Rubble[] {
   const now: (Rubble | null)[] = [...t.rubble];
@@ -157,8 +162,7 @@ export function stepRubble(t: Terrain): Rubble[] {
     if (r.landed >= 0) {
       const cy = cellOf(r.y);
       const raw = t.tiles[cy]?.charAt(r.cx) ?? "";
-      const refilled =
-        (raw === TILE.brick || raw === TILE.bedrock) && holeAt(t.holes, r.cx, cy) === undefined;
+      const refilled = (raw === TILE.brick || raw === TILE.bedrock) && !isOpened(t, r.cx, cy);
       if (refilled || r.landed + 1 >= RUBBLE_TICKS) next = null;
       else if (!supported(rest, r)) next = { ...r, y: r.y + 1, landed: -1 };
       else next = { ...r, landed: r.landed + 1 };

@@ -350,6 +350,13 @@ item or the exit._
 
 ### B-026 — Bombs
 
+_Done. As built: a new bomb key (B alone; N and G with two players). One counter per
+player holds both kinds, laid in pick-up order (agreed by Guillaume, 2026-10-29). Small
+blast: its row ± 2 cells and the rows above and below ± 1, brick only, back after
+13 s; big blast: dx² + dy² ≤ 5, all terrain for good except the exit, gold, items and
+teleporters. Shapes are provisional. Blasts kill actors whose centre is in them and
+light bombs lying there; the counter shows in the status line._
+
 - Bombs lying in the level are collected by walking over them into a per-player
   counter (starts at 0 each level, S-015), and laid at the player's feet with the bomb
   key. A laid bomb burns for `FUSE_TICKS` (about 2.5 s, S-015 @ 1:05–1:07.5).

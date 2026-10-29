@@ -52,6 +52,7 @@ const KEYS: readonly (readonly [keyof PlayerInput, string])[] = [
   ["digRight", ">"],
   ["pickUp", "I"],
   ["use", "X"],
+  ["bomb", "B"],
 ];
 
 export function encodeKeys(input: PlayerInput): string {
@@ -203,7 +204,7 @@ function parseLog(log: unknown, maxRuns: number): { runs: InputRun[]; ticks: num
       return "run ticks must be a positive integer";
     }
     if (typeof keys !== "string" || decodeKeys(keys) === null) {
-      return `run keys must be in canonical "LRUD<>IX" order`;
+      return `run keys must be in canonical "LRUD<>IXB" order`;
     }
     total += ticks;
     if (total > REPLAY_LIMITS.maxTicks) {
