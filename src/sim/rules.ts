@@ -43,7 +43,7 @@ export const GOO_PERIOD = 6;
 /**
  * Ticks an actor spends in a teleporter, between vanishing at the entrance and
  * appearing at the exit (0.75 s; S-025 @ 0:04–0:05 shows 0.5 to 1 s, read at 4 frames
- * per second; provisional).
+ * per second; agreed by Guillaume, 2026-10-29).
  */
 export const TELEPORT_TICKS = 45;
 

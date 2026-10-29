@@ -276,7 +276,8 @@ _Done. As built: the jump is not on the next tick but after `TELEPORT_TICKS` (0.
 the delay seen in S-025 @ 0:04–0:05; the actor waits at the exit, unseen and safe. A
 chain cannot happen (an exit cell is never an entrance), so its test was dropped.
 Monks use teleporters; the AI does not plan through them. The link tool is in the
-palette, after the tiles._
+palette, after the tiles. Guillaume agreed (2026-10-29) to the delay and to monks
+chasing a player in transit._
 
 - Stepping fully into an entrance moves the actor to its linked exit on the next tick;
   exits do nothing when entered. Monks use them too (to confirm), the AI does not plan
