@@ -493,9 +493,9 @@ as gameplay is implemented.
 | Big bomb                        | same counter; round blast ≈ 5 cells, permanent; chain reactions                           | S-025 @ 1:04–1:15          |
 | Snare                           | holds the first monk that walks in for good; others walk past                             | S-018 @ 0:23–0:48          |
 | Alcove                          | hiding place: a player inside cannot be caught                                            | S-018 @ 0:02–0:19, S-100   |
-| Alcove: monks' sight            | monks do not see a hiding player (they chase another, or stand still)                     | **Provisional**, to check  |
+| Alcove: monks' sight            | monks do not see a hiding player (they chase another, or stand still)                     | Guillaume, 2026-10-29      |
 | Trapdoor turf                   | drawn like brick; actors fall through; cannot be dug                                      | S-002, S-008               |
-| Gooey turf speed                | 1 sub-unit per 6 ticks for runners and monks (3× slower runner, 2× slower monk)           | **Provisional**, S-002     |
+| Gooey turf speed                | 1 sub-unit per 6 ticks for runners and monks (3× slower runner, 2× slower monk)           | S-002; Guillaume, 10-29    |
 | Hidden ladder                   | appears when the last gold is taken                                                       | S-001, S-025 @ 0:00–0:04   |
 | Monk respawn points             | a dead monk reappears at a free `R`, picked at random                                     | S-001, pick to check       |
 | Monk speed                      | 2/3 of the runner's                                                                       | **Provisional**, 1982 feel |
