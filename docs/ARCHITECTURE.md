@@ -54,7 +54,7 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
 - **Engine-independent:** no transcendental `Math` functions, no reliance on the
   iteration order of objects keyed by numeric-looking strings.
 - **Replays** (`replay.ts`, format version 2): a level, a seed and one run-length
-  encoded input log per player (`[ticks, keys]`, keys in the canonical order `LRUD<>`,
+  encoded input log per player (`[ticks, keys]`, keys in the canonical order `LRUD<>I`, `I` being pick up,
   `""` for no input; one or two logs, all covering the same number of ticks) rebuild
   the exact same game. Version 1 (a single log) is no longer read: replays are test
   fixtures only, and those were rewritten. `runReplay` returns the final state and a checkpoint hash every
@@ -126,6 +126,25 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
 - The chase AI does not plan through teleporters; a monk only uses one when its chase
   walks it onto an entrance.
 
+### Items, keys and doors
+
+- `items.ts`: items lie in cells of `tiles` (keys `a b c` so far) and read as
+  **empty** for movement, support and digging, so a brick can be dug under one, as
+  under gold. Monks never take them.
+- Each player has one **item slot** (`Player.item`, `""` when empty). The pick-up key
+  (`PlayerInput.pickUp`) acts on the tick it is pressed (`Player.pickHeld` remembers
+  last tick), at the player's centre cell: on an item, the player takes it and leaves
+  the one it held there (a swap, S-016 @ 3:03–3:05); on an empty cell (`.` only, not a
+  ladder, bar, gold or exit), it drops the held item. Not while digging, in transit or
+  dead. A player who dies keeps its item.
+- **Doors** `A B C` are solid like bedrock (walls and floor) and cannot be dug. A
+  player in play holding the key of a door's colour, with the door next to its centre
+  cell (left, right, above or below, in that order; not diagonally), opens it: the
+  door becomes empty for good and the key is used up, so a key opens one door
+  (S-016 @ 3:30–3:33; used up: provisional). Every tick, after the pick-up.
+- A door cannot sit on the exit cell (one tile per cell): to keep the exit shut until
+  a key is brought, the maker walls it in with doors.
+
 ### Digging and holes
 
 - `holes.ts`: a hole is `{ cx, cy, age }`, kept in `GameState.holes` in creation order.
@@ -135,7 +154,8 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
   need no special case for holes.
 - **Digging** (`step.ts`, `tryDig`): exactly one dig key, the player not falling (on
   the ground, on a ladder or hanging on a bar), the target diagonally below its nearest
-  cell an undug brick, and the cell above the target empty or holding gold (a brick,
+  cell an undug brick, and the cell above the target empty (an item or the exit count
+  as empty) or holding gold (a brick,
   ladder or bar blocks; the gold stays in place; another player does not block). Walking or climbing usually stops between two tiles, so the player snaps onto
   the nearest cell (up to half a tile), turns that way and is busy (frozen) while the
   hole is dug.
@@ -154,13 +174,16 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
 - An actor **touches** a cell once its centre is inside it (`centerCell`), so it need
   not be aligned. A player collects the gold it touches, which removes it from
   `tiles`, also while falling. Gold is neither solid nor support.
-- The exit (`E`) is a door: passable, no support, locked while `goldLeft > 0`.
+- The exit (`E`) is not there while `goldLeft > 0`: not drawn, and passable with no
+  support like an empty cell. It appears on the tick the last gold is taken
+  (S-015 @ 1:22–1:23); doors around it can keep it shut (see Items, keys and doors).
   A player in play touching it once the last gold is taken sets the status to `won`
   (for both players), which freezes the state like `dead`, and takes precedence over a
   hole filling on the same tick: nobody dies on the winning tick. `playersAtExit` names the players touching the open
   exit, so on a won state it names who got out: one player, or both on the same tick.
   Exits belong to no player.
-- Order within a tick: each player acts (dig or move) and collects gold, then the exit
+- Order within a tick: each player acts (dig or move), picks up or drops an item,
+  opens a door and collects gold, then the exit
   is checked, holes age, and deaths are counted. `game/session.ts` restarts the level after a win, since there is
   only one level until packs exist.
 
@@ -234,9 +257,11 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
   bound by `KeyboardEvent.code` (physical position, so AZERTY works). Held keys are
   cleared on window blur, since a key released while unfocused never fires `keyup`.
 - **Two players on one keyboard** (`input/keyboard.ts`): alone, the player uses the
-  arrows and Z / X (W / X on AZERTY). With two, player 1 (right) uses the arrows and
-  the two keys left of right Shift (`Period`, `Slash`), player 2 (left) `W A S D` and
-  `Q` / `E` (Z Q S D and A / E on AZERTY); the two sets share no key. Remapping and
+  arrows, Z / X to dig (W / X on AZERTY) and C to pick up. With two, player 1 (right)
+  uses the arrows, the two keys left of right Shift to dig (`Period`, `Slash`) and the
+  one before them to pick up (`Comma`, ; on AZERTY), player 2 (left) `W A S D`, `Q` /
+  `E` to dig and `R` to pick up (Z Q S D and A / E on AZERTY); the two sets share no
+  key. Remapping and
   gamepads: step 4.
 - A level with a `Q` shows a "1 player / 2 players: co-op / 2 players: versus" choice
   above the play and test canvases; switching restarts the level. The last choice
@@ -292,7 +317,7 @@ cell cannot hold a link, so links live beside the grid.
 | `H`  | ladder                                 | `h`         | hidden ladder              |
 | `-`  | bar (hand-over-hand)                   | `R`         | monk respawn point         |
 | `$`  | gold                                   | `n`         | alcove (hiding place)      |
-| `E`  | exit (locked until all gold collected) | `T`         | teleporter entrance        |
+| `E`  | exit (shows up once all gold is taken) | `T`         | teleporter entrance        |
 | `P`  | runner start (player 1)                | `t`         | teleporter exit            |
 | `M`  | monk start                             | `a` `b` `c` | key: red, green, blue      |
 |      |                                        | `A` `B` `C` | door: red, green, blue     |
@@ -307,8 +332,9 @@ cell cannot hold a link, so links live beside the grid.
 The left column holds the tiles of the 1982 game (`TILE_BASE`). The right column is reserved by the format first: each
 tile gets its behavior, its drawing and its place in the editor palette with its own
 step 3 item (B-020 to B-028, see [`plans/step-3.md`](plans/step-3.md)). Done so far:
-`Q` (B-020), the terrain `% ~ h R n` (B-022, see Terrain) and the teleporters `T t`
-(B-023, see Teleporters). Until then the game does
+`Q` (B-020), the terrain `% ~ h R n` (B-022, see Terrain), the teleporters `T t`
+(B-023, see Teleporters) and the keys and doors `a b c A B C` (B-024, see Items, keys
+and doors). Until then the game does
 not draw a tile, and it is neither solid nor climbable: nothing in the editor palette
 places one, but an imported v2 file may hold some.
 
@@ -502,9 +528,12 @@ as gameplay is implemented.
 | Digging from a ladder or bar    | allowed                                                                                   | 1982 rule [^lrtr]          |
 | Digging under gold              | allowed, the gold stays in place                                                          | S-100 (Guillaume's memory) |
 | Gold is collected               | when the runner's centre enters it                                                        | **Provisional**            |
-| Exit                            | door, opens once all gold is taken                                                        | **Provisional**, to check  |
-| Exit in TLR                     | absent until the last gold is taken, then appears (B-024)                                 | S-015 @ 1:22               |
+| Exit                            | absent until the last gold is taken, then appears                                         | S-015 @ 1:22               |
 | Keys                            | carried in the item slot to the door of their colour                                      | S-016 @ 3:03–3:33          |
+| Item slot                       | one item; picking up another swaps them in place                                          | S-016 @ 3:03–3:05          |
+| Key used up on its door         | yes; one door per key                                                                     | **Provisional**, to check  |
+| Opening a door                  | the key holder next to it (side, above, below), not diagonal                              | **Provisional**            |
+| Item of a player who dies       | kept while it waits to reappear                                                           | **Provisional**            |
 | Bombs                           | collected into a counter, fuse ≈ 2.5 s, chain reactions, blasted blocks back after ≈ 13 s | S-015 @ 1:05–1:24          |
 | Jackhammer                      | rides straight down through brick, ≈ 5 tiles in 9 s; tool kept                            | S-019 @ 2:33–2:43          |
 | Gas gun                         | cloud ≈ 2 tiles for ≈ 6 s; monks inside stuck; gun kept                                   | S-021 @ 0:54–1:04          |

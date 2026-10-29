@@ -55,6 +55,8 @@ export function hashState(s: GameState): number {
     int(p.gold);
     int(p.startX);
     int(p.startY);
+    int(p.item === "" ? 0 : p.item.charCodeAt(0));
+    int(p.pickHeld ? 1 : 0);
   }
   int(s.holes.length);
   for (const h of s.holes) {

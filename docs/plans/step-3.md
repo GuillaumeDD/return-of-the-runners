@@ -293,6 +293,12 @@ undo restores links; `toLevel` output always validates.
 
 ### B-024 — Item slot, keys, doors and exit
 
+_Done. As built: a new pick-up key (C alone; comma and R with two players) picks up,
+swaps or drops, once per press. A key opens the first door of its colour next to the
+player and is used up (provisional). A door cannot share the exit's cell in the level
+format (one tile per cell), so "a door on the exit cell" became an exit walled in by a
+door, and its test checks that. A player who dies keeps its item (provisional)._
+
 - `src/sim/items.ts`: one item slot per player; "pick up" takes the item in the
   player's cell and leaves the held one there (swap, S-016 @ 3:03–3:05); with nothing to
   take, it drops the held item into an empty cell. Keys are the first items.

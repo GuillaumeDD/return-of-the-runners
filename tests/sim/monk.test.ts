@@ -317,7 +317,7 @@ describe("monks and gold", () => {
     expect(monk(s).carry).toBe(0);
   });
 
-  it("gold carried by a monk still counts as gold left (the exit stays locked)", () => {
+  it("gold carried by a monk still counts as gold left (the exit does not appear)", () => {
     let s = stateFrom(["P....$.M", "########"]);
     for (let t = 0; t < 60 && monk(s).carry === 0; t++) s = stepOne(s, press.none);
     expect(monk(s).carry).toBeGreaterThan(0);

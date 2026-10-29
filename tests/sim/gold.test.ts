@@ -67,7 +67,7 @@ describe("gold", () => {
 });
 
 describe("exit", () => {
-  it("stays locked while gold remains: walking through it does not win", () => {
+  it("is not there while gold remains: walking through it does not win", () => {
     let s = stateFrom(["P..E..$.", "########"]);
     s = run(s, press.right, 60);
     expect(cell(s).x).toBeGreaterThan(3);
@@ -75,7 +75,7 @@ describe("exit", () => {
     expect(s.goldLeft).toBe(1);
   });
 
-  it("is passable but gives no support: a locked exit is fallen through", () => {
+  it("is passable but gives no support: an exit not there yet is fallen through", () => {
     let s = atCell(stateFrom(["P......$", "...E....", "........", "########"]), 3, 0);
     s = run(s, press.none, 40);
     expect(cell(s)).toEqual({ x: 3, y: 2 });
@@ -92,7 +92,7 @@ describe("exit", () => {
     expect(centerCell(p1(s))).toEqual({ cx: 5, cy: 0 });
   });
 
-  it("a locked exit passed earlier opens once the last gold is taken", () => {
+  it("an exit passed earlier appears once the last gold is taken", () => {
     let s = stateFrom(["P.E.$...", "########"]);
     s = run(s, press.right, 64);
     expect(s.goldLeft).toBe(0);

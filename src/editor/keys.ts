@@ -20,6 +20,12 @@ export const PALETTE: readonly { readonly tile: TileChar; readonly name: Message
   { tile: TILE.monkRespawn, name: "tileMonkRespawn" },
   { tile: TILE.teleportEntrance, name: "tileTeleportEntrance" },
   { tile: TILE.teleportExit, name: "tileTeleportExit" },
+  { tile: TILE.keyRed, name: "tileKeyRed" },
+  { tile: TILE.doorRed, name: "tileDoorRed" },
+  { tile: TILE.keyGreen, name: "tileKeyGreen" },
+  { tile: TILE.doorGreen, name: "tileDoorGreen" },
+  { tile: TILE.keyBlue, name: "tileKeyBlue" },
+  { tile: TILE.doorBlue, name: "tileDoorBlue" },
 ];
 
 /**

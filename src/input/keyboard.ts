@@ -15,13 +15,16 @@ export const DEFAULT_BINDINGS: Bindings = {
   // Physical positions: the two keys right of left Shift. Labelled Z/X on QWERTY, W/X on AZERTY.
   digLeft: ["KeyZ"],
   digRight: ["KeyX"],
+  // The next key along: C on QWERTY and AZERTY.
+  pickUp: ["KeyC"],
 };
 
 /**
  * Two players on one keyboard, each on their own side. Player 1 (right) keeps the
  * arrows and digs with the two keys left of right Shift: . and / on QWERTY, : and ! on
- * AZERTY. Player 2 (left) moves with W A S D (Z Q S D on AZERTY) and digs with the keys
- * above A and D: Q and E (A and E on AZERTY).
+ * AZERTY; it picks up with the key before them (, on QWERTY, ; on AZERTY). Player 2
+ * (left) moves with W A S D (Z Q S D on AZERTY), digs with the keys above A and D: Q and
+ * E (A and E on AZERTY), and picks up with R.
  */
 export const TWO_PLAYER_BINDINGS: readonly [Bindings, Bindings] = [
   {
@@ -31,6 +34,7 @@ export const TWO_PLAYER_BINDINGS: readonly [Bindings, Bindings] = [
     down: ["ArrowDown"],
     digLeft: ["Period"],
     digRight: ["Slash"],
+    pickUp: ["Comma"],
   },
   {
     left: ["KeyA"],
@@ -39,6 +43,7 @@ export const TWO_PLAYER_BINDINGS: readonly [Bindings, Bindings] = [
     down: ["KeyS"],
     digLeft: ["KeyQ"],
     digRight: ["KeyE"],
+    pickUp: ["KeyR"],
   },
 ];
 
@@ -75,6 +80,7 @@ export function inputFrom(held: HeldKeys, bindings: Bindings = DEFAULT_BINDINGS)
     down: pressed("down"),
     digLeft: pressed("digLeft"),
     digRight: pressed("digRight"),
+    pickUp: pressed("pickUp"),
   };
 }
 

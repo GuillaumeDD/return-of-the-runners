@@ -1,4 +1,4 @@
-import { TILE } from "../level/format";
+import { DOOR_KEY, TILE } from "../level/format";
 import { isDugOut } from "./holes";
 import { SUB } from "./rules";
 import type { GameState } from "./state";
@@ -13,10 +13,13 @@ export type Terrain = Pick<GameState, "width" | "height" | "tiles" | "holes" | "
  * Tiles actors move through as if the cell were empty: trapdoor turf (drawn like brick,
  * but nothing is there), a hidden ladder not yet revealed (it becomes a ladder in
  * `tiles` once the gold is gone, see `revealLadders`), an alcove (a hiding place with
- * no support of its own), a monk respawn point (a marker) and both teleporter ends
- * (the jump itself is in `teleport.ts`).
+ * no support of its own), a monk respawn point (a marker), both teleporter ends
+ * (the jump itself is in `teleport.ts`) and the items lying in a cell (`items.ts`).
  */
 const AS_EMPTY: ReadonlySet<string> = new Set([
+  TILE.keyRed,
+  TILE.keyGreen,
+  TILE.keyBlue,
   TILE.teleportEntrance,
   TILE.teleportExit,
   TILE.trapdoor,
@@ -40,9 +43,14 @@ export function tileAt(t: Terrain, cx: number, cy: number): string {
   return actorTile(t.tiles[cy]?.charAt(cx) ?? TILE.bedrock);
 }
 
-/** Walls and floors: brick, bedrock and gooey turf (only brick can be dug). */
+/** Walls and floors: brick, bedrock, gooey turf and closed doors (only brick can be dug). */
 export function isSolid(tile: string): boolean {
-  return tile === TILE.brick || tile === TILE.bedrock || tile === TILE.gooeyTurf;
+  return (
+    tile === TILE.brick ||
+    tile === TILE.bedrock ||
+    tile === TILE.gooeyTurf ||
+    Object.hasOwn(DOOR_KEY, tile)
+  );
 }
 
 /**

@@ -41,6 +41,18 @@ describe("keyboard input", () => {
     expect(inputFrom(keyDown(new Set(), "KeyX"))).toEqual({ ...NO_INPUT, digRight: true });
   });
 
+  it("maps the pick-up key: C alone; comma for player 1 and R for player 2 together", () => {
+    expect(inputFrom(keyDown(new Set(), "KeyC"))).toEqual({ ...NO_INPUT, pickUp: true });
+    expect(inputsFrom(keyDown(new Set(), "Comma"), 2)).toEqual([
+      { ...NO_INPUT, pickUp: true },
+      NO_INPUT,
+    ]);
+    expect(inputsFrom(keyDown(new Set(), "KeyR"), 2)).toEqual([
+      NO_INPUT,
+      { ...NO_INPUT, pickUp: true },
+    ]);
+  });
+
   it("ignores unbound keys", () => {
     expect(inputFrom(keyDown(new Set(), "KeyQ"))).toEqual(NO_INPUT);
     expect(isBound("KeyQ")).toBe(false);
@@ -55,6 +67,7 @@ describe("keyboard input", () => {
       down: ["KeyS"],
       digLeft: ["KeyQ"],
       digRight: ["KeyE"],
+      pickUp: ["KeyF"],
     };
     expect(inputFrom(keyDown(new Set(), "KeyA"), wasd)).toEqual({ ...NO_INPUT, left: true });
     expect(inputFrom(keyDown(new Set(), "ArrowLeft"), wasd)).toEqual(NO_INPUT);
