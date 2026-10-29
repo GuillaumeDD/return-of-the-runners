@@ -297,7 +297,8 @@ _Done. As built: a new pick-up key (C alone; comma and R with two players) picks
 swaps or drops, once per press. A key opens the first door of its colour next to the
 player and is used up (provisional). A door cannot share the exit's cell in the level
 format (one tile per cell), so "a door on the exit cell" became an exit walled in by a
-door, and its test checks that. A player who dies keeps its item (provisional)._
+door, and its test checks that. A player who dies keeps its item. Guillaume agreed
+(2026-10-29) to these three choices._
 
 - `src/sim/items.ts`: one item slot per player; "pick up" takes the item in the
   player's cell and leaves the held one there (swap, S-016 @ 3:03–3:05); with nothing to
@@ -320,6 +321,13 @@ and empty once open; the exit is absent while gold is left, appears on the tick 
 gold is taken, and a door on the exit cell still needs its key.
 
 ### B-025 — Tools, part 1: slot, jackhammer, pickaxe
+
+_Done. As built: a new use key (V alone; M and F with two players) acts once per
+press. The jackhammer drills brick and bedrock, 100 ticks a cell (provisional), and
+each drilled cell is an ordinary hole, so the shaft refills behind and kills whoever
+stays in it. Pickaxe rubble falls one sub-unit a tick, lands solid like bedrock and
+crumbles after 420 ticks; while it falls it crushes monks and also players
+(provisional). Tools are never used up._
 
 - `src/sim/tools.ts`: tools use B-024's slot; "use" applies the held tool.
 - Jackhammer: the player rides it straight down, cell after cell (bedrock included),

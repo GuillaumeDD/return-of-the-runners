@@ -70,11 +70,29 @@ describe("hashState", () => {
       { item: "a" },
       { item: "b" },
       { pickHeld: true },
+      { useHeld: true },
+      { drill: true },
     ];
     for (const v of variants) expect(hashState(withPlayer(base, v))).not.toBe(hashState(base));
     const swapped = { ...base, players: [...base.players].reverse() };
     expect(hashState(swapped)).not.toBe(hashState(base));
     expect(hashState({ ...base, players: [p] })).not.toBe(hashState(base));
+  });
+
+  it("distinguishes rubble fields, and rubble order", () => {
+    const base = stateFrom(rows);
+    const r = { cx: 1, y: 8, landed: -1 };
+    const a = { ...base, rubble: [r] };
+    for (const v of [
+      { ...r, cx: 2 },
+      { ...r, y: 9 },
+      { ...r, landed: 0 },
+    ]) {
+      expect(hashState({ ...base, rubble: [v] })).not.toBe(hashState(a));
+    }
+    const o = { cx: 5, y: 0, landed: 3 };
+    expect(hashState({ ...base, rubble: [r, o] })).not.toBe(hashState({ ...base, rubble: [o, r] }));
+    expect(hashState(base)).not.toBe(hashState(a));
   });
 
   it("distinguishes hole fields", () => {
@@ -95,6 +113,8 @@ describe("hashState", () => {
       status: base.status,
       players: [
         {
+          drill: p1(base).drill,
+          useHeld: p1(base).useHeld,
           pickHeld: p1(base).pickHeld,
           item: p1(base).item,
           startY: p1(base).startY,
@@ -110,6 +130,7 @@ describe("hashState", () => {
           x: p1(base).x,
         },
       ],
+      rubble: base.rubble,
       holes: base.holes,
       goldLeft: base.goldLeft,
       teleports: base.teleports,
@@ -161,5 +182,5 @@ describe("hashState with monks", () => {
   });
 });
 
-const COMMITTED_MONK_HASH = 3085721787;
-const COMMITTED_HASH = 1201140032;
+const COMMITTED_MONK_HASH = 3592541515;
+const COMMITTED_HASH = 3701550400;

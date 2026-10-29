@@ -54,7 +54,7 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
 - **Engine-independent:** no transcendental `Math` functions, no reliance on the
   iteration order of objects keyed by numeric-looking strings.
 - **Replays** (`replay.ts`, format version 2): a level, a seed and one run-length
-  encoded input log per player (`[ticks, keys]`, keys in the canonical order `LRUD<>I`, `I` being pick up,
+  encoded input log per player (`[ticks, keys]`, keys in the canonical order `LRUD<>IX`, `I` being pick up and `X` use,
   `""` for no input; one or two logs, all covering the same number of ticks) rebuild
   the exact same game. Version 1 (a single log) is no longer read: replays are test
   fixtures only, and those were rewritten. `runReplay` returns the final state and a checkpoint hash every
@@ -72,7 +72,8 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
 - **When a replay's hash changes, gameplay changed.** Update `expected` only together
   with an intentional rules change, and say so in the PR (the failing test prints the
   new values). A new state field also changes every hash while tick and status stay
-  the same (B-023 added `teleports` and `warp`); say so in the PR as well.
+  the same (B-023 added `teleports` and `warp`, B-025 `rubble`, `useHeld` and
+  `drill`); say so in the PR as well.
 
 ### Movement model
 
@@ -81,7 +82,8 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
 - An actor is between two tiles on at most one axis at a time. To change axis (turn
   onto a ladder, step off one), it first **snaps** toward the nearest aligned position.
 - **Support** (`physics.ts`): an aligned actor is held up by a ladder or bar in its own
-  cell, or by brick, bedrock, gooey turf, a ladder or the level floor below it. Otherwise it falls,
+  cell, or by brick, bedrock, gooey turf, a closed door, landed rubble, a ladder or the
+  level floor below it. Otherwise it falls,
   and input is ignored until it lands or catches a bar.
 - **Up** needs a ladder in the current cell; **down** works onto or along a ladder, and
   lets go of a bar. Moving along a bar usually stops between two columns: down then
@@ -128,7 +130,7 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
 
 ### Items, keys and doors
 
-- `items.ts`: items lie in cells of `tiles` (keys `a b c` so far) and read as
+- `items.ts`: items lie in cells of `tiles` (keys `a b c` and tools `j k` so far) and read as
   **empty** for movement, support and digging, so a brick can be dug under one, as
   under gold. Monks never take them.
 - Each player has one **item slot** (`Player.item`, `""` when empty). The pick-up key
@@ -141,9 +143,42 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
   player in play holding the key of a door's colour, with the door next to its centre
   cell (left, right, above or below, in that order; not diagonally), opens it: the
   door becomes empty for good and the key is used up, so a key opens one door
-  (S-016 @ 3:30–3:33; used up: provisional). Every tick, after the pick-up.
+  (S-016 @ 3:30–3:33; used up: agreed by Guillaume, 2026-10-29). Every tick, after the pick-up.
 - A door cannot sit on the exit cell (one tile per cell): to keep the exit shut until
   a key is brought, the maker walls it in with doors.
+
+### Tools
+
+- `tools.ts`: the jackhammer `j` and the pickaxe `k` are items (see above), used from
+  the slot with the use key (`PlayerInput.use`), once per press (`Player.useHeld`).
+  Using an empty slot or a key does nothing; nothing works while falling, busy, in
+  transit or dead, nor from a spot where snapping to the nearest cell would leave the
+  player falling (as for digging). Tools are never used up (S-019, S-021).
+- **Jackhammer** (S-019 @ 2:28–2:43): the player snaps onto its nearest cell and drills
+  the cell below if it is brick or bedrock, inside the level, not already dug, and no
+  monk is in it (a ladder, a door, gooey turf or an empty cell stop it). The drilled
+  cell is an ordinary hole that starts at a negative age, so it stays solid for
+  `DRILL_TICKS` (100) instead of `HOLE_TICKS.digging` while the player waits
+  (busy); then it opens, the player falls in, and `Player.drill` makes it drill the
+  next cell on landing, until it cannot or no longer holds the jackhammer. The shaft refills behind like any hole, bedrock
+  included, and kills whoever is still in a cell when it fills; monks can fall into it
+  and are trapped as in a dug hole.
+- **Pickaxe** (S-021 @ 0:06–0:15): the cell in front of the player (`facing`) must be
+  empty (`.`) or an open hole, with no rubble. Rubble (`GameState.rubble`: column,
+  height in sub-units, ticks since landing or -1) appears there and the player is busy
+  `PICK_TICKS`. Rubble falls one sub-unit a tick (as fast as a falling runner, faster
+  than monks) until a solid tile, a ladder, landed rubble or the level floor holds it
+  up, then lands; pieces are moved lowest first, so one falling on another that lands
+  stacks on it. Rubble that comes to rest in any other cell (gold, an item, the exit, a
+  teleporter…) crumbles at once rather than seal it. Landed rubble reads as **bedrock**
+  for movement, support, digging and the chase AI; monks neither reappear nor drop
+  gold in a rubble cell. It falls again if a hole opens under it, and crumbles
+  `RUBBLE_TICKS` (420, 7 s) after landing, or at once when its cell turns back into
+  brick or bedrock (a refilled hole).
+- **Crushing**: rubble that is falling, or lands this tick, kills every monk and player
+  in play that it touches (their boxes overlap), after the holes age, so a monk right
+  in front of the swing is buried at once (S-021 @ 0:08). A crushed monk is dead as if
+  buried (it keeps its gold); a crushed player dies as if caught (provisional).
 
 ### Digging and holes
 
@@ -257,11 +292,12 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
   bound by `KeyboardEvent.code` (physical position, so AZERTY works). Held keys are
   cleared on window blur, since a key released while unfocused never fires `keyup`.
 - **Two players on one keyboard** (`input/keyboard.ts`): alone, the player uses the
-  arrows, Z / X to dig (W / X on AZERTY) and C to pick up. With two, player 1 (right)
-  uses the arrows, the two keys left of right Shift to dig (`Period`, `Slash`) and the
-  one before them to pick up (`Comma`, ; on AZERTY), player 2 (left) `W A S D`, `Q` /
-  `E` to dig and `R` to pick up (Z Q S D and A / E on AZERTY); the two sets share no
-  key. Remapping and
+  arrows, Z / X to dig (W / X on AZERTY), C to pick up and V to use a tool. With two,
+  player 1 (right) uses the arrows, the two keys left of right Shift to dig (`Period`,
+  `Slash`), the one before them to pick up (`Comma`, ; on AZERTY) and the one before
+  that to use a tool (`KeyM`, , on AZERTY), player 2 (left) `W A S D`, `Q` / `E` to dig,
+  `R` to pick up and `F` to use a tool (Z Q S D and A / E on AZERTY); the two sets share
+  no key. Remapping and
   gamepads: step 4.
 - A level with a `Q` shows a "1 player / 2 players: co-op / 2 players: versus" choice
   above the play and test canvases; switching restarts the level. The last choice
@@ -333,8 +369,8 @@ The left column holds the tiles of the 1982 game (`TILE_BASE`). The right column
 tile gets its behavior, its drawing and its place in the editor palette with its own
 step 3 item (B-020 to B-028, see [`plans/step-3.md`](plans/step-3.md)). Done so far:
 `Q` (B-020), the terrain `% ~ h R n` (B-022, see Terrain), the teleporters `T t`
-(B-023, see Teleporters) and the keys and doors `a b c A B C` (B-024, see Items, keys
-and doors). Until then the game does
+(B-023, see Teleporters), the keys and doors `a b c A B C` (B-024, see Items, keys
+and doors) and the tools `j k` (B-025, see Tools). Until then the game does
 not draw a tile, and it is neither solid nor climbable: nothing in the editor palette
 places one, but an imported v2 file may hold some.
 
@@ -531,11 +567,12 @@ as gameplay is implemented.
 | Exit                            | absent until the last gold is taken, then appears                                         | S-015 @ 1:22               |
 | Keys                            | carried in the item slot to the door of their colour                                      | S-016 @ 3:03–3:33          |
 | Item slot                       | one item; picking up another swaps them in place                                          | S-016 @ 3:03–3:05          |
-| Key used up on its door         | yes; one door per key                                                                     | **Provisional**, to check  |
-| Opening a door                  | the key holder next to it (side, above, below), not diagonal                              | **Provisional**            |
-| Item of a player who dies       | kept while it waits to reappear                                                           | **Provisional**            |
+| Key used up on its door         | yes; one door per key                                                                     | Guillaume, 2026-10-29      |
+| Opening a door                  | the key holder next to it (side, above, below), not diagonal                              | Guillaume, 2026-10-29      |
+| Item of a player who dies       | kept while it waits to reappear                                                           | Guillaume, 2026-10-29      |
 | Bombs                           | collected into a counter, fuse ≈ 2.5 s, chain reactions, blasted blocks back after ≈ 13 s | S-015 @ 1:05–1:24          |
 | Jackhammer                      | rides straight down through brick, ≈ 5 tiles in 9 s; tool kept                            | S-019 @ 2:33–2:43          |
+| Jackhammer: bedrock, timing     | drills bedrock too; 100 ticks a cell, then falls in; the shaft refills like a dug hole    | **Provisional**, to check  |
 | Gas gun                         | cloud ≈ 2 tiles for ≈ 6 s; monks inside stuck; gun kept                                   | S-021 @ 0:54–1:04          |
 | Two-player race                 | mirrored halves, exits appear with the gold, first out wins                               | S-025                      |
 | Versus end                      | first player out wins                                                                     | S-025 @ 0:04–1:24          |
@@ -546,6 +583,8 @@ as gameplay is implemented.
 | Two-player respawn delay        | 90 ticks (1.5 s) at the player's start                                                    | **Provisional**            |
 | Monk target with two players    | the nearest player; players do not block each other                                       | **Provisional**, to check  |
 | Pickaxe                         | rubble buries the monk on the next cell; ≥ 7 s; tool kept                                 | S-021 @ 0:08–0:15.5        |
+| Pickaxe rubble                  | falls 1 sub-unit a tick, lands solid as bedrock, crumbles after 420 ticks (7 s)           | **Provisional**, to check  |
+| Rubble on a player              | crushes it, like a monk                                                                   | **Provisional**, to check  |
 | Goo bucket                      | goo 2–3 cells in front, rest of the level; one use; stops monks                           | S-022 @ 3:16, @ 3:36       |
 | Teleporter                      | step in, reappear at the linked spot ≈ 0.5–1 s later (45 ticks, 0.75 s)                   | S-025; Guillaume, 10-29    |
 | Teleporter: monks, blocked exit | monks use them; a monk on the exit delays the jump                                        | **Provisional**, to check  |

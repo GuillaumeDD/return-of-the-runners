@@ -1,6 +1,7 @@
 import { TILE, type Level, type Teleport } from "../level/format";
 import { countGold, revealLadders } from "./gold";
 import type { Hole } from "./holes";
+import type { Rubble } from "./tools";
 import { START_LIVES, SUB } from "./rules";
 
 export type Facing = -1 | 1;
@@ -60,6 +61,10 @@ export interface Player extends Actor {
   readonly item: string;
   /** The pick-up key was held last tick: a held key acts only on the tick it is pressed. */
   readonly pickHeld: boolean;
+  /** The use key was held last tick (as `pickHeld`). */
+  readonly useHeld: boolean;
+  /** Drilling down with a jackhammer (`tools.ts`): goes on after each fall. */
+  readonly drill: boolean;
 }
 
 /**
@@ -91,6 +96,8 @@ export interface GameState {
   readonly goldLeft: number;
   /** Holes being dug or open, ordered by creation (deterministic). */
   readonly holes: readonly Hole[];
+  /** Pickaxe rubble, falling or landed, ordered by creation (`tools.ts`). */
+  readonly rubble: readonly Rubble[];
   /** Player 1, then player 2 in a two-player game; this order is the update order. */
   readonly players: readonly Player[];
   /** Monks in level reading order (row by row); this order is the update order. */
@@ -143,6 +150,8 @@ export function newPlayer(cx: number, cy: number): Player {
     startY: y,
     item: "",
     pickHeld: false,
+    useHeld: false,
+    drill: false,
   };
 }
 
@@ -183,6 +192,7 @@ export function createState(level: Level, seed: number, players: PlayerCount = 1
     teleports: level.teleports,
     goldLeft,
     holes: [],
+    rubble: [],
     players:
       p2 === null ? [newPlayer(p1.cx, p1.cy)] : [newPlayer(p1.cx, p1.cy), newPlayer(p2.cx, p2.cy)],
     monks,

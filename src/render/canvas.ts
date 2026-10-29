@@ -2,6 +2,7 @@ import { DOOR_KEY, TILE, type Teleport } from "../level/format";
 import { holeAt, holePhase } from "../sim/holes";
 import { HOLE_TICKS, SUB } from "../sim/rules";
 import type { GameState, Monk, Player } from "../sim/state";
+import type { Rubble } from "../sim/tools";
 
 /** On-screen size of one tile, in canvas pixels. A multiple of SUB keeps motion crisp. */
 export const TILE_PX = 24;
@@ -39,6 +40,11 @@ const COLOR = {
   keyGreen: "#46a758",
   keyBlue: "#3e63dd",
   keyhole: "#111",
+  steel: "#b8c0cc",
+  steelDark: "#5d6673",
+  handle: "#8b5a2b",
+  rubble: "#8a7866",
+  rubbleDark: "#4e4237",
   gridLine: "#222",
 } as const;
 
@@ -65,8 +71,9 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState): void {
   drawTiles(state.tiles, (tile, cx, cy, x, y) => {
     const hole = holeAt(state.holes, cx, cy);
     if (hole === undefined) drawTile(ctx, tile, x, y, exitOpen);
-    else drawHole(ctx, brickLeft(hole.age), x, y);
+    else drawHole(ctx, tile, brickLeft(hole.age), x, y);
   });
+  for (const r of state.rubble) drawRubble(ctx, r);
   for (const m of state.monks) drawMonk(ctx, m);
   // Actors in a teleporter show as a sparkle at the exit.
   for (const a of [...state.monks, ...state.players]) {
@@ -88,13 +95,39 @@ function drawPlayer(ctx: CanvasRenderingContext2D, p: Player, index: number, los
   const x = p.x * PX_PER_SUB;
   const y = p.y * PX_PER_SUB;
   drawRunner(ctx, x, y, p.facing, dead, index);
+  const hand = p.facing === 1 ? x + 17 : x + 1;
   const color = KEY_COLOR[p.item];
   if (color !== undefined) {
     ctx.fillStyle = color;
-    const hand = p.facing === 1 ? x + 17 : x + 1;
     ctx.fillRect(hand, y + 10, 6, 2); // shaft
     ctx.fillRect(p.facing === 1 ? hand + 4 : hand, y + 8, 2, 6); // bow
+  } else if (p.item === TILE.jackhammer) {
+    ctx.fillStyle = COLOR.steelDark;
+    ctx.fillRect(hand, y + 8, 6, 2); // handle
+    ctx.fillStyle = COLOR.steel;
+    ctx.fillRect(hand + 2, y + 10, 2, 5); // body
+    ctx.fillRect(hand + 2, y + 15, 1, 3); // bit
+  } else if (p.item === TILE.pickaxe) {
+    ctx.fillStyle = COLOR.handle;
+    ctx.fillRect(hand + 2, y + 9, 2, 8); // handle
+    ctx.fillStyle = COLOR.steel;
+    ctx.fillRect(hand, y + 8, 6, 2); // head
   }
+}
+
+/** Rubble: a heap of stones, where it is (falling rubble is drawn between cells). */
+function drawRubble(ctx: CanvasRenderingContext2D, r: Rubble): void {
+  const x = r.cx * TILE_PX;
+  const y = r.y * PX_PER_SUB;
+  ctx.fillStyle = COLOR.rubbleDark;
+  ctx.fillRect(x + 1, y + 1, TILE_PX - 2, TILE_PX - 1);
+  ctx.fillStyle = COLOR.rubble;
+  ctx.fillRect(x + 2, y + 2, 9, 6);
+  ctx.fillRect(x + 13, y + 3, 9, 7);
+  ctx.fillRect(x + 3, y + 10, 7, 6);
+  ctx.fillRect(x + 12, y + 12, 10, 5);
+  ctx.fillRect(x + 2, y + 18, 11, 5);
+  ctx.fillRect(x + 15, y + 19, 7, 4);
 }
 
 /** The colour of each key; a door has the colour of its key (`DOOR_KEY`). */
@@ -188,12 +221,13 @@ function drawTiles(
 
 /**
  * How much of a hole's brick is visible, from 1 (whole brick) to 0 (fully open): it
- * shrinks while being dug and grows back while closing.
+ * shrinks while being dug and grows back while closing. A drilled hole starts with a
+ * negative age (`tools.ts`): whole until its last `HOLE_TICKS.digging` ticks.
  */
 export function brickLeft(age: number): number {
   switch (holePhase(age)) {
     case "digging":
-      return 1 - age / HOLE_TICKS.digging;
+      return Math.min(1, 1 - age / HOLE_TICKS.digging);
     case "open":
       return 0;
     case "closing":
@@ -203,11 +237,20 @@ export function brickLeft(age: number): number {
   }
 }
 
-/** A partly dug brick: the visible part sits at the bottom of the cell. */
-function drawHole(ctx: CanvasRenderingContext2D, left: number, x: number, y: number): void {
+/**
+ * A partly dug brick, or bedrock drilled by a jackhammer: the visible part sits at the
+ * bottom of the cell.
+ */
+function drawHole(
+  ctx: CanvasRenderingContext2D,
+  tile: string,
+  left: number,
+  x: number,
+  y: number,
+): void {
   const h = Math.round(TILE_PX * left);
   if (h === 0) return;
-  ctx.fillStyle = COLOR.brick;
+  ctx.fillStyle = tile === TILE.bedrock ? COLOR.bedrock : COLOR.brick;
   ctx.fillRect(x, y + TILE_PX - h, TILE_PX, h);
 }
 
@@ -305,6 +348,27 @@ function drawTile(
       ctx.fillRect(x + 10, y + s - 9, 11, 2);
       ctx.fillRect(x + 15, y + s - 7, 2, 3);
       ctx.fillRect(x + 19, y + s - 7, 2, 3);
+      break;
+    case TILE.jackhammer:
+      // Upright: a T handle, the body and the bit.
+      ctx.fillStyle = COLOR.steelDark;
+      ctx.fillRect(x + 5, y + 4, s - 10, 3);
+      ctx.fillRect(x + 5, y + 4, 2, 5);
+      ctx.fillRect(x + s - 7, y + 4, 2, 5);
+      ctx.fillStyle = COLOR.steel;
+      ctx.fillRect(x + 9, y + 7, 6, 10);
+      ctx.fillRect(x + 11, y + 17, 2, 6);
+      break;
+    case TILE.pickaxe:
+      // A curved steel head on a wooden handle.
+      ctx.fillStyle = COLOR.handle;
+      ctx.fillRect(x + 11, y + 8, 2, s - 9);
+      ctx.fillStyle = COLOR.steel;
+      ctx.fillRect(x + 5, y + 5, s - 10, 3);
+      ctx.fillRect(x + 3, y + 7, 3, 3);
+      ctx.fillRect(x + s - 6, y + 7, 3, 3);
+      ctx.fillRect(x + 2, y + 10, 2, 2);
+      ctx.fillRect(x + s - 4, y + 10, 2, 2);
       break;
     case TILE.doorRed:
     case TILE.doorGreen:

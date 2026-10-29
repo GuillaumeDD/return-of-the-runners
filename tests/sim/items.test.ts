@@ -121,13 +121,14 @@ describe("the item slot", () => {
 });
 
 describe("items are never duplicated or lost", () => {
-  // Randomized: random two-player levels with keys, doors and monks, and random inputs
-  // (pick-up included). On every tick, the keys lying in the grid, plus those held, plus
-  // the doors opened (each uses one key up), is the level's key count, per colour. So
-  // the 1994 duplication bug (S-005) is not reproduced.
-  it("1,000 random levels keep each key colour's count", { timeout: 60_000 }, () => {
+  // Randomized: random two-player levels with keys, tools, doors and monks, and random
+  // inputs (pick-up and use included). On every tick, the keys lying in the grid, plus
+  // those held, plus the doors opened (each uses one key up), is the level's key count,
+  // per colour; and each tool's count, lying plus held, never changes (tools are never
+  // used up). So the 1994 duplication bug (S-005) is not reproduced.
+  it("1,000 random levels keep each key's and each tool's count", { timeout: 60_000 }, () => {
     const rng = makeRng(2401);
-    const tiles = "....###H-$$abcABCM";
+    const tiles = "....###@H-$$abcABCjkM";
     const colours = [
       [TILE.keyRed, TILE.doorRed],
       [TILE.keyGreen, TILE.doorGreen],
@@ -141,8 +142,12 @@ describe("items are never duplicated or lost", () => {
       return lying + held + opened;
     };
     const doors = (g: GameState): number => g.tiles.join("").split("").filter(isDoor).length;
+    const tools = [TILE.jackhammer, TILE.pickaxe];
+    const toolCount = (s: GameState, tool: string): number =>
+      s.tiles.join("").split(tool).length - 1 + s.players.filter((p) => p.item === tool).length;
     let swaps = 0;
     let opens = 0;
+    let uses = 0;
     for (let trial = 0; trial < 1000; trial++) {
       const w = 6 + randInt(rng, 5);
       const h = 4 + randInt(rng, 3);
@@ -169,6 +174,7 @@ describe("items are never duplicated or lost", () => {
         const doors = s.tiles.join("").split(door).length - 1;
         return { key, door, doors, total: count(s, key, door, doors) };
       });
+      const toolTotals = tools.map((tool) => toolCount(s, tool));
       const controls: PlayerInput[] = [
         NO_INPUT,
         press.left,
@@ -177,6 +183,7 @@ describe("items are never duplicated or lost", () => {
         press.down,
         take,
         take,
+        { ...NO_INPUT, use: true },
         { ...NO_INPUT, digLeft: true },
       ];
       const pick = (): PlayerInput => controls[randInt(rng, controls.length)] ?? NO_INPUT;
@@ -193,6 +200,10 @@ describe("items are never duplicated or lost", () => {
           const n = count(next, c.key, c.door, c.doors);
           if (n !== c.total) expect(n, why()).toBe(c.total);
         }
+        tools.forEach((tool, k) => {
+          const n = toolCount(next, tool);
+          if (n !== toolTotals[k]) expect(n, why()).toBe(toolTotals[k]);
+        });
         for (const p of next.players) {
           if (p.item !== "" && !isItem(p.item)) expect(p.item, why()).toBe("an item");
         }
@@ -202,11 +213,14 @@ describe("items are never duplicated or lost", () => {
             swaps++;
         });
         if (next.tiles !== s.tiles && doors(next) < doors(s)) opens++;
+        const drills = next.players.filter((p, i) => p.drill && s.players[i]?.drill !== true);
+        if (next.rubble.length > s.rubble.length || drills.length > 0) uses++;
         s = next;
       }
     }
     // The test does exercise swaps and doors.
     expect(swaps).toBeGreaterThan(10);
     expect(opens).toBeGreaterThan(10);
+    expect(uses).toBeGreaterThan(10);
   });
 });

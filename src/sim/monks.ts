@@ -7,6 +7,7 @@ import { every, isFalling, overlapsCell, stepActor, tryHorizontal } from "./move
 import { cellOf, isPassable, isSolid, offsetOf, type Terrain } from "./physics";
 import { prngInt } from "./prng";
 import { inTransit, tryTeleport } from "./teleport";
+import { rubbleAt, rubbleIn } from "./tools";
 import { MONK_CARRY, MONK_PERIOD, MONK_TICKS, SUB } from "./rules";
 import type { Actor, Facing, GameState, Monk, Player } from "./state";
 
@@ -60,12 +61,16 @@ function aligned(a: Actor): boolean {
   return offsetOf(a.x) === 0 && offsetOf(a.y) === 0;
 }
 
-/** Free floor for gold: an empty tile (not dug) with a solid tile or a ladder below. */
+/**
+ * Free floor for gold: an empty tile (not dug, no rubble) with a solid tile, a ladder or
+ * landed rubble below.
+ */
 function canHoldGold(t: Terrain, cx: number, cy: number): boolean {
-  if (t.tiles[cy]?.charAt(cx) !== TILE.empty || holeAt(t.holes, cx, cy) !== undefined) {
+  const here = t.tiles[cy]?.charAt(cx);
+  if (here !== TILE.empty || holeAt(t.holes, cx, cy) !== undefined || rubbleIn(t.rubble, cx, cy)) {
     return false;
   }
-  if (cy + 1 >= t.height) return true;
+  if (cy + 1 >= t.height || rubbleAt(t.rubble, cx, cy + 1)) return true;
   const below = t.tiles[cy + 1]?.charAt(cx) ?? TILE.bedrock;
   return isSolid(below) || below === TILE.ladder;
 }
@@ -291,10 +296,10 @@ function carryGold(
 
 /**
  * Where a dead monk reappears. A level with monk respawn points (`R`) uses one of them,
- * drawn from the PRNG among those free of monks and of players in play; with all taken,
- * none (the monk waits). Without any, the 1982 rule: on the second row, from a random
- * column onward (wrapping), the first empty cell free of monks and of players in play;
- * if the row is full, the next row down.
+ * drawn from the PRNG among those free of monks, of players in play and of rubble; with
+ * all taken, none (the monk waits). Without any, the 1982 rule: on the second row, from
+ * a random column onward (wrapping), the first empty cell free of monks, of players in
+ * play and of rubble; if the row is full, the next row down.
  */
 export function respawnCell(
   t: Terrain,
@@ -304,7 +309,8 @@ export function respawnCell(
   const playerCells = players.filter((p) => p.mode === "alive").map(centerCell);
   const taken = (cx: number, cy: number): boolean =>
     t.monks.some((o) => o.mode !== "dead" && overlaps(o, { x: cx * SUB, y: cy * SUB })) ||
-    playerCells.some((c) => c.cx === cx && c.cy === cy);
+    playerCells.some((c) => c.cx === cx && c.cy === cy) ||
+    rubbleIn(t.rubble, cx, cy);
   const points: { cx: number; cy: number }[] = [];
   t.tiles.forEach((row, cy) => {
     for (let cx = 0; cx < row.length; cx++) {

@@ -1,13 +1,14 @@
 import { DOOR_KEY, TILE } from "../level/format";
 import { isDugOut } from "./holes";
+import { rubbleAt } from "./tools";
 import { SUB } from "./rules";
 import type { GameState } from "./state";
 
 /**
- * What movement needs to know: the terrain, the holes, and the monks, whose bodies hold
- * up whoever stands on them. When moving a monk, `monks` holds the other monks only.
+ * What movement needs to know: the terrain, the holes, the rubble (`tools.ts`), and the
+ * monks, whose bodies hold up whoever stands on them. When moving a monk, `monks` holds the other monks only.
  */
-export type Terrain = Pick<GameState, "width" | "height" | "tiles" | "holes" | "monks">;
+export type Terrain = Pick<GameState, "width" | "height" | "tiles" | "holes" | "monks" | "rubble">;
 
 /**
  * Tiles actors move through as if the cell were empty: trapdoor turf (drawn like brick,
@@ -20,6 +21,8 @@ const AS_EMPTY: ReadonlySet<string> = new Set([
   TILE.keyRed,
   TILE.keyGreen,
   TILE.keyBlue,
+  TILE.jackhammer,
+  TILE.pickaxe,
   TILE.teleportEntrance,
   TILE.teleportExit,
   TILE.trapdoor,
@@ -34,11 +37,13 @@ export function actorTile(tile: string): string {
 }
 
 /**
- * Tile at a cell, as actors experience it: a dug-out brick reads as empty, so do the
- * `AS_EMPTY` tiles, and anything outside the level reads as bedrock (a solid wall).
+ * Tile at a cell, as actors experience it: landed rubble reads as bedrock, a dug-out
+ * brick reads as empty, so do the `AS_EMPTY` tiles, and anything outside the level
+ * reads as bedrock (a solid wall).
  */
 export function tileAt(t: Terrain, cx: number, cy: number): string {
   if (cx < 0 || cy < 0 || cx >= t.width || cy >= t.height) return TILE.bedrock;
+  if (rubbleAt(t.rubble, cx, cy)) return TILE.bedrock;
   if (isDugOut(t.holes, cx, cy)) return TILE.empty;
   return actorTile(t.tiles[cy]?.charAt(cx) ?? TILE.bedrock);
 }

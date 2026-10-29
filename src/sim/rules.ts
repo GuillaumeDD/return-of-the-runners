@@ -47,6 +47,18 @@ export const GOO_PERIOD = 6;
  */
 export const TELEPORT_TICKS = 45;
 
+/**
+ * Ticks a jackhammer takes to drill one cell, before the player falls in: with the
+ * fall, about 5 cells in 9 s (S-019 @ 2:33–2:43, to measure better; provisional).
+ */
+export const DRILL_TICKS = 100;
+
+/** Ticks a pickaxe swing keeps the player busy (as long as digging a hole; provisional). */
+export const PICK_TICKS = 15;
+
+/** Ticks landed rubble stays before it crumbles (7 s; S-021 shows at least 7 s; provisional). */
+export const RUBBLE_TICKS = 420;
+
 export const MONK_TICKS = {
   /** Stuck in a hole before climbing out (if the hole has not refilled by then). */
   trapped: 120,

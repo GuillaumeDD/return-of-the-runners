@@ -53,6 +53,18 @@ describe("keyboard input", () => {
     ]);
   });
 
+  it("maps the use key: V alone; M for player 1 and F for player 2 together", () => {
+    expect(inputFrom(keyDown(new Set(), "KeyV"))).toEqual({ ...NO_INPUT, use: true });
+    expect(inputsFrom(keyDown(new Set(), "KeyM"), 2)).toEqual([
+      { ...NO_INPUT, use: true },
+      NO_INPUT,
+    ]);
+    expect(inputsFrom(keyDown(new Set(), "KeyF"), 2)).toEqual([
+      NO_INPUT,
+      { ...NO_INPUT, use: true },
+    ]);
+  });
+
   it("ignores unbound keys", () => {
     expect(inputFrom(keyDown(new Set(), "KeyQ"))).toEqual(NO_INPUT);
     expect(isBound("KeyQ")).toBe(false);
@@ -68,6 +80,7 @@ describe("keyboard input", () => {
       digLeft: ["KeyQ"],
       digRight: ["KeyE"],
       pickUp: ["KeyF"],
+      use: ["KeyG"],
     };
     expect(inputFrom(keyDown(new Set(), "KeyA"), wasd)).toEqual({ ...NO_INPUT, left: true });
     expect(inputFrom(keyDown(new Set(), "ArrowLeft"), wasd)).toEqual(NO_INPUT);

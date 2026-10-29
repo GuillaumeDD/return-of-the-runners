@@ -15,8 +15,8 @@ const key = (
 });
 
 describe("palette", () => {
-  it("holds every base tile, the player 2 start, the terrain, the teleporters, keys and doors once; every name is translated", () => {
-    // The other v2 tiles join the palette with their behavior (B-025 to B-028).
+  it("holds every base tile, the player 2 start, the terrain, the teleporters, keys, doors and tools once; every name is translated", () => {
+    // The other v2 tiles join the palette with their behavior (B-026 to B-028).
     const expected = new Set([
       ...Object.values(TILE_BASE),
       TILE.player2Start,
@@ -33,6 +33,8 @@ describe("palette", () => {
       TILE.doorRed,
       TILE.doorGreen,
       TILE.doorBlue,
+      TILE.jackhammer,
+      TILE.pickaxe,
     ]);
     expect(new Set(PALETTE.map((p) => p.tile))).toEqual(expected);
     expect(PALETTE).toHaveLength(expected.size);
