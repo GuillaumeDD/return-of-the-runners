@@ -1,4 +1,4 @@
-import { TILE, type Level } from "../level/format";
+import { TILE, type Level, type Teleport } from "../level/format";
 import { countGold, revealLadders } from "./gold";
 import type { Hole } from "./holes";
 import { START_LIVES, SUB } from "./rules";
@@ -12,6 +12,11 @@ export interface Actor {
   readonly facing: Facing;
   /** Ticks left in an action that blocks movement (digging); 0 when free. */
   readonly busy: number;
+  /**
+   * Ticks left in transit through a teleporter (see `teleport.ts`); 0 otherwise. In
+   * transit, the actor is already at the exit, but not drawn and not in play.
+   */
+  readonly warp: number;
 }
 
 /**
@@ -76,6 +81,8 @@ export interface GameState {
    * gold is removed.
    */
   readonly tiles: readonly string[];
+  /** The level's teleporter links (static), entrance to exit, as in the level. */
+  readonly teleports: readonly Teleport[];
   /** Gold not yet collected by a player. The exit opens when it reaches 0. */
   readonly goldLeft: number;
   /** Holes being dug or open, ordered by creation (deterministic). */
@@ -93,6 +100,7 @@ export function newMonk(cx: number, cy: number): Monk {
     y: cy * SUB,
     facing: -1,
     busy: 0,
+    warp: 0,
     mode: "free",
     timer: 0,
     carry: 0,
@@ -122,6 +130,7 @@ export function newPlayer(cx: number, cy: number): Player {
     y,
     facing: 1,
     busy: 0,
+    warp: 0,
     mode: "alive",
     timer: 0,
     lives: START_LIVES,
@@ -165,6 +174,7 @@ export function createState(level: Level, seed: number, players: PlayerCount = 1
     height: level.height,
     // A level without gold shows its hidden ladders from the start.
     tiles: revealLadders(tiles, goldLeft),
+    teleports: level.teleports,
     goldLeft,
     holes: [],
     players:

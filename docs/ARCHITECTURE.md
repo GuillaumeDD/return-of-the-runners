@@ -71,7 +71,8 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
   `e2e/share.html`, since each engine brings its own `CompressionStream`.
 - **When a replay's hash changes, gameplay changed.** Update `expected` only together
   with an intentional rules change, and say so in the PR (the failing test prints the
-  new values).
+  new values). A new state field also changes every hash while tick and status stay
+  the same (B-023 added `teleports` and `warp`); say so in the PR as well.
 
 ### Movement model
 
@@ -106,6 +107,24 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
 - **Alcove**: a player whose centre is in one is hidden: monks neither catch it nor see
   it (`monks.ts`, `isHidden`), so with no other player in sight they stand still.
 - **Monk respawn points** (`R`): not drawn in the game. See Monks.
+
+### Teleporters
+
+- `teleport.ts`: one-way links from an entrance (`T`) to an exit (`t`), from the
+  level's `teleports` (kept in `GameState`, and hashed). Both read as **empty** for
+  movement, support and digging.
+- An actor (player or free monk) **aligned** on an entrance, after its move, is moved
+  to the linked exit at once and is **in transit** for `TELEPORT_TICKS` (45 ticks,
+  0.75 s): `warp` counts down; it does not move, take gold, catch or get caught. Monks
+  still see a player in transit, at its exit, and chase it there (so they do not stop
+  while it travels). It is drawn as a sparkle on the exit. Falling onto an entrance
+  counts. An exit does nothing when entered.
+- A monk in play standing on the exit, even partly, **delays** the jump: an actor that
+  stays on the entrance jumps once the monk has left (one that walks on just crosses
+  it). A monk in transit on the exit blocks too, and walking monks do not step onto it,
+  so two monks never come out on top of each other; a dead monk does not block.
+- The chase AI does not plan through teleporters; a monk only uses one when its chase
+  walks it onto an entrance.
 
 ### Digging and holes
 
@@ -288,7 +307,8 @@ cell cannot hold a link, so links live beside the grid.
 The left column holds the tiles of the 1982 game (`TILE_BASE`). The right column is reserved by the format first: each
 tile gets its behavior, its drawing and its place in the editor palette with its own
 step 3 item (B-020 to B-028, see [`plans/step-3.md`](plans/step-3.md)). Done so far:
-`Q` (B-020) and the terrain `% ~ h R n` (B-022, see Terrain). Until then the game does
+`Q` (B-020), the terrain `% ~ h R n` (B-022, see Terrain) and the teleporters `T t`
+(B-023, see Teleporters). Until then the game does
 not draw a tile, and it is neither solid nor climbable: nothing in the editor palette
 places one, but an imported v2 file may hold some.
 
@@ -341,14 +361,23 @@ Code: `src/editor/` (pure modules, and `view.ts` / `library-view.ts` for the DOM
 - **Editor model** (`editor/model.ts`): plain data and pure functions, like the
   simulation. `paint` moves a player start (`P` or `Q`) instead of adding a second one;
   `paintLine` fills a segment (Bresenham) so a fast drag leaves no gaps. Undo covers
-  the grid only (at most 100 steps); one mouse stroke (`beginStroke` … `endStroke`) is
-  one step. `toLevel` runs the edited document through `parseLevel`, so the editor
+  the grid and the teleporter links (at most 100 steps); one mouse stroke
+  (`beginStroke` … `endStroke`) is one step. `toLevel` runs the edited document through `parseLevel`, so the editor
   never hands the game a level an import would reject.
+- **Teleporter links** follow the grid (`relink`, after every grid change and when a
+  level is opened): a link whose entrance or exit is painted over goes, and an
+  entrance without a link gets one to the nearest exit (by |dx| + |dy|, ties to the
+  first exit in reading order). The **link tool**, after the tiles in the palette,
+  re-points one: click an entrance, then an exit (`linkAt`, one undo step). Links show
+  as dotted lines, and the picked entrance is framed. So the editor always holds valid
+  links; only an entrance with no exit in the level is left unlinked, which the
+  validator reports.
 - **Editor screen** (`editor/view.ts`, the only editor file that touches the DOM): a
   palette (number keys 1–9, then 0 for the first ten entries, by `KeyboardEvent.code`, like the game keys), name and size
   fields, undo and redo. `editor/pointer.ts` maps canvas pixels to cells at any CSS
   scale and turns pointer events into model operations: the left button paints, the
-  right one erases, and release, cancel and lost capture all end the stroke, so letting
+  right one erases (with the link tool, a left click links instead and starts no
+  drag), and release, cancel and lost capture all end the stroke, so letting
   go outside the window cannot merge later edits into one undo step. A drag follows
   one pointer: a second finger is ignored. Ctrl+Z / Ctrl+Y go
   by `KeyboardEvent.key`, as in other applications; keys typed in a field are left to
@@ -489,7 +518,8 @@ as gameplay is implemented.
 | Monk target with two players    | the nearest player; players do not block each other                                       | **Provisional**, to check  |
 | Pickaxe                         | rubble buries the monk on the next cell; ≥ 7 s; tool kept                                 | S-021 @ 0:08–0:15.5        |
 | Goo bucket                      | goo 2–3 cells in front, rest of the level; one use; stops monks                           | S-022 @ 3:16, @ 3:36       |
-| Teleporter                      | step in, reappear at the linked spot ≈ 0.5–1 s later                                      | S-025 @ 0:04–0:05          |
+| Teleporter                      | step in, reappear at the linked spot ≈ 0.5–1 s later (45 ticks, 0.75 s, provisional)      | S-025 @ 0:04–0:05          |
+| Teleporter: monks, blocked exit | monks use them; a monk on the exit delays the jump                                        | **Provisional**, to check  |
 | Big bomb                        | same counter; round blast ≈ 5 cells, permanent; chain reactions                           | S-025 @ 1:04–1:15          |
 | Snare                           | holds the first monk that walks in for good; others walk past                             | S-018 @ 0:23–0:48          |
 | Alcove                          | hiding place: a player inside cannot be caught                                            | S-018 @ 0:02–0:19, S-100   |

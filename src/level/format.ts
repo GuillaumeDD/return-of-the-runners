@@ -22,8 +22,8 @@ export const TILE_BASE = {
 /**
  * Every tile of version 2. The tiles added in v2 are reserved by the format first
  * (B-019); each gets its behavior, its drawing and its place in the editor palette in
- * a later step 3 item (so far: `Q`, and the terrain of B-022). Until then the game does
- * not draw them, and they are neither solid nor climbable.
+ * a later step 3 item (so far: `Q`, the terrain of B-022 and the teleporters of B-023).
+ * Until then the game does not draw them, and they are neither solid nor climbable.
  */
 export const TILE = {
   ...TILE_BASE,

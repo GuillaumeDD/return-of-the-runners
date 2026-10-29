@@ -1,0 +1,52 @@
+{
+  "about": "Teleporters (B-023): the monk walks onto the entrance at (8, 5) and reappears at its exit (11, 5) 45 ticks later; the runner walks onto the entrance at (3, 5), waits 45 ticks at the exit (0, 0) on the top floor, takes the gold and leaves by the exit.",
+  "replay": {
+    "format": "return-of-the-runners/replay",
+    "version": 2,
+    "seed": 7,
+    "level": {
+      "format": "return-of-the-runners/level",
+      "version": 2,
+      "name": "Teleporters",
+      "width": 12,
+      "height": 8,
+      "grid": [
+        "t...$....E..",
+        "@@@@@@@@@@@@",
+        "............",
+        "............",
+        "............",
+        "P..T....TM.t",
+        "@@@@@@@@@@@@",
+        "@@@@@@@@@@@@"
+      ],
+      "teleports": [
+        [
+          3,
+          5,
+          0,
+          0
+        ],
+        [
+          8,
+          5,
+          11,
+          5
+        ]
+      ]
+    },
+    "inputs": [
+      [
+        [
+          228,
+          "R"
+        ]
+      ]
+    ]
+  },
+  "expected": {
+    "tick": 228,
+    "status": "won",
+    "hash": 1129868217
+  }
+}

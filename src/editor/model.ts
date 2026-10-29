@@ -16,27 +16,38 @@ import { blankGrid, clampSize } from "./blank";
  * the editor is unit-testable without a browser. The DOM layer only turns mouse and
  * keyboard events into these operations.
  *
- * Undo covers the grid (painting, resizing); the name is a text field with its own
- * undo in the browser.
+ * Undo covers the grid and the teleporter links (painting, resizing, linking); the
+ * name is a text field with its own undo in the browser.
  */
 export interface EditorState {
   readonly grid: readonly string[];
   readonly name: string;
   /**
-   * The level's teleporter links, kept as they were opened: the editor does not place
-   * teleporters yet (B-023), it only carries their links through to the saved level.
+   * The level's teleporter links. They follow the grid: a link whose entrance or exit
+   * is erased goes, and an entrance without a link gets one to the nearest exit
+   * (`relink`). The link tool changes where an entrance leads.
    */
   readonly teleports: readonly Teleport[];
   /** The tile the left button paints. */
   readonly tile: TileChar;
-  /** Earlier grids, oldest first, at most `UNDO_LIMIT`. */
-  readonly undo: readonly (readonly string[])[];
-  readonly redo: readonly (readonly string[])[];
+  /** What the left button does: paint `tile`, or link teleporters. */
+  readonly tool: "paint" | "link";
+  /** With the link tool: the entrance picked, waiting for the exit it should lead to. */
+  readonly linkFrom: { readonly cx: number; readonly cy: number } | null;
+  /** Earlier versions, oldest first, at most `UNDO_LIMIT`. */
+  readonly undo: readonly Snapshot[];
+  readonly redo: readonly Snapshot[];
   /**
    * A mouse stroke is in progress: its first change saves an undo step, the rest of
    * the stroke joins it. `"saved"` once that step exists.
    */
   readonly stroke: "none" | "open" | "saved";
+}
+
+/** What undo restores. */
+export interface Snapshot {
+  readonly grid: readonly string[];
+  readonly teleports: readonly Teleport[];
 }
 
 export const UNDO_LIMIT = 100;
@@ -47,6 +58,8 @@ export function newEditor(name: string): EditorState {
     name: cleanName(name),
     teleports: [],
     tile: TILE.brick,
+    tool: "paint",
+    linkFrom: null,
     undo: [],
     redo: [],
     stroke: "none",
@@ -68,11 +81,82 @@ export function sameContent(a: EditorState, b: EditorState): boolean {
 
 /** Opens a saved level (or draft) for editing, with an empty undo history. */
 export function editorFrom(level: LevelDraft): EditorState {
-  return { ...newEditor(level.name), grid: [...level.grid], teleports: level.teleports };
+  return {
+    ...newEditor(level.name),
+    grid: [...level.grid],
+    teleports: relink(level.grid, level.teleports),
+  };
 }
 
 export function selectTile(s: EditorState, tile: TileChar): EditorState {
-  return { ...s, tile };
+  return { ...s, tile, tool: "paint", linkFrom: null };
+}
+
+/** The link tool: click an entrance, then the exit it should lead to. */
+export function selectLinkTool(s: EditorState): EditorState {
+  return { ...s, tool: "link", linkFrom: null };
+}
+
+/**
+ * A click with the link tool: on an entrance, picks it; then on an exit, links the
+ * picked entrance to it (one undo step). Anywhere else, drops the pick.
+ */
+export function linkAt(s: EditorState, cx: number, cy: number): EditorState {
+  const tile = tileAt(s.grid, cx, cy);
+  if (tile === TILE.teleportEntrance) return { ...s, linkFrom: { cx, cy } };
+  const from = s.linkFrom;
+  if (tile !== TILE.teleportExit || from === null) return { ...s, linkFrom: null };
+  const link: Teleport = [from.cx, from.cy, cx, cy];
+  // In place, so re-linking an entrance to its own exit changes nothing.
+  const own = (l: Teleport): boolean => l[0] === from.cx && l[1] === from.cy;
+  const teleports = s.teleports.some(own)
+    ? s.teleports.map((l) => (own(l) ? link : l))
+    : [...s.teleports, link];
+  const done = { ...s, linkFrom: null };
+  if (JSON.stringify(teleports) === JSON.stringify(s.teleports)) return done;
+  // A link is its own undo step, even in the middle of a stroke.
+  return resume(s, record({ ...done, stroke: "none" }, { grid: s.grid, teleports }));
+}
+
+/**
+ * The links that fit a grid: those from an entrance (`T`) to an exit (`t`), the first
+ * one of each entrance, in their order; then one for each entrance left without, to the
+ * nearest exit (by |dx| + |dy|, ties to the first in reading order), if there is one.
+ */
+export function relink(grid: readonly string[], links: readonly Teleport[]): Teleport[] {
+  const at = (x: number, y: number): string | undefined => tileAt(grid, x, y);
+  const linked = new Set<string>();
+  const kept: Teleport[] = [];
+  for (const link of links) {
+    const [fx, fy, tx, ty] = link;
+    const key = `${String(fx)},${String(fy)}`;
+    if (at(fx, fy) !== TILE.teleportEntrance || at(tx, ty) !== TILE.teleportExit) continue;
+    if (linked.has(key)) continue;
+    linked.add(key);
+    kept.push(link);
+  }
+  const exits: [number, number][] = [];
+  const entrances: [number, number][] = [];
+  grid.forEach((row, y) => {
+    for (let x = 0; x < row.length; x++) {
+      if (row.charAt(x) === TILE.teleportExit) exits.push([x, y]);
+      if (row.charAt(x) === TILE.teleportEntrance) entrances.push([x, y]);
+    }
+  });
+  for (const [x, y] of entrances) {
+    if (linked.has(`${String(x)},${String(y)}`)) continue;
+    let best: [number, number] | null = null;
+    let bestDistance = Infinity;
+    for (const [ex, ey] of exits) {
+      const d = Math.abs(ex - x) + Math.abs(ey - y);
+      if (d < bestDistance) {
+        best = [ex, ey];
+        bestDistance = d;
+      }
+    }
+    if (best !== null) kept.push([x, y, best[0], best[1]]);
+  }
+  return kept;
 }
 
 export function beginStroke(s: EditorState): EditorState {
@@ -188,9 +272,10 @@ export function undo(s: EditorState): EditorState {
   if (previous === undefined) return s;
   return {
     ...s,
-    grid: previous,
+    ...previous,
+    linkFrom: null,
     undo: s.undo.slice(0, -1),
-    redo: [...s.redo, s.grid],
+    redo: [...s.redo, snapshot(s)],
     stroke: reopened(s),
   };
 }
@@ -200,8 +285,9 @@ export function redo(s: EditorState): EditorState {
   if (next === undefined) return s;
   return {
     ...s,
-    grid: next,
-    undo: capped([...s.undo, s.grid]),
+    ...next,
+    linkFrom: null,
+    undo: capped([...s.undo, snapshot(s)]),
     redo: s.redo.slice(0, -1),
     stroke: reopened(s),
   };
@@ -231,15 +317,30 @@ export function toDocument(s: EditorState): Record<string, unknown> {
   });
 }
 
+/** A grid change; the teleporter links follow it (`relink`). */
 function change(s: EditorState, grid: readonly string[]): EditorState {
-  if (s.stroke === "saved") return { ...s, grid };
+  return record(s, { grid, teleports: relink(grid, s.teleports) });
+}
+
+/** A new version of the level, with its undo step (unless the stroke has one already). */
+function record(s: EditorState, next: Snapshot): EditorState {
+  const linkFrom =
+    s.linkFrom !== null && tileAt(next.grid, s.linkFrom.cx, s.linkFrom.cy) === TILE.teleportEntrance
+      ? s.linkFrom
+      : null;
+  if (s.stroke === "saved") return { ...s, ...next, linkFrom };
   return {
     ...s,
-    grid,
-    undo: capped([...s.undo, s.grid]),
+    ...next,
+    linkFrom,
+    undo: capped([...s.undo, snapshot(s)]),
     redo: [],
     stroke: s.stroke === "open" ? "saved" : s.stroke,
   };
+}
+
+function snapshot(s: EditorState): Snapshot {
+  return { grid: s.grid, teleports: s.teleports };
 }
 
 /**
@@ -254,7 +355,7 @@ function resume(before: EditorState, after: EditorState): EditorState {
   return { ...after, stroke: reopened(before) };
 }
 
-function capped(stack: (readonly string[])[]): (readonly string[])[] {
+function capped(stack: Snapshot[]): Snapshot[] {
   return stack.length > UNDO_LIMIT ? stack.slice(stack.length - UNDO_LIMIT) : stack;
 }
 

@@ -19,6 +19,9 @@ import {
   toDraft,
   toLevel,
   undo,
+  linkAt,
+  relink,
+  selectLinkTool,
   type EditorState,
 } from "../../src/editor/model";
 import { makeRng, randInt } from "../helpers/rng";
@@ -256,7 +259,7 @@ describe("toLevel", () => {
     }
   });
 
-  it("keeps the teleporter links of an opened level, and reports a link left dangling", () => {
+  it("keeps the teleporter links of an opened level, and drops a link whose end is painted over", () => {
     let grid = valid().grid;
     grid = grid.map((row, y) => (y === 2 ? `.T....t${row.slice(7)}` : row));
     const opened = editorFrom({
@@ -269,11 +272,10 @@ describe("toLevel", () => {
     const r = toLevel(paint(opened, 20, 2, TILE.brick));
     expect(r.ok && r.level.teleports).toEqual([[1, 2, 6, 2]]);
     expect(toDocument(opened).teleports).toEqual([[1, 2, 6, 2]]);
-    // Painting over the entrance leaves its link pointing at a brick.
-    const broken = toLevel(paint(opened, 1, 2, TILE.brick));
-    expect(broken.ok ? [] : broken.errors.map((e) => e.code)).toEqual(["teleport-not-entrance"]);
-    // Still a draft that can be saved.
-    expect(toDraft(paint(opened, 1, 2, TILE.brick)).ok).toBe(true);
+    // Painting over the entrance takes its link with it: the level stays playable.
+    const gone = paint(opened, 1, 2, TILE.brick);
+    expect(gone.teleports).toEqual([]);
+    expect(toLevel(gone).ok).toBe(true);
     expect(sameContent(opened, { ...opened, teleports: [] })).toBe(false);
   });
 
@@ -373,5 +375,142 @@ describe("sameContent", () => {
     expect(sameContent(a, undo(paint(a, 1, 1, TILE.gold)))).toBe(true);
     expect(sameContent(a, rename(a, "Other"))).toBe(false);
     expect(sameContent(a, resize(a, 30, 16))).toBe(false);
+  });
+});
+
+describe("teleporter links", () => {
+  /** A blank level with tiles painted at the given cells (row 2). */
+  const level = (cells: Record<number, TileChar>): EditorState => {
+    let s = newEditor("Links");
+    for (const [x, tile] of Object.entries(cells)) s = paint(s, Number(x), 2, tile);
+    return s;
+  };
+  const T = TILE.teleportEntrance;
+  const t = TILE.teleportExit;
+
+  it("a new entrance leads to the nearest exit; ties go to the first in reading order", () => {
+    // Exits at 2 and 10; an entrance at 6 is 4 from both: the first one (2) wins.
+    const s = level({ 2: t, 10: t, 6: T });
+    expect(s.teleports).toEqual([[6, 2, 2, 2]]);
+    // An entrance at 9 is nearer to 10.
+    expect(paint(s, 9, 2, T).teleports).toEqual([
+      [6, 2, 2, 2],
+      [9, 2, 10, 2],
+    ]);
+    // Distance is |dx| + |dy|: an exit one row down beats one three columns away.
+    expect(relink(["T..t", "t..."], [])).toEqual([[0, 0, 0, 1]]);
+  });
+
+  it("an entrance with no exit has no link until an exit is painted", () => {
+    const s = level({ 4: T });
+    expect(s.teleports).toEqual([]);
+    expect(paint(s, 12, 2, t).teleports).toEqual([[4, 2, 12, 2]]);
+  });
+
+  it("erasing an exit relinks its entrances to the next nearest one, or drops them", () => {
+    const s = level({ 2: t, 10: t, 4: T });
+    expect(s.teleports).toEqual([[4, 2, 2, 2]]);
+    expect(erase(s, 2, 2).teleports).toEqual([[4, 2, 10, 2]]);
+    expect(erase(erase(s, 2, 2), 10, 2).teleports).toEqual([]);
+  });
+
+  it("the link tool: click an entrance, then an exit, links them; one undo step", () => {
+    let s = selectLinkTool(level({ 2: t, 10: t, 4: T }));
+    const steps = s.undo.length;
+    s = linkAt(s, 4, 2);
+    expect(s.linkFrom).toEqual({ cx: 4, cy: 2 });
+    s = linkAt(s, 10, 2);
+    expect(s.linkFrom).toBeNull();
+    expect(s.teleports).toEqual([[4, 2, 10, 2]]);
+    expect(s.undo).toHaveLength(steps + 1);
+    // Undo restores the old link, redo the new one.
+    expect(undo(s).teleports).toEqual([[4, 2, 2, 2]]);
+    expect(redo(undo(s)).teleports).toEqual([[4, 2, 10, 2]]);
+    // The chosen link survives other edits.
+    expect(paint(s, 20, 5, TILE.brick).teleports).toEqual([[4, 2, 10, 2]]);
+  });
+
+  it("the link tool: an exit with no entrance picked, or any other cell, picks nothing", () => {
+    const s = selectLinkTool(level({ 2: t, 4: T }));
+    expect(linkAt(s, 2, 2)).toEqual(s);
+    expect(linkAt(linkAt(s, 4, 2), 7, 2).linkFrom).toBeNull();
+    expect(linkAt(linkAt(s, 4, 2), 99, 99).linkFrom).toBeNull();
+    // Re-linking an entrance to the exit it already has adds no undo step.
+    const same = linkAt(linkAt(s, 4, 2), 2, 2);
+    expect(same.undo).toHaveLength(s.undo.length);
+    // Regression (self-review): with another link after it, the list was reordered,
+    // which counted as a change.
+    const two = paint(paint(s, 13, 2, t), 12, 2, T);
+    expect(two.teleports).toEqual([
+      [4, 2, 2, 2],
+      [12, 2, 13, 2],
+    ]);
+    const relinked = linkAt(linkAt(two, 4, 2), 2, 2);
+    expect(relinked.teleports).toEqual(two.teleports);
+    expect(relinked.undo).toHaveLength(two.undo.length);
+    expect(sameContent(relinked, two)).toBe(true);
+    // Choosing a tile leaves the link tool and drops the pick.
+    expect(selectTile(linkAt(s, 4, 2), TILE.brick)).toMatchObject({
+      tool: "paint",
+      linkFrom: null,
+    });
+  });
+
+  it("painting over the picked entrance drops the pick", () => {
+    const s = linkAt(selectLinkTool(level({ 2: t, 4: T })), 4, 2);
+    expect(paint(s, 4, 2, TILE.brick).linkFrom).toBeNull();
+    expect(paint(s, 9, 9, TILE.brick).linkFrom).toEqual({ cx: 4, cy: 2 });
+  });
+
+  it("editorFrom repairs the links of an opened draft", () => {
+    const opened = editorFrom({
+      name: "Draft",
+      width: 8,
+      height: 8,
+      grid: ["T.t.....", "t.......", ...Array.from({ length: 6 }, () => "........")],
+      // A link to a cell that is not an exit, and a second link for the same entrance.
+      teleports: [
+        [0, 0, 1, 0],
+        [0, 0, 2, 0],
+        [0, 0, 0, 1],
+      ],
+    });
+    expect(opened.teleports).toEqual([[0, 0, 2, 0]]);
+  });
+
+  // Randomized: random edits with teleporters, the link tool, undo and redo. After every
+  // step the links are exactly what relink keeps (a fixed point), every entrance has a
+  // link when the grid has an exit, and a playable grid has no link error.
+  it("random edit sequences always leave valid links", () => {
+    const rng = makeRng(2302);
+    const tiles: TileChar[] = [T, t, T, t, TILE.brick, TILE.empty];
+    for (let trial = 0; trial < 300; trial++) {
+      let s = newEditor("R");
+      s = paint(s, 0, 15, TILE.runnerStart);
+      s = paint(s, 1, 14, TILE.gold);
+      s = paint(s, 2, 14, TILE.exit);
+      for (let i = 0; i < 30; i++) {
+        const x = randInt(rng, 8);
+        const y = randInt(rng, 4);
+        const op = randInt(rng, 7);
+        if (op === 0) s = undo(s);
+        else if (op === 1) s = redo(s);
+        else if (op === 2) s = linkAt(selectLinkTool(s), x, y);
+        else s = paint(s, x, y, tiles[randInt(rng, tiles.length)] ?? TILE.empty);
+        expect(relink(s.grid, s.teleports)).toEqual(s.teleports);
+        const hasExit = s.grid.some((row) => row.includes(t));
+        const entrances = s.grid
+          .join("")
+          .split("")
+          .filter((c) => c === T).length;
+        expect(s.teleports).toHaveLength(hasExit ? entrances : 0);
+        const r = toLevel(s);
+        const codes = r.ok ? [] : r.errors.map((e) => e.code);
+        expect(codes.filter((c) => c.startsWith("teleport") && c !== "teleport-unlinked")).toEqual(
+          [],
+        );
+        if (hasExit) expect(codes).not.toContain("teleport-unlinked");
+      }
+    }
   });
 });

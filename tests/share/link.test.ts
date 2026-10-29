@@ -77,7 +77,8 @@ describe("round trip", () => {
     }
   });
 
-  it("2,000 random valid levels come back equal", async () => {
+  // Takes 4–5 s alone, close to Vitest's 5 s default: it timed out under a loaded run.
+  it("2,000 random valid levels come back equal", { timeout: 30_000 }, async () => {
     const rng = makeRng(17);
     for (let i = 0; i < ITERATIONS; i++) {
       const level = randomLevel(rng);

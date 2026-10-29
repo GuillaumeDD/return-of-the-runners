@@ -1,4 +1,4 @@
-import { TILE } from "../level/format";
+import { TILE, type Teleport } from "../level/format";
 import { holeAt, holePhase } from "../sim/holes";
 import { HOLE_TICKS, SUB } from "../sim/rules";
 import type { GameState, Monk, Player } from "../sim/state";
@@ -31,6 +31,10 @@ const COLOR = {
   alcoveInside: "#0a0710",
   hiddenLadder: "#6b5a36",
   trapdoorMark: "#f2e6a0",
+  teleportIn: "#f2c94c",
+  teleportOut: "#7fd8f0",
+  sparkle: "#fff6c8",
+  link: "#7fd8f0",
   gridLine: "#222",
 } as const;
 
@@ -60,6 +64,10 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState): void {
     else drawHole(ctx, brickLeft(hole.age), x, y);
   });
   for (const m of state.monks) drawMonk(ctx, m);
+  // Actors in a teleporter show as a sparkle at the exit.
+  for (const a of [...state.monks, ...state.players]) {
+    if (a.warp > 0) drawSparkle(ctx, a.x * PX_PER_SUB, a.y * PX_PER_SUB);
+  }
   state.players.forEach((p, i) => {
     drawPlayer(ctx, p, i, state.status === "dead");
   });
@@ -70,7 +78,7 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState): void {
  * unless the level is lost, when everyone shows where they fell.
  */
 function drawPlayer(ctx: CanvasRenderingContext2D, p: Player, index: number, lost: boolean): void {
-  if (p.mode === "out" && !lost) return;
+  if ((p.mode === "out" && !lost) || p.warp > 0) return;
   const dead = p.mode !== "alive";
   drawRunner(ctx, p.x * PX_PER_SUB, p.y * PX_PER_SUB, p.facing, dead, index);
 }
@@ -81,7 +89,12 @@ function drawPlayer(ctx: CanvasRenderingContext2D, p: Player, index: number, los
  * hides are shown to the maker: trapdoor turf has a mark, a hidden ladder is dim, a monk
  * respawn point is a monk-coloured frame.
  */
-export function renderGrid(ctx: CanvasRenderingContext2D, grid: readonly string[]): void {
+export function renderGrid(
+  ctx: CanvasRenderingContext2D,
+  grid: readonly string[],
+  links: readonly Teleport[] = [],
+  picked: { readonly cx: number; readonly cy: number } | null = null,
+): void {
   const size = gridCanvasSize(grid);
   ctx.fillStyle = COLOR.background;
   ctx.fillRect(0, 0, size.width, size.height);
@@ -95,6 +108,41 @@ export function renderGrid(ctx: CanvasRenderingContext2D, grid: readonly string[
   ctx.fillStyle = COLOR.gridLine;
   for (let x = TILE_PX; x < size.width; x += TILE_PX) ctx.fillRect(x, 0, 1, size.height);
   for (let y = TILE_PX; y < size.height; y += TILE_PX) ctx.fillRect(0, y, size.width, 1);
+  for (const [fx, fy, tx, ty] of links) drawLink(ctx, fx, fy, tx, ty);
+  if (picked !== null) drawPicked(ctx, picked.cx * TILE_PX, picked.cy * TILE_PX);
+}
+
+/** A teleporter link: a dotted line from the entrance's centre to a dot on the exit. */
+function drawLink(
+  ctx: CanvasRenderingContext2D,
+  fx: number,
+  fy: number,
+  tx: number,
+  ty: number,
+): void {
+  const half = TILE_PX / 2;
+  const x0 = fx * TILE_PX + half;
+  const y0 = fy * TILE_PX + half;
+  const x1 = tx * TILE_PX + half;
+  const y1 = ty * TILE_PX + half;
+  const dots = Math.max(1, Math.ceil(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)) / 6));
+  ctx.fillStyle = COLOR.link;
+  for (let i = 0; i <= dots; i++) {
+    const x = Math.round(x0 + ((x1 - x0) * i) / dots);
+    const y = Math.round(y0 + ((y1 - y0) * i) / dots);
+    ctx.fillRect(x - 1, y - 1, 2, 2);
+  }
+  ctx.fillRect(x1 - 3, y1 - 3, 6, 6);
+}
+
+/** The entrance picked by the link tool, waiting for its exit. */
+function drawPicked(ctx: CanvasRenderingContext2D, x: number, y: number): void {
+  const s = TILE_PX;
+  ctx.fillStyle = COLOR.sparkle;
+  ctx.fillRect(x, y, s, 1);
+  ctx.fillRect(x, y + s - 1, s, 1);
+  ctx.fillRect(x, y, 1, s);
+  ctx.fillRect(x + s - 1, y, 1, s);
 }
 
 /** Canvas size for a grid; an empty grid gives 0 × 0. */
@@ -182,6 +230,18 @@ function drawTile(
       ctx.fillRect(x + 5, y + 8, s - 10, s - 8);
       ctx.fillRect(x + 8, y + 5, s - 16, 3);
       break;
+    case TILE.teleportEntrance:
+    case TILE.teleportExit: {
+      // A pad: gold for an entrance, light blue for an exit.
+      ctx.fillStyle = tile === TILE.teleportEntrance ? COLOR.teleportIn : COLOR.teleportOut;
+      ctx.fillRect(x + 2, y + 2, s - 4, 2);
+      ctx.fillRect(x + 2, y + 2, 2, s - 4);
+      ctx.fillRect(x + s - 4, y + 2, 2, s - 4);
+      ctx.fillRect(x + 1, y + s - 3, s - 2, 3);
+      ctx.fillRect(x + 9, y + 8, 6, 2);
+      ctx.fillRect(x + 11, y + 6, 2, 6);
+      break;
+    }
     case TILE.monkRespawn:
       // A marker only: nothing shows in the game.
       if (editor) {
@@ -221,6 +281,15 @@ function drawTile(
     default:
       break;
   }
+}
+
+/** A small four-pointed star, centred in the tile at (x, y). */
+function drawSparkle(ctx: CanvasRenderingContext2D, x: number, y: number): void {
+  const s = TILE_PX;
+  ctx.fillStyle = COLOR.sparkle;
+  ctx.fillRect(x + s / 2 - 1, y + 4, 2, s - 8);
+  ctx.fillRect(x + 4, y + s / 2 - 1, s - 8, 2);
+  ctx.fillRect(x + s / 2 - 3, y + s / 2 - 3, 6, 6);
 }
 
 function drawBrick(ctx: CanvasRenderingContext2D, x: number, y: number): void {
@@ -263,7 +332,7 @@ function drawRunner(
 
 /** A monk: a robed figure; a gold band on its head while it carries gold. */
 function drawMonk(ctx: CanvasRenderingContext2D, m: Monk): void {
-  if (m.mode === "dead") return;
+  if (m.mode === "dead" || m.warp > 0) return;
   drawMonkAt(ctx, m.x * PX_PER_SUB, m.y * PX_PER_SUB, m.facing, m.carry > 0);
 }
 
