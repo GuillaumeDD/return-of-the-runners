@@ -25,6 +25,7 @@ describe("committed replays (Node)", () => {
     expect(fixtures.map((f) => f.name)).toEqual([
       "bombs",
       "coop-monks",
+      "default-level",
       "first-steps-random",
       "keys",
       "monk-trap-respawn",

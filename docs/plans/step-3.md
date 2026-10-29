@@ -1,7 +1,7 @@
 # Step 3 plan: TLR specifics (terrain, tools, two players)
 
 Status: **approved** (PR #28). Roadmap: `docs/PRD.md` §7, step 3.
-Backlog items: B-019 to B-029 (B-029 is a bug fix found in play), and B-038, a fix found later. Source ids (`S-…`) refer to [`../SOURCES.md`](../SOURCES.md).
+Backlog items: B-019 to B-029 (B-029 is a bug fix found in play), then B-038 (a fix found later) and B-039 (the default level). Source ids (`S-…`) refer to [`../SOURCES.md`](../SOURCES.md).
 
 ## Goal
 
@@ -434,6 +434,25 @@ like B-022's gooey turf; it does not block digging the cell under it (to confirm
 - a monk walks to the column of a pit and drops through it to the runner below, coming
   from the right and from the left;
 - the same through trapdoor turf.
+
+### B-039 — The default level shows step 3
+
+- Asked by Guillaume (2026-10-29): the level the game opens on (`src/levels/first-steps.json`,
+  the only bundled level) should show the new features. Rebuilt on three floors with
+  trapdoor turf, gooey turf, a hidden ladder, alcoves, a teleporter, a red key and door,
+  the jackhammer (a pocket of gold under bedrock), the pickaxe, small and big bombs, a
+  monk respawn point, diggable brick, and a player 2 start. One monk.
+- To update again at the end of step 3, with the snare, gas and goo bucket (B-027,
+  B-028).
+
+Tests:
+
+- `tests/fixtures/replays/default-level.json`: one player wins the level with its monk in
+  play (bomb, door, a held monk, jackhammer, teleporter, hidden ladder);
+- `tests/levels/bundled.test.ts`: that replay's level is the bundled level, so the
+  bundled level stays winnable;
+- `tests/level/file.test.ts`: the "no `teleports` field" export check uses a fixture
+  without teleporters, since the bundled level now has one.
 
 ## Open questions (faithfulness)
 

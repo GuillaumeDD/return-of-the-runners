@@ -1,0 +1,174 @@
+{
+  "about": "The default level (B-039), won by one player with its monk in play. The runner lays a small bomb against the brick wall; the blast kills the monk behind it. It takes the gold and the red key across gooey turf while the monk, back from the respawn point and down through trapdoor turf, is held off by the wall. Upstairs, it opens the red door, digs a hole the monk walks into and stands on it until it refills. It drills through bedrock with the jackhammer into the pocket of gold (the monk, falling through the trapdoor again, dies in the refilling shaft), takes the teleporter up and the last gold, and outruns the monk up the hidden ladder to the exit.",
+  "replay": {
+    "format": "return-of-the-runners/replay",
+    "version": 2,
+    "seed": 1,
+    "level": {
+      "format": "return-of-the-runners/level",
+      "version": 2,
+      "name": "First steps",
+      "width": 28,
+      "height": 16,
+      "grid": [
+        "...........................E",
+        ".............R.............h",
+        "..............-------......h",
+        "...........................h",
+        "...o...........n..$..$.O..th",
+        "@@%@@@@@~~~~~#########@@@@@@",
+        "..............@.............",
+        "......------..@.............",
+        "..............@.............",
+        "..j......$....A..k.M......T.",
+        "@@@@@H################H#####",
+        ".@.@.H.#..............H.....",
+        ".@$@.H.#..............H.....",
+        "..H..H.#..............H.....",
+        ".P.QoH.#.$.a.....n....H..$..",
+        "@@@@@@@@@@@@~~~~@@####@@@@@@"
+      ],
+      "teleports": [
+        [
+          26,
+          9,
+          26,
+          4
+        ]
+      ]
+    },
+    "inputs": [
+      [
+        [
+          80,
+          "R"
+        ],
+        [
+          405,
+          ""
+        ],
+        [
+          1,
+          "B"
+        ],
+        [
+          64,
+          "L"
+        ],
+        [
+          160,
+          ""
+        ],
+        [
+          144,
+          "R"
+        ],
+        [
+          1,
+          "I"
+        ],
+        [
+          1,
+          ""
+        ],
+        [
+          400,
+          "R"
+        ],
+        [
+          80,
+          "L"
+        ],
+        [
+          90,
+          "U"
+        ],
+        [
+          112,
+          "L"
+        ],
+        [
+          32,
+          "R"
+        ],
+        [
+          60,
+          ""
+        ],
+        [
+          1,
+          "<"
+        ],
+        [
+          64,
+          ""
+        ],
+        [
+          16,
+          "L"
+        ],
+        [
+          220,
+          ""
+        ],
+        [
+          224,
+          "L"
+        ],
+        [
+          1,
+          "I"
+        ],
+        [
+          1,
+          ""
+        ],
+        [
+          1,
+          "X"
+        ],
+        [
+          140,
+          ""
+        ],
+        [
+          40,
+          "D"
+        ],
+        [
+          48,
+          "R"
+        ],
+        [
+          90,
+          "U"
+        ],
+        [
+          340,
+          "R"
+        ],
+        [
+          45,
+          ""
+        ],
+        [
+          130,
+          "L"
+        ],
+        [
+          146,
+          "R"
+        ],
+        [
+          57,
+          "U"
+        ]
+      ]
+    ]
+  },
+  "expected": {
+    "tick": 3194,
+    "status": "won",
+    "hash": 2476945365
+  }
+}

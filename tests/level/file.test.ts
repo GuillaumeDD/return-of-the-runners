@@ -56,7 +56,9 @@ describe("export then import", () => {
   });
 
   it("is the v2 document, one grid row per line, with a final newline", () => {
-    const { text } = exportLevel(parsed(firstSteps));
+    const fixture = loadFixtures("valid", "v2").find((f) => f.file === "v2/minimal-8x8.json");
+    if (!fixture) throw new Error("missing v2/minimal-8x8.json");
+    const { text } = exportLevel(parsed(fixture.text));
     expect(text.endsWith("}\n")).toBe(true);
     const doc = JSON.parse(text) as Record<string, unknown>;
     // No teleporters: no `teleports` field.
