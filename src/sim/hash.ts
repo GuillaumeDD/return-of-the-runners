@@ -57,12 +57,20 @@ export function hashState(s: GameState): number {
     int(p.startY);
     int(p.item === "" ? 0 : p.item.charCodeAt(0));
     int(p.pickHeld ? 1 : 0);
+    int(p.useHeld ? 1 : 0);
+    int(p.drill ? 1 : 0);
   }
   int(s.holes.length);
   for (const h of s.holes) {
     int(h.cx);
     int(h.cy);
     int(h.age);
+  }
+  int(s.rubble.length);
+  for (const r of s.rubble) {
+    int(r.cx);
+    int(r.y);
+    int(r.landed);
   }
   int(s.monks.length);
   for (const m of s.monks) {

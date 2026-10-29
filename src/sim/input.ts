@@ -8,6 +8,8 @@ export interface PlayerInput {
   readonly digRight: boolean;
   /** Pick up, swap or drop an item (`items.ts`); acts once per press. */
   readonly pickUp: boolean;
+  /** Use the held tool (`tools.ts`); acts once per press. */
+  readonly use: boolean;
 }
 
 export const NO_INPUT: PlayerInput = {
@@ -18,6 +20,7 @@ export const NO_INPUT: PlayerInput = {
   digLeft: false,
   digRight: false,
   pickUp: false,
+  use: false,
 };
 
 /** Every player's input for one tick, player 1 first; a missing entry is no input. */

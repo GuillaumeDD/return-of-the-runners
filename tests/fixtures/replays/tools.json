@@ -1,0 +1,78 @@
+{
+  "about": "Tools (B-025): the runner takes the pickaxe and swings it: the rubble lands in front and walls the monk out. It swaps the pickaxe for the jackhammer, drills down through two cells of bedrock, stops on the ladder, takes the gold and leaves by the exit.",
+  "replay": {
+    "format": "return-of-the-runners/replay",
+    "version": 2,
+    "seed": 5,
+    "level": {
+      "format": "return-of-the-runners/level",
+      "version": 2,
+      "name": "Tools",
+      "width": 14,
+      "height": 8,
+      "grid": [
+        "..............",
+        "..............",
+        "..............",
+        "P.k.j.......M.",
+        "@@@@@###@@@@@@",
+        "@@@@@@@@@@@@@@",
+        "...........$E.",
+        "@@@@H@@@@@@@@@"
+      ]
+    },
+    "inputs": [
+      [
+        [
+          32,
+          "R"
+        ],
+        [
+          1,
+          "I"
+        ],
+        [
+          1,
+          ""
+        ],
+        [
+          32,
+          "R"
+        ],
+        [
+          1,
+          "X"
+        ],
+        [
+          21,
+          ""
+        ],
+        [
+          1,
+          "I"
+        ],
+        [
+          1,
+          ""
+        ],
+        [
+          1,
+          "X"
+        ],
+        [
+          240,
+          ""
+        ],
+        [
+          119,
+          "R"
+        ]
+      ]
+    ]
+  },
+  "expected": {
+    "tick": 450,
+    "status": "won",
+    "hash": 1764380679
+  }
+}

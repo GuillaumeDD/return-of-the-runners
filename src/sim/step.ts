@@ -5,6 +5,7 @@ import { NO_INPUT, type PlayerInput, type TickInput } from "./input";
 import { openDoor, pickUp } from "./items";
 import { inSight, stepMonks } from "./monks";
 import { inTransit, tryTeleport } from "./teleport";
+import { keepDrilling, rubbleHits, stepRubble, useTool, type Rubble } from "./tools";
 import { isFalling, overlapsCell, stepActor } from "./move";
 import { cellOf, monkAt, tileAt, type Terrain } from "./physics";
 import { HOLE_TICKS, MONK_TICKS, PLAYER_RESPAWN_TICKS, RUNNER_PERIOD, SUB } from "./rules";
@@ -18,11 +19,14 @@ import type { Actor, Facing, GameState, Monk, Player } from "./state";
  * a dead player counts down, then reappears at its start; a player that ends its move
  * on a teleporter entrance jumps (see `teleport.ts`). A player in play then picks up,
  * swaps or drops an item if it just pressed the pick-up key, opens a door next to it
- * that its key fits (`items.ts`), and picks up the gold it touches.
- * Once the last gold is taken, hidden ladders appear. A player touching the open exit wins the level (`playersAtExit`). Unless it
- * was won, the monks then act in order, and a monk touching a player catches it. Then
- * holes age: a player or monk inside a hole that just filled dies (no player dies on
- * the winning tick). Last, deaths are counted (see `die`).
+ * that its key fits (`items.ts`), uses its tool if it just pressed the use key, or goes
+ * on drilling down (`tools.ts`), and picks up the gold it touches.
+ * Once the last gold is taken, hidden ladders appear. A player touching the open exit
+ * wins the level (`playersAtExit`). Unless it was won, the monks then act in order, and
+ * a monk touching a player catches it. Then holes age: a player or monk inside a hole
+ * that just filled dies (no player dies on the winning tick). Rubble then falls or
+ * crumbles, and falling rubble crushes the monks and players it touches. Last, deaths
+ * are counted (see `die`).
  */
 export function step(state: GameState, inputs: TickInput): GameState {
   const tick = state.tick + 1;
@@ -31,6 +35,7 @@ export function step(state: GameState, inputs: TickInput): GameState {
   let tiles = state.tiles;
   let goldLeft = state.goldLeft;
   let holes = state.holes;
+  let rubble: readonly Rubble[] = state.rubble;
   const players: Player[] = [];
   // Monks only move while they can see someone: hiding players do not count (players
   // in transit do: they are seen at their exit).
@@ -38,18 +43,31 @@ export function step(state: GameState, inputs: TickInput): GameState {
   for (let i = 0; i < state.players.length; i++) {
     const before = state.players[i];
     if (before === undefined) continue;
-    const t: Terrain = { ...state, tiles, holes };
+    const t: Terrain = { ...state, tiles, holes, rubble };
     const input = inputs[i] ?? NO_INPUT;
     const acted = actPlayer(t, before, input, tick, anyAlive);
-    let p: Player = { ...acted.player, pickHeld: input.pickUp };
+    let p: Player = { ...acted.player, pickHeld: input.pickUp, useHeld: input.use };
     if (acted.hole !== null) holes = [...holes, acted.hole];
     if (p.mode === "alive") p = tryTeleport(state, p, state.monks);
+    if (inTransit(p)) p = { ...p, drill: false };
     if (p.mode === "alive" && !inTransit(p)) {
-      // The pick-up key acts on the tick it is pressed, unless the player is digging.
+      // The pick-up and use keys act on the tick they are pressed, unless the player is
+      // busy (digging, drilling or swinging).
       if (input.pickUp && !before.pickHeld && p.busy === 0) {
         ({ tiles, player: p } = pickUp(tiles, p));
       }
       ({ tiles, player: p } = openDoor(tiles, p));
+      const here: Terrain = { ...state, tiles, holes, rubble };
+      const falling = isFalling(here, p);
+      const used =
+        input.use && !before.useHeld && p.busy === 0
+          ? useTool(here, p, falling)
+          : keepDrilling(here, p, falling);
+      if (used !== null) {
+        p = used.player;
+        if (used.hole !== null) holes = [...holes, used.hole];
+        if (used.rubble !== null) rubble = [...rubble, used.rubble];
+      }
       const { cx, cy } = centerCell(p);
       const taken = takeGold(tiles, cx, cy);
       if (taken !== null) {
@@ -67,15 +85,20 @@ export function step(state: GameState, inputs: TickInput): GameState {
   let rng = state.rng;
   let caught: readonly boolean[] = players.map(() => false);
   if (!won) {
-    const after = stepMonks({ ...state, tiles, goldLeft, players, holes }, tick);
+    const after = stepMonks({ ...state, tiles, goldLeft, players, holes, rubble }, tick);
     ({ monks, tiles, rng, caught } = after);
   }
 
   const aged = holes.map((h) => ({ ...h, age: h.age + 1 }));
   const filled = aged.filter((h) => h.age >= HOLE_LIFETIME);
   const buried = (a: Actor): boolean => filled.some((h) => overlapsCell(a, h.cx, h.cy));
+  const kept = aged.filter((h) => h.age < HOLE_LIFETIME);
+  rubble = stepRubble({ ...state, tiles, holes: kept, monks, rubble });
+  // Rubble crushes while it falls, and on the tick it lands.
+  const falling = rubble.filter((r) => r.landed <= 0);
+  const crushed = (a: Actor): boolean => !inTransit(a) && falling.some((r) => rubbleHits(r, a));
   monks = monks.map((m) =>
-    m.mode !== "dead" && buried(m)
+    m.mode !== "dead" && (buried(m) || crushed(m))
       ? { ...m, mode: "dead", timer: MONK_TICKS.respawn, holeX: -1, holeY: -1 }
       : m,
   );
@@ -84,7 +107,7 @@ export function step(state: GameState, inputs: TickInput): GameState {
   // A won level ends as it is: nobody dies on the winning tick (a hole filling under
   // the winner would otherwise remove it from `playersAtExit`).
   const final = players.map((p, i) => {
-    if (won || p.mode !== "alive" || !(caught[i] === true || buried(p))) return p;
+    if (won || p.mode !== "alive" || !(caught[i] === true || buried(p) || crushed(p))) return p;
     died = true;
     return die(p, solo);
   });
@@ -99,7 +122,8 @@ export function step(state: GameState, inputs: TickInput): GameState {
     goldLeft,
     players: final,
     monks,
-    holes: aged.filter((h) => h.age < HOLE_LIFETIME),
+    holes: kept,
+    rubble,
     status,
   };
 }
@@ -128,8 +152,9 @@ export function playersAtExit(s: Pick<GameState, "tiles" | "goldLeft" | "players
  */
 function die(p: Player, solo: boolean): Player {
   const lives = p.lives - 1;
-  if (lives <= 0) return { ...p, lives: 0, mode: "out", timer: 0, busy: 0 };
-  return { ...p, lives, mode: "dead", timer: solo ? 0 : PLAYER_RESPAWN_TICKS, busy: 0 };
+  if (lives <= 0) return { ...p, lives: 0, mode: "out", timer: 0, busy: 0, drill: false };
+  const timer = solo ? 0 : PLAYER_RESPAWN_TICKS;
+  return { ...p, lives, mode: "dead", timer, busy: 0, drill: false };
 }
 
 /**

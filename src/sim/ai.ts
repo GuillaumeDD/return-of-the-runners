@@ -1,5 +1,6 @@
 import { TILE } from "../level/format";
 import { actorTile, isSolid, monkAt, type Terrain } from "./physics";
+import { rubbleAt } from "./tools";
 
 /**
  * Monk chase AI: the classic Lode Runner algorithm (from the 1982 game, as described in
@@ -35,10 +36,11 @@ export interface ChaseView {
 
 /**
  * Static tile: holes ignored, the exit and the tiles actors pass through (`actorTile`)
- * read as empty, outside the level as bedrock.
+ * read as empty, landed rubble and outside the level as bedrock.
  */
 function base(t: Terrain, x: number, y: number): string {
   if (x < 0 || y < 0 || x >= t.width || y >= t.height) return TILE.bedrock;
+  if (rubbleAt(t.rubble, x, y)) return TILE.bedrock;
   const c = actorTile(t.tiles[y]?.charAt(x) ?? TILE.bedrock);
   return c === TILE.exit ? TILE.empty : c;
 }

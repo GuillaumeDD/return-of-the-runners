@@ -6,16 +6,22 @@ import type { Player } from "./state";
  * Items and the item slot (S-016 @ 3:03–3:33). Items lie in cells of `tiles`, like
  * gold, and actors pass through them. Each player has one slot (`Player.item`, `""`
  * when empty). The pick-up key acts once per press: on an item, the player takes it and
- * leaves the item it held there (a swap); on an empty cell, it drops the held item. Keys
- * are the first items; tools come with their own items.
+ * leaves the item it held there (a swap); on an empty cell, it drops the held item. The
+ * items are the keys and the tools (`tools.ts`).
  *
  * A door is solid. A player carrying the key of its colour that stands next to it
  * (left, right, above or below its centre cell) opens it for good, and the key is used
  * up. Monks never take items.
  */
 
-/** The item tiles: each key. */
-export const ITEMS: ReadonlySet<string> = new Set([TILE.keyRed, TILE.keyGreen, TILE.keyBlue]);
+/** The item tiles: each key, and the tools (`tools.ts`). */
+export const ITEMS: ReadonlySet<string> = new Set([
+  TILE.keyRed,
+  TILE.keyGreen,
+  TILE.keyBlue,
+  TILE.jackhammer,
+  TILE.pickaxe,
+]);
 
 export function isItem(tile: string): boolean {
   return ITEMS.has(tile);

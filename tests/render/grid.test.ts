@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { gridCanvasSize, render, renderGrid, TILE_PX } from "../../src/render/canvas";
+import { HOLE_TICKS } from "../../src/sim/rules";
 import { stateFrom, withPlayer } from "../sim/helpers";
 
 /** Records the colour of every filled rectangle, keyed by its top-left pixel. */
@@ -162,5 +163,64 @@ describe("keys, doors and the exit", () => {
     const holding = recorder();
     render(holding.ctx, withPlayer(stateFrom(rows), { item: "b" }));
     expect(fillsIn(holding.fills, 0, 0)).toContain(GREEN);
+  });
+});
+
+describe("tools and rubble", () => {
+  const STEEL = "#b8c0cc";
+  const HANDLE = "#8b5a2b";
+  const RUBBLE = "#8a7866";
+  const BRICK = "#a0522d";
+  const BEDROCK = "#555";
+
+  it("a jackhammer and a pickaxe are drawn, in the game and the editor", () => {
+    const rows = ["Pj.k", "@@@@"];
+    for (const draw of [
+      (c: CanvasRenderingContext2D) => {
+        render(c, stateFrom(rows));
+      },
+      (c: CanvasRenderingContext2D) => {
+        renderGrid(c, rows);
+      },
+    ]) {
+      const { ctx, fills } = recorder();
+      draw(ctx);
+      expect(fillsIn(fills, 1, 0)).toContain(STEEL);
+      expect(fillsIn(fills, 3, 0)).toContain(HANDLE);
+    }
+  });
+
+  it("the tool a player holds is drawn in its hand", () => {
+    const rows = ["P...", "@@@@"];
+    for (const item of ["j", "k"]) {
+      const { ctx, fills } = recorder();
+      render(ctx, withPlayer(stateFrom(rows), { item }));
+      expect(fillsIn(fills, 0, 0), item).toContain(STEEL);
+    }
+  });
+
+  it("rubble is drawn where it is, falling rubble between two cells", () => {
+    const s = stateFrom(["P...", "....", "@@@@"]);
+    const { ctx, fills } = recorder();
+    render(ctx, { ...s, rubble: [{ cx: 2, y: 4, landed: -1 }] });
+    // Half a cell down (4 of 8 sub-units): its outline starts 1 px inside, at y = 12 + 1.
+    expect(fills.get(`${String(2 * TILE_PX + 1)},${String(TILE_PX / 2 + 1)}`)).toBeDefined();
+    expect(fillsIn(fills, 2, 0)).toContain(RUBBLE);
+  });
+
+  it("a hole drilled in bedrock is drawn as bedrock, a dug brick as brick", () => {
+    const s = stateFrom(["P...", "@#..", "@@@@"]);
+    // Closing holes: part of the cell shows again.
+    const age = HOLE_TICKS.digging + HOLE_TICKS.open + 20;
+    const { ctx, fills } = recorder();
+    render(ctx, {
+      ...s,
+      holes: [
+        { cx: 0, cy: 1, age },
+        { cx: 1, cy: 1, age },
+      ],
+    });
+    expect(fillsIn(fills, 0, 1)).toEqual([BEDROCK]);
+    expect(fillsIn(fills, 1, 1)).toEqual([BRICK]);
   });
 });

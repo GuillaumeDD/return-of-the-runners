@@ -322,6 +322,13 @@ gold is taken, and a door on the exit cell still needs its key.
 
 ### B-025 — Tools, part 1: slot, jackhammer, pickaxe
 
+_Done. As built: a new use key (V alone; M and F with two players) acts once per
+press. The jackhammer drills brick and bedrock, 100 ticks a cell (provisional), and
+each drilled cell is an ordinary hole, so the shaft refills behind and kills whoever
+stays in it. Pickaxe rubble falls one sub-unit a tick, lands solid like bedrock and
+crumbles after 420 ticks; while it falls it crushes monks and also players
+(provisional). Tools are never used up._
+
 - `src/sim/tools.ts`: tools use B-024's slot; "use" applies the held tool.
 - Jackhammer: the player rides it straight down, cell after cell (bedrock included),
   at about 5 tiles in 9 s (S-019 @ 2:33–2:43, to measure better); the shaft stays open

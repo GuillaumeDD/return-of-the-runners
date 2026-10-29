@@ -24,3 +24,10 @@ describe("brickLeft", () => {
     }
   });
 });
+
+describe("brickLeft of a drilled hole", () => {
+  it("stays a whole cell while its negative age counts up, then opens as a dug one", () => {
+    for (let age = -100; age <= 0; age++) expect(brickLeft(age)).toBe(1);
+    expect(brickLeft(HOLE_TICKS.digging)).toBe(0);
+  });
+});
