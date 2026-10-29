@@ -141,7 +141,7 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
   player in play holding the key of a door's colour, with the door next to its centre
   cell (left, right, above or below, in that order; not diagonally), opens it: the
   door becomes empty for good and the key is used up, so a key opens one door
-  (S-016 @ 3:30–3:33; used up: provisional). Every tick, after the pick-up.
+  (S-016 @ 3:30–3:33; used up: agreed by Guillaume, 2026-10-29). Every tick, after the pick-up.
 - A door cannot sit on the exit cell (one tile per cell): to keep the exit shut until
   a key is brought, the maker walls it in with doors.
 
@@ -531,9 +531,9 @@ as gameplay is implemented.
 | Exit                            | absent until the last gold is taken, then appears                                         | S-015 @ 1:22               |
 | Keys                            | carried in the item slot to the door of their colour                                      | S-016 @ 3:03–3:33          |
 | Item slot                       | one item; picking up another swaps them in place                                          | S-016 @ 3:03–3:05          |
-| Key used up on its door         | yes; one door per key                                                                     | **Provisional**, to check  |
-| Opening a door                  | the key holder next to it (side, above, below), not diagonal                              | **Provisional**            |
-| Item of a player who dies       | kept while it waits to reappear                                                           | **Provisional**            |
+| Key used up on its door         | yes; one door per key                                                                     | Guillaume, 2026-10-29      |
+| Opening a door                  | the key holder next to it (side, above, below), not diagonal                              | Guillaume, 2026-10-29      |
+| Item of a player who dies       | kept while it waits to reappear                                                           | Guillaume, 2026-10-29      |
 | Bombs                           | collected into a counter, fuse ≈ 2.5 s, chain reactions, blasted blocks back after ≈ 13 s | S-015 @ 1:05–1:24          |
 | Jackhammer                      | rides straight down through brick, ≈ 5 tiles in 9 s; tool kept                            | S-019 @ 2:33–2:43          |
 | Gas gun                         | cloud ≈ 2 tiles for ≈ 6 s; monks inside stuck; gun kept                                   | S-021 @ 0:54–1:04          |
