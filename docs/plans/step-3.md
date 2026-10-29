@@ -327,7 +327,9 @@ press. The jackhammer drills brick and bedrock, 100 ticks a cell (provisional), 
 each drilled cell is an ordinary hole, so the shaft refills behind and kills whoever
 stays in it. Pickaxe rubble falls one sub-unit a tick, lands solid like bedrock and
 crumbles after 420 ticks; while it falls it crushes monks and also players
-(provisional). Tools are never used up._
+(provisional). Tools are never used up. Guillaume agreed (2026-10-29) to rubble
+crushing players, the jackhammer drilling bedrock, and rubble never sealing gold, an
+item or the exit._
 
 - `src/sim/tools.ts`: tools use B-024's slot; "use" applies the held tool.
 - Jackhammer: the player rides it straight down, cell after cell (bedrock included),
