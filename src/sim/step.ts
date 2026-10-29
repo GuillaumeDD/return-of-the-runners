@@ -2,6 +2,7 @@ import { TILE } from "../level/format";
 import { centerCell, revealLadders, takeGold } from "./gold";
 import { HOLE_LIFETIME, holeAt, type Hole } from "./holes";
 import { NO_INPUT, type PlayerInput, type TickInput } from "./input";
+import { openDoor, pickUp } from "./items";
 import { inSight, stepMonks } from "./monks";
 import { inTransit, tryTeleport } from "./teleport";
 import { isFalling, overlapsCell, stepActor } from "./move";
@@ -13,9 +14,11 @@ import type { Actor, Facing, GameState, Monk, Player } from "./state";
  * Advances the game by one tick. Pure: returns a new state. `inputs[i]` drives player i
  * (missing: no input).
  *
- * Order within a tick: each player in order acts (dig or move) on the current terrain
- * and picks up the gold it touches; a dead player counts down, then reappears at its
- * start; a player that ends its move on a teleporter entrance jumps (see `teleport.ts`).
+ * Order within a tick: each player in order acts (dig or move) on the current terrain;
+ * a dead player counts down, then reappears at its start; a player that ends its move
+ * on a teleporter entrance jumps (see `teleport.ts`). A player in play then picks up,
+ * swaps or drops an item if it just pressed the pick-up key, opens a door next to it
+ * that its key fits (`items.ts`), and picks up the gold it touches.
  * Once the last gold is taken, hidden ladders appear. A player touching the open exit wins the level (`playersAtExit`). Unless it
  * was won, the monks then act in order, and a monk touching a player catches it. Then
  * holes age: a player or monk inside a hole that just filled dies (no player dies on
@@ -36,11 +39,17 @@ export function step(state: GameState, inputs: TickInput): GameState {
     const before = state.players[i];
     if (before === undefined) continue;
     const t: Terrain = { ...state, tiles, holes };
-    const acted = actPlayer(t, before, inputs[i] ?? NO_INPUT, tick, anyAlive);
-    let p = acted.player;
+    const input = inputs[i] ?? NO_INPUT;
+    const acted = actPlayer(t, before, input, tick, anyAlive);
+    let p: Player = { ...acted.player, pickHeld: input.pickUp };
     if (acted.hole !== null) holes = [...holes, acted.hole];
     if (p.mode === "alive") p = tryTeleport(state, p, state.monks);
     if (p.mode === "alive" && !inTransit(p)) {
+      // The pick-up key acts on the tick it is pressed, unless the player is digging.
+      if (input.pickUp && !before.pickHeld && p.busy === 0) {
+        ({ tiles, player: p } = pickUp(tiles, p));
+      }
+      ({ tiles, player: p } = openDoor(tiles, p));
       const { cx, cy } = centerCell(p);
       const taken = takeGold(tiles, cx, cy);
       if (taken !== null) {
@@ -167,8 +176,8 @@ function actPlayer(
  * Digs the brick diagonally below on the given side. The player digs from the cell
  * nearest to it and snaps onto it, since walking or climbing usually stops between two
  * tiles. It must not be falling; standing on a ladder or hanging on a bar is fine. The
- * target must be an undug brick whose cell above is empty or holds gold (TLR allows
- * digging under gold; the gold stays where it is). A brick, ladder, bar or monk above
+ * target must be an undug brick whose cell above is empty, the exit, or holds gold
+ * (TLR allows digging under gold; the gold stays where it is). A brick, ladder, bar or monk above
  * blocks; another player does not.
  */
 function tryDig(t: Terrain, a: Actor, input: PlayerInput): { runner: Actor; hole: Hole } | null {
@@ -183,7 +192,8 @@ function tryDig(t: Terrain, a: Actor, input: PlayerInput): { runner: Actor; hole
   const ty = cy + 1;
   if (tileAt(t, tx, ty) !== TILE.brick || holeAt(t.holes, tx, ty) !== undefined) return null;
   const above = tileAt(t, tx, cy);
-  if (above !== TILE.empty && above !== TILE.gold) return null;
+  // The exit counts as empty: it is not there until the gold is gone, and passable after.
+  if (above !== TILE.empty && above !== TILE.gold && above !== TILE.exit) return null;
   // A monk standing over the target blocks it (1982 rule).
   if (monkAt(t, tx, cy)) return null;
   return {

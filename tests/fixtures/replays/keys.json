@@ -1,0 +1,94 @@
+{
+  "about": "Keys and doors (B-024): the runner picks up the green key, swaps it for the red one, is stopped by the green door, swaps back and opens it (the key is used up), takes the gold, fetches the red key, opens the red door and leaves by the exit, which appeared with the last gold.",
+  "replay": {
+    "format": "return-of-the-runners/replay",
+    "version": 2,
+    "seed": 3,
+    "level": {
+      "format": "return-of-the-runners/level",
+      "version": 2,
+      "name": "Keys and doors",
+      "width": 14,
+      "height": 8,
+      "grid": [
+        "..............",
+        "..............",
+        "..............",
+        "..............",
+        "..............",
+        "P.b.a.B.$.A.E.",
+        "@@@@@@@@@@@@@@",
+        "@@@@@@@@@@@@@@"
+      ]
+    },
+    "inputs": [
+      [
+        [
+          32,
+          "R"
+        ],
+        [
+          1,
+          "I"
+        ],
+        [
+          1,
+          ""
+        ],
+        [
+          32,
+          "R"
+        ],
+        [
+          1,
+          "I"
+        ],
+        [
+          1,
+          ""
+        ],
+        [
+          60,
+          "R"
+        ],
+        [
+          16,
+          "L"
+        ],
+        [
+          1,
+          "I"
+        ],
+        [
+          1,
+          ""
+        ],
+        [
+          80,
+          "R"
+        ],
+        [
+          80,
+          "L"
+        ],
+        [
+          1,
+          "I"
+        ],
+        [
+          1,
+          ""
+        ],
+        [
+          120,
+          "R"
+        ]
+      ]
+    ]
+  },
+  "expected": {
+    "tick": 428,
+    "status": "won",
+    "hash": 768623722
+  }
+}

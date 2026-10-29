@@ -111,3 +111,56 @@ describe("teleporters", () => {
     expect(fillsIn(picked.fills, 0, 0)).toContain(SPARKLE);
   });
 });
+
+describe("keys, doors and the exit", () => {
+  const RED = "#e5484d";
+  const GREEN = "#46a758";
+  const OPEN = "#4caf50";
+
+  it("in the game: no exit while gold is left; it shows once the gold is gone", () => {
+    const rows = ["P.$E", "@@@@"];
+    const before = recorder();
+    render(before.ctx, stateFrom(rows));
+    expect(fillsIn(before.fills, 3, 0)).toEqual([]);
+    const after = recorder();
+    render(after.ctx, { ...stateFrom(rows), goldLeft: 0 });
+    expect(fillsIn(after.fills, 3, 0)).toContain(OPEN);
+  });
+
+  it("in the editor: the exit shows as an outline", () => {
+    const { ctx } = recorder();
+    let stroked = 0;
+    (ctx as unknown as { strokeRect: () => void }).strokeRect = () => {
+      stroked++;
+    };
+    renderGrid(ctx, ["P..E", "@@@@"]);
+    expect(stroked).toBe(1);
+  });
+
+  it("a key and a door are drawn in their colour, in the game and the editor", () => {
+    const rows = ["Pa.B", "@@@@"];
+    for (const draw of [
+      (c: CanvasRenderingContext2D) => {
+        render(c, stateFrom(rows));
+      },
+      (c: CanvasRenderingContext2D) => {
+        renderGrid(c, rows);
+      },
+    ]) {
+      const { ctx, fills } = recorder();
+      draw(ctx);
+      expect(fillsIn(fills, 1, 0)).toContain(RED);
+      expect(fillsIn(fills, 3, 0)).toContain(GREEN);
+    }
+  });
+
+  it("the key a player holds is drawn in its hand", () => {
+    const rows = ["P...", "@@@@"];
+    const empty = recorder();
+    render(empty.ctx, stateFrom(rows));
+    expect([...empty.fills.values()].flat()).not.toContain(GREEN);
+    const holding = recorder();
+    render(holding.ctx, withPlayer(stateFrom(rows), { item: "b" }));
+    expect(fillsIn(holding.fills, 0, 0)).toContain(GREEN);
+  });
+});

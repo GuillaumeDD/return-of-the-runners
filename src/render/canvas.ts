@@ -1,4 +1,4 @@
-import { TILE, type Teleport } from "../level/format";
+import { DOOR_KEY, TILE, type Teleport } from "../level/format";
 import { holeAt, holePhase } from "../sim/holes";
 import { HOLE_TICKS, SUB } from "../sim/rules";
 import type { GameState, Monk, Player } from "../sim/state";
@@ -35,6 +35,10 @@ const COLOR = {
   teleportOut: "#7fd8f0",
   sparkle: "#fff6c8",
   link: "#7fd8f0",
+  keyRed: "#e5484d",
+  keyGreen: "#46a758",
+  keyBlue: "#3e63dd",
+  keyhole: "#111",
   gridLine: "#222",
 } as const;
 
@@ -75,19 +79,40 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState): void {
 
 /**
  * A player: red while dead (waiting to reappear); a player who is out is not drawn,
- * unless the level is lost, when everyone shows where they fell.
+ * unless the level is lost, when everyone shows where they fell. The item it holds is
+ * drawn small, in its hand.
  */
 function drawPlayer(ctx: CanvasRenderingContext2D, p: Player, index: number, lost: boolean): void {
   if ((p.mode === "out" && !lost) || p.warp > 0) return;
   const dead = p.mode !== "alive";
-  drawRunner(ctx, p.x * PX_PER_SUB, p.y * PX_PER_SUB, p.facing, dead, index);
+  const x = p.x * PX_PER_SUB;
+  const y = p.y * PX_PER_SUB;
+  drawRunner(ctx, x, y, p.facing, dead, index);
+  const color = KEY_COLOR[p.item];
+  if (color !== undefined) {
+    ctx.fillStyle = color;
+    const hand = p.facing === 1 ? x + 17 : x + 1;
+    ctx.fillRect(hand, y + 10, 6, 2); // shaft
+    ctx.fillRect(p.facing === 1 ? hand + 4 : hand, y + 8, 2, 6); // bow
+  }
+}
+
+/** The colour of each key; a door has the colour of its key (`DOOR_KEY`). */
+const KEY_COLOR: Readonly<Record<string, string>> = {
+  [TILE.keyRed]: COLOR.keyRed,
+  [TILE.keyGreen]: COLOR.keyGreen,
+  [TILE.keyBlue]: COLOR.keyBlue,
+};
+
+function colorOf(tile: string): string {
+  return KEY_COLOR[DOOR_KEY[tile] ?? tile] ?? COLOR.keyRed;
 }
 
 /**
- * Draws a level grid as the editor shows it: tiles as in the game (exit locked), and
+ * Draws a level grid as the editor shows it: tiles as in the game, and
  * the player and monk start markers as the actors that will stand there. Tiles the game
  * hides are shown to the maker: trapdoor turf has a mark, a hidden ladder is dim, a monk
- * respawn point is a monk-coloured frame.
+ * respawn point is a monk-coloured frame, and the exit is an outline.
  */
 export function renderGrid(
   ctx: CanvasRenderingContext2D,
@@ -268,8 +293,33 @@ function drawTile(
       ctx.fillStyle = COLOR.gold;
       ctx.fillRect(x + 6, y + s - 10, s - 12, 8);
       break;
+    case TILE.keyRed:
+    case TILE.keyGreen:
+    case TILE.keyBlue:
+      // A key lying on its side: a ring, a shaft and two teeth.
+      ctx.fillStyle = colorOf(tile);
+      ctx.fillRect(x + 3, y + s - 12, 7, 2);
+      ctx.fillRect(x + 3, y + s - 6, 7, 2);
+      ctx.fillRect(x + 3, y + s - 12, 2, 8);
+      ctx.fillRect(x + 8, y + s - 12, 2, 8);
+      ctx.fillRect(x + 10, y + s - 9, 11, 2);
+      ctx.fillRect(x + 15, y + s - 7, 2, 3);
+      ctx.fillRect(x + 19, y + s - 7, 2, 3);
+      break;
+    case TILE.doorRed:
+    case TILE.doorGreen:
+    case TILE.doorBlue:
+      // A solid door of its key's colour, with a keyhole.
+      ctx.fillStyle = colorOf(tile);
+      ctx.fillRect(x, y, s, s);
+      ctx.fillStyle = COLOR.keyhole;
+      ctx.fillRect(x + 10, y + 7, 4, 4);
+      ctx.fillRect(x + 11, y + 11, 2, 6);
+      break;
     case TILE.exit:
-      // A door: an outline while locked, filled once all the gold is collected.
+      // Not there in the game until all the gold is collected (S-015 @ 1:22–1:23); the
+      // editor shows it as an outline.
+      if (!exitOpen && !editor) break;
       ctx.strokeStyle = exitOpen ? COLOR.exitOpen : COLOR.exitLocked;
       ctx.lineWidth = 2;
       ctx.strokeRect(x + 4, y + 2, s - 8, s - 3);

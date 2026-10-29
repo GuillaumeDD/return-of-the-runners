@@ -22,7 +22,8 @@ export const TILE_BASE = {
 /**
  * Every tile of version 2. The tiles added in v2 are reserved by the format first
  * (B-019); each gets its behavior, its drawing and its place in the editor palette in
- * a later step 3 item (so far: `Q`, the terrain of B-022 and the teleporters of B-023).
+ * a later step 3 item (so far: `Q`, the terrain of B-022, the teleporters of B-023,
+ * and the keys and doors of B-024).
  * Until then the game does not draw them, and they are neither solid nor climbable.
  */
 export const TILE = {
@@ -51,6 +52,13 @@ export const TILE = {
 } as const;
 
 export type TileChar = (typeof TILE)[keyof typeof TILE];
+
+/** The doors, each with the key that opens it (see `sim/items.ts`). */
+export const DOOR_KEY: Readonly<Partial<Record<string, string>>> = {
+  [TILE.doorRed]: TILE.keyRed,
+  [TILE.doorGreen]: TILE.keyGreen,
+  [TILE.doorBlue]: TILE.keyBlue,
+};
 
 export const TILE_CHARS: ReadonlySet<string> = new Set(Object.values(TILE));
 

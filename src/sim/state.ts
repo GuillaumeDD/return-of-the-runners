@@ -56,6 +56,10 @@ export interface Player extends Actor {
   /** Where the player starts and reappears, in sub-units. */
   readonly startX: number;
   readonly startY: number;
+  /** The item in the player's slot (an item tile, `items.ts`); `""` when empty. */
+  readonly item: string;
+  /** The pick-up key was held last tick: a held key acts only on the tick it is pressed. */
+  readonly pickHeld: boolean;
 }
 
 /**
@@ -137,6 +141,8 @@ export function newPlayer(cx: number, cy: number): Player {
     gold: 0,
     startX: x,
     startY: y,
+    item: "",
+    pickHeld: false,
   };
 }
 

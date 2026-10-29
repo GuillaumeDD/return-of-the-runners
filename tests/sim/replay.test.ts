@@ -25,6 +25,7 @@ describe("committed replays (Node)", () => {
     expect(fixtures.map((f) => f.name)).toEqual([
       "coop-monks",
       "first-steps-random",
+      "keys",
       "monk-trap-respawn",
       "teleport",
       "terrain",
@@ -46,6 +47,21 @@ describe("committed replays (Node)", () => {
     const end = runReplay(f.replay).state;
     expect(end.tiles.map((r) => r.charAt(12)).slice(1, 7)).toEqual(Array(6).fill("H"));
     expect(end.status).toBe("won");
+  });
+
+  it("keys: the green door opens on the second try, the red one at the end", () => {
+    const f = fixtures.find((x) => x.name === "keys");
+    if (f === undefined) throw new Error("missing keys");
+    const at = (ticks: number) =>
+      runReplay({
+        ...f.replay,
+        inputs: f.replay.inputs.map((log) => encodeInputs(decodeInputs(log).slice(0, ticks))),
+      }).state;
+    // Holding the red key, stopped at the green door.
+    const stopped = at(130);
+    expect([stopped.players[0]?.item, stopped.tiles[5]]).toEqual(["a", "....b.B.$.A.E."]);
+    const end = runReplay(f.replay).state;
+    expect([end.status, end.players[0]?.item, end.tiles[5]]).toEqual(["won", "", "............E."]);
   });
 
   it("teleport: the monk, then the runner, go through a teleporter", () => {
@@ -109,13 +125,14 @@ function dropLastTick(log: InputLog): InputLog {
   return [...log.slice(0, -1), ...(last[0] > 1 ? [[last[0] - 1, last[1]] as const] : [])];
 }
 
-const ALL_INPUTS: PlayerInput[] = Array.from({ length: 64 }, (_, bits) => ({
+const ALL_INPUTS: PlayerInput[] = Array.from({ length: 128 }, (_, bits) => ({
   left: (bits & 1) !== 0,
   right: (bits & 2) !== 0,
   up: (bits & 4) !== 0,
   down: (bits & 8) !== 0,
   digLeft: (bits & 16) !== 0,
   digRight: (bits & 32) !== 0,
+  pickUp: (bits & 64) !== 0,
 }));
 
 describe("runReplay", () => {
@@ -157,9 +174,9 @@ describe("runReplay", () => {
 });
 
 describe("input log encoding", () => {
-  it("encodes keys in canonical order, and decodes them back, for all 64 inputs", () => {
+  it("encodes keys in canonical order, and decodes them back, for all 128 inputs", () => {
     expect(encodeKeys(NO_INPUT)).toBe("");
-    expect(encodeKeys(ALL_INPUTS[63] ?? NO_INPUT)).toBe("LRUD<>");
+    expect(encodeKeys(ALL_INPUTS[127] ?? NO_INPUT)).toBe("LRUD<>I");
     for (const input of ALL_INPUTS) expect(decodeKeys(encodeKeys(input))).toEqual(input);
   });
 
@@ -180,7 +197,7 @@ describe("input log encoding", () => {
     for (let i = 0; i < 200; i++) {
       const inputs = Array.from(
         { length: randInt(rng, 300) },
-        () => ALL_INPUTS[randInt(rng, 4) === 0 ? randInt(rng, 64) : 0] ?? NO_INPUT,
+        () => ALL_INPUTS[randInt(rng, 4) === 0 ? randInt(rng, 128) : 0] ?? NO_INPUT,
       );
       expect(decodeInputs(encodeInputs(inputs))).toEqual(inputs);
     }
@@ -322,7 +339,7 @@ describe("parseReplay", () => {
   it("never throws on random mutations of a valid replay", () => {
     const valid = text({});
     const rng = makeRng(11);
-    const chars = '{}[]",:0123456789-.LRUD<>aZ ';
+    const chars = '{}[]",:0123456789-.LRUD<>IaZ ';
     for (let i = 0; i < 2000; i++) {
       let s = valid;
       for (let k = 0; k <= randInt(rng, 4); k++) {

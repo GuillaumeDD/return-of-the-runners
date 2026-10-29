@@ -276,7 +276,8 @@ _Done. As built: the jump is not on the next tick but after `TELEPORT_TICKS` (0.
 the delay seen in S-025 @ 0:04–0:05; the actor waits at the exit, unseen and safe. A
 chain cannot happen (an exit cell is never an entrance), so its test was dropped.
 Monks use teleporters; the AI does not plan through them. The link tool is in the
-palette, after the tiles._
+palette, after the tiles. Guillaume agreed (2026-10-29) to the delay and to monks
+chasing a player in transit._
 
 - Stepping fully into an entrance moves the actor to its linked exit on the next tick;
   exits do nothing when entered. Monks use them too (to confirm), the AI does not plan
@@ -291,6 +292,12 @@ standing on it) delays the jump; a chain (exit on an entrance) jumps once per ti
 undo restores links; `toLevel` output always validates.
 
 ### B-024 — Item slot, keys, doors and exit
+
+_Done. As built: a new pick-up key (C alone; comma and R with two players) picks up,
+swaps or drops, once per press. A key opens the first door of its colour next to the
+player and is used up (provisional). A door cannot share the exit's cell in the level
+format (one tile per cell), so "a door on the exit cell" became an exit walled in by a
+door, and its test checks that. A player who dies keeps its item (provisional)._
 
 - `src/sim/items.ts`: one item slot per player; "pick up" takes the item in the
   player's cell and leaves the held one there (swap, S-016 @ 3:03–3:05); with nothing to

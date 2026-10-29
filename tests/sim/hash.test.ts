@@ -67,6 +67,9 @@ describe("hashState", () => {
       { gold: 1 },
       { startX: p.startX + 1 },
       { startY: p.startY + 1 },
+      { item: "a" },
+      { item: "b" },
+      { pickHeld: true },
     ];
     for (const v of variants) expect(hashState(withPlayer(base, v))).not.toBe(hashState(base));
     const swapped = { ...base, players: [...base.players].reverse() };
@@ -92,6 +95,8 @@ describe("hashState", () => {
       status: base.status,
       players: [
         {
+          pickHeld: p1(base).pickHeld,
+          item: p1(base).item,
           startY: p1(base).startY,
           startX: p1(base).startX,
           gold: p1(base).gold,
@@ -156,5 +161,5 @@ describe("hashState with monks", () => {
   });
 });
 
-const COMMITTED_MONK_HASH = 371611291;
-const COMMITTED_HASH = 2917665088;
+const COMMITTED_MONK_HASH = 3085721787;
+const COMMITTED_HASH = 1201140032;
