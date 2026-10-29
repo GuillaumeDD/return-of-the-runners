@@ -481,7 +481,7 @@ as gameplay is implemented.
 | Gas gun                         | cloud ≈ 2 tiles for ≈ 6 s; monks inside stuck; gun kept                                   | S-021 @ 0:54–1:04          |
 | Two-player race                 | mirrored halves, exits appear with the gold, first out wins                               | S-025                      |
 | Versus end                      | first player out wins                                                                     | S-025 @ 0:04–1:24          |
-| Versus gold and exits           | shared, as in co-op (any gold, any exit); both out on the same tick: draw                 | **Provisional**, to check  |
+| Versus gold and exits           | shared, as in co-op (any gold, any exit); both out on the same tick: draw                 | Guillaume, 2026-10-29      |
 | Versus deaths                   | as in co-op: own lives, respawn at the start; a player can bury the other                 | **Provisional**, to check  |
 | Co-op end                       | won when one player exits; a dead player alone restarts, on their own lives               | S-100 (2026-10-27)         |
 | Lives at start (two players)    | 5 each (status bar shows 05 for both)                                                     | S-026 @ 0:01               |
