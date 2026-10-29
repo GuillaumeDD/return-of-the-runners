@@ -299,7 +299,9 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
   below it. The AI reads static tiles, so a hole looks like brick and monks walk into
   it. Like the original, the same-row check ignores walls: a monk on the runner's row
   presses against a wall rather than going around it. A randomized test checks the AI
-  against a naive reference implementation.
+  against a naive reference implementation. When the AI says "down" from a column with
+  no ladder or bar (a pit, trapdoor turf), a monk not yet on that column walks to it,
+  then falls (`monks.ts`, `toColumn`; B-038).
 - **Holes** (`monks.ts`): a monk aligned in an open hole is `trapped` for
   `MONK_TICKS.trapped`, then `escaping`: it climbs to the row above and walks off
   sideways, without falling back in (walled in on both sides, it falls back in). It

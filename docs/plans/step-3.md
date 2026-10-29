@@ -1,7 +1,7 @@
 # Step 3 plan: TLR specifics (terrain, tools, two players)
 
 Status: **approved** (PR #28). Roadmap: `docs/PRD.md` §7, step 3.
-Backlog items: B-019 to B-029 (B-029 is a bug fix found in play). Source ids (`S-…`) refer to [`../SOURCES.md`](../SOURCES.md).
+Backlog items: B-019 to B-029 (B-029 is a bug fix found in play), and B-038, a fix found later. Source ids (`S-…`) refer to [`../SOURCES.md`](../SOURCES.md).
 
 ## Goal
 
@@ -414,6 +414,26 @@ like B-022's gooey turf; it does not block digging the cell under it (to confirm
 - a runner standing on the hole keeps the monk in place and alive until the hole
   refills, then the monk dies and the runner is unharmed;
 - once the runner steps off, the held monk climbs out and leaves.
+
+### B-038 — Fix: a monk stops at the edge of a pit
+
+- Found while testing the new default level (2026-10-29): a monk whose way to the
+  runner was down a one-cell pit, or through trapdoor turf, stopped at the edge and
+  never moved again. The AI picks "down" from the monk's centre column, but the shared
+  movement rules only move an actor off its grid line toward a ladder or a bar, so the
+  monk, still half on the floor, neither moved nor fell.
+- `src/sim/monks.ts` (`toColumn`): a monk told to go down, not aligned on that column
+  and with no ladder or bar there, walks to the column instead; once there, it falls.
+  The AI itself (`ai.ts`) is unchanged.
+- The `terrain` replay depended on the bug (its monk stood at the edge of the hidden
+  ladder's shaft): re-recorded so the runner still traps it and it still reappears at
+  the respawn point.
+
+`tests/sim/monk.test.ts`
+
+- a monk walks to the column of a pit and drops through it to the runner below, coming
+  from the right and from the left;
+- the same through trapdoor turf.
 
 ## Open questions (faithfulness)
 
