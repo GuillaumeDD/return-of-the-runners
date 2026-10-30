@@ -414,8 +414,9 @@ _Done._
   front of the player (`GOO_CELLS`) becomes gooey turf for the rest of the level, and
   the bucket is used up (S-022 @ 3:16–3:17). A monk walking into goo is slowed to
   `GOO_PERIOD`, which reads as stuck (S-022 @ 3:19–3:36). The goo stops at a wall, a
-  gap, a ladder, a door, a hole, a crater or rubble (provisional). Bucket goo is gooey
-  turf, so it cannot be dug (provisional; the plan had left digging open).
+  gap, a ladder, a door, a hole, a crater or rubble, and is not thrown from a bar
+  (provisional). Bucket goo is gooey turf, so it cannot be dug, cratered by a small
+  bomb or drilled (provisional; the plan had left digging open).
 - Drawing: the bucket in a cell and in the player's hand; the editor palette and the
   tile name (EN + FR).
 
@@ -426,9 +427,10 @@ _Done._
   is busy `GOO_THROW_TICKS`, its own floor is untouched; thrown the way it faces;
 - bedrock and goo are covered too; the goo stays for the rest of the level;
 - stops at a wall or the level's edge; at a gap, a ladder or a door under the cell; at
-  a hole, even one still being dug, which it does not fill;
-- kept when nothing can take goo (against a wall), while falling, or while busy
-  digging; nothing with an empty slot; one throw per press;
+  a hole, even one still being dug, which it does not fill; at a crater and at landed
+  rubble;
+- kept when nothing can take goo (against a wall), while falling, on a bar, or while
+  busy digging; nothing with an empty slot; one throw per press;
 - the runner walks on it at `GOO_PERIOD`; a monk crossing it is far slower than on
   brick; it cannot be dug.
 

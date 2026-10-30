@@ -219,14 +219,16 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
   for the rest of the level (S-022 @ 3:16–3:17, where it spreads over about half a
   second; here it appears at once). The player snaps onto its cell and is busy
   `GOO_THROW_TICKS` (45, 0.75 s).
-- The goo runs outward from the cell next to the player and stops at the first cell an
+- The player must not hang on a bar (S-022 only shows a throw from a floor). The goo
+  runs outward from the cell next to the player and stops at the first cell an
   actor cannot stand in (a wall, the level's edge), or whose floor is not intact brick,
   bedrock or goo: a gap, a ladder, a door, a hole (even one still being dug), a crater
   or rubble. When not even the first cell can take goo, nothing happens and the bucket
   is kept. These limits are provisional: S-022 only shows goo thrown on a plain floor.
 - The goo is ordinary gooey turf (see Terrain): runners and monks walk on it at
-  `GOO_PERIOD`, which is how a monk "gets stuck" in it (S-022 @ 3:19–3:36), it cannot
-  be dug (provisional), and a big blast destroys it.
+  `GOO_PERIOD`, which is how a monk "gets stuck" in it (S-022 @ 3:19–3:36). The brick
+  or bedrock under it is gone: the goo cannot be dug, cratered by a small bomb or
+  drilled with the jackhammer (provisional), and a big blast destroys it.
 
 ### Bombs
 
@@ -683,8 +685,8 @@ as gameplay is implemented.
 | Rubble on a player              | crushes it, like a monk                                                                   | Guillaume, 2026-10-29      |
 | Rubble on gold, items, exit     | never rests there: crumbles instead of sealing them                                       | Guillaume, 2026-10-29      |
 | Goo bucket                      | the floor under the 3 cells in front turns to goo for good; one use; slows monks          | S-022 @ 3:16–3:17, @ 3:36  |
-| Goo bucket: where               | stops at a wall, a gap, a ladder, a hole, rubble or a door; covers bedrock                | **Provisional**            |
-| Goo bucket: digging             | bucket goo is gooey turf: it cannot be dug                                                | **Provisional**, to check  |
+| Goo bucket: where               | stops at a wall, gap, ladder, hole, rubble or door; covers bedrock; not from a bar        | **Provisional**            |
+| Goo bucket: digging             | bucket goo is gooey turf: no digging, no small-bomb crater, no drilling                   | **Provisional**, to check  |
 | Teleporter                      | step in, reappear at the linked spot ≈ 0.5–1 s later (45 ticks, 0.75 s)                   | S-025; Guillaume, 10-29    |
 | Teleporter: monks, blocked exit | monks use them; a monk on the exit delays the jump                                        | **Provisional**, to check  |
 | Teleporter: player in transit   | monks keep chasing it, toward its exit                                                    | Guillaume, 2026-10-29      |

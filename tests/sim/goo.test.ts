@@ -89,7 +89,28 @@ describe("the goo bucket", () => {
     expect([t.tiles[1], p1(t).item]).toEqual(["########", TILE.gooBucket]);
   });
 
-  it("is kept when nothing can take goo: against a wall, while falling, or busy", () => {
+  it("stops at a crater and at landed rubble", () => {
+    const base = stateFrom(["P.......", "########"]);
+    const cratered = { ...base, craters: [{ cx: 2, cy: 1, left: 100 }] };
+    expect(stepOne(bucket(cratered), use).tiles[1]).toBe("#~######");
+    // Rubble resting in a hole of the floor: the cell reads as bedrock, not brick.
+    const rubbled = {
+      ...base,
+      holes: [{ cx: 3, cy: 1, age: HOLE_TICKS.digging }],
+      rubble: [{ cx: 3, y: SUB, landed: 0 }],
+    };
+    expect(stepOne(bucket(rubbled), use).tiles[1]).toBe("#~~#####");
+  });
+
+  it("is not thrown from a bar", () => {
+    // A bar right over the floor: from the floor beside it, the throw would cover it.
+    const s = withPlayer(bucket(stateFrom(["P-......", "########"])), { x: SUB });
+    const t = stepOne(s, use);
+    expect([t.tiles[1], p1(t).item]).toEqual(["########", TILE.gooBucket]);
+    expect(stepOne(bucket(stateFrom(["P-......", "########"])), use).tiles[1]).toBe("#~~~####");
+  });
+
+  it("is kept when nothing can take goo: against a wall, while falling, or busy digging", () => {
     const wall = thrown(["P#......", "########"]);
     expect([wall.floor, p1(wall.s).item, p1(wall.s).busy]).toEqual(["########", TILE.gooBucket, 0]);
     const falling = withPlayer(bucket(stateFrom(["P...", "....", "####"])), { y: 2 });
