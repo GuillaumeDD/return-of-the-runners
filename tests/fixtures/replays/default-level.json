@@ -1,5 +1,5 @@
 {
-  "about": "The default level (B-039), won by one player with its monk in play. The runner lays a small bomb against the brick wall; the blast kills the monk behind it. It takes the gold and the red key across gooey turf while the monk, back from the respawn point and down through trapdoor turf, is held off by the wall. Upstairs, it opens the red door, digs a hole the monk walks into and stands on it until it refills. It drills through bedrock with the jackhammer into the pocket of gold (the monk, falling through the trapdoor again, dies in the refilling shaft), takes the teleporter up and the last gold, and outruns the monk up the hidden ladder to the exit.",
+  "about": "The default level (B-039), won by one player with its monk in play. The runner lays a small bomb against the brick wall; the blast kills the monk behind it. It takes the gold and the red key across gooey turf while the monk, back from the respawn point and down through trapdoor turf, is held off by the wall. Upstairs, it opens the red door, digs a hole the monk walks into and stands on it until it refills. It drills through bedrock with the jackhammer into the pocket of gold (the monk, falling through the trapdoor again, dies in the refilling shaft), takes the teleporter up and the last gold, and outruns the monk up the hidden ladder to the exit. The snare, gas gun and goo bucket lie in the level for players to try; the runner does not pick them up.",
   "replay": {
     "format": "return-of-the-runners/replay",
     "version": 2,
@@ -15,17 +15,17 @@
         ".............R.............h",
         "..............-------......h",
         "...........................h",
-        "...o...........n..$..$.O..th",
+        "...o...........n..$.u$.O..th",
         "@@%@@@@@~~~~~#########@@@@@@",
         "..............@.............",
         "......------..@.............",
         "..............@.............",
-        "..j......$....A..k.M......T.",
+        "..j......$..g.A..k.M......T.",
         "@@@@@H################H#####",
         ".@.@.H.#..............H.....",
         ".@$@.H.#..............H.....",
         "..H..H.#..............H.....",
-        ".P.QoH.#.$.a.....n....H..$..",
+        ".P.QoH.#.$.a.s...n....H..$..",
         "@@@@@@@@@@@@~~~~@@####@@@@@@"
       ],
       "teleports": [
@@ -165,6 +165,6 @@
   "expected": {
     "tick": 3194,
     "status": "won",
-    "hash": 1734820013
+    "hash": 391391250
   }
 }
