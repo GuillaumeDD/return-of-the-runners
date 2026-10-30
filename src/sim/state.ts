@@ -74,7 +74,10 @@ export interface Player extends Actor {
   readonly pickHeld: boolean;
   /** The use key was held last tick (as `pickHeld`). */
   readonly useHeld: boolean;
-  /** Drilling down with a jackhammer (`tools.ts`): goes on after each fall. */
+  /**
+   * Drilling the cell below with a jackhammer (`tools.ts`), busy until it opens; letting
+   * go of the use key stops it.
+   */
   readonly drill: boolean;
   /**
    * The bombs this player carries (`bombs.ts`), one bomb tile each, in the order they
