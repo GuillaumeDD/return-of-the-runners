@@ -6,7 +6,10 @@ import {
   drawSprite,
   frameAt,
   frameKey,
+  AUTOTILED,
   MAX_ROW,
+  SLAB_VARIANTS,
+  slabKey,
   type SpriteDef,
   type Surface,
   TILE_ART,
@@ -60,9 +63,18 @@ const def = (
 describe("TILE_ART", () => {
   it("lists every tile of the format, each with a sprite or a placeholder (null)", () => {
     expect(new Set(Object.keys(TILE_ART))).toEqual(TILE_CHARS);
+    const keys = new Set(SPRITES.map((s) => s.key));
     for (const tile of TILE_CHARS) {
       const art = tileArt(tile);
-      expect(art === null || SPRITES.some((s) => s.key === art)).toBe(true);
+      if (art === null) continue;
+      if (!AUTOTILED.has(art)) {
+        expect(keys).toContain(art);
+        continue;
+      }
+      // An autotiled family has a sprite for every neighbour mask and texture variant.
+      for (let mask = 0; mask < 16; mask++) {
+        for (let v = 0; v < SLAB_VARIANTS; v++) expect(keys).toContain(slabKey(art, mask, v));
+      }
     }
   });
 

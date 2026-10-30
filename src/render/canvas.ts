@@ -16,7 +16,8 @@ import {
   poseSprite,
   RUNNER_ANIMS,
 } from "./actors";
-import { drawSprite, type SpriteSheet, tileArt } from "./sprites";
+import { drawSprite, DUG_STAGES, dugStage, type SpriteSheet, tileArt } from "./sprites";
+import { cellSprite, slabOf } from "./terrain";
 
 /** No art: everything is drawn as a placeholder. */
 const NO_ART: SpriteSheet = { scale: 1, image: null, frames: new Map() };
@@ -120,16 +121,21 @@ export function render(
   drawTiles(state.tiles, (tile, cx, cy, x, y) => {
     const hole = holeAt(state.holes, cx, cy);
     const crater = craterAt(state.craters, cx, cy);
-    if (crater !== undefined) drawHole(ctx, tile, craterLeft(crater.left), x, y);
-    else if (hole === undefined) drawTileArt(ctx, sheet, tile, x, y, exitOpen);
-    else drawHole(ctx, tile, brickLeft(hole.age), x, y);
+    if (crater !== undefined) drawHole(ctx, sheet, tile, craterLeft(crater.left), x, y);
+    else if (hole === undefined) {
+      drawTileArt(ctx, sheet, state.tiles, cx, cy, x, y, exitOpen);
+    } else drawHole(ctx, sheet, tile, brickLeft(hole.age), x, y);
   });
   for (const r of state.rubble) drawRubble(ctx, r);
   for (const n of state.snares) drawArmedSnare(ctx, n);
   for (const f of state.fuses) drawLitBomb(ctx, f);
   state.monks.forEach((m, i) => {
-    drawMonk(ctx, m, state.tick, () =>
-      drawActorSprite(ctx, sheet, monkPose(state, motion, i), time, m.x, m.y),
+    drawMonk(
+      ctx,
+      m,
+      state.tick,
+      () => drawActorSprite(ctx, sheet, monkPose(state, motion, i), time, m.x, m.y),
+      sheet,
     );
   });
   // Actors in a teleporter show as a sparkle at the exit.
@@ -137,8 +143,13 @@ export function render(
     if (a.warp > 0) drawSparkle(ctx, a.x * PX_PER_SUB, a.y * PX_PER_SUB);
   }
   state.players.forEach((p, i) => {
-    drawPlayer(ctx, p, i, state.status === "dead", () =>
-      drawActorSprite(ctx, sheet, playerPose(state, motion, i), time, p.x, p.y),
+    drawPlayer(
+      ctx,
+      p,
+      i,
+      state.status === "dead",
+      () => drawActorSprite(ctx, sheet, playerPose(state, motion, i), time, p.x, p.y),
+      sheet,
     );
   });
   for (const c of state.clouds) drawCloud(ctx, c);
@@ -235,6 +246,7 @@ function drawPlayer(
   index: number,
   lost: boolean,
   sprite: () => boolean,
+  sheet: SpriteSheet = NO_ART,
 ): void {
   if ((p.mode === "out" && !lost) || p.warp > 0) return;
   const dead = p.mode !== "alive";
@@ -245,6 +257,14 @@ function drawPlayer(
   const drawn = sprite();
   ctx.globalAlpha = 1;
   if (!drawn) drawRunner(ctx, x, y, p.facing, dead, index, p.hidden);
+  if (p.item === "") return;
+  // The item it holds, small, in its hand: its art when there is some.
+  if (
+    drawn &&
+    drawSmall(ctx, sheet, tileArt(p.item), p.facing === 1 ? x + 11 : x - 1, y + 4, 0.5)
+  ) {
+    return;
+  }
   const hand = p.facing === 1 ? x + 17 : x + 1;
   const color = KEY_COLOR[p.item];
   if (color !== undefined) {
@@ -323,14 +343,14 @@ export function renderGrid(
   const size = gridCanvasSize(grid);
   ctx.fillStyle = COLOR.background;
   ctx.fillRect(0, 0, size.width, size.height);
-  drawTiles(grid, (tile, _cx, _cy, x, y) => {
+  drawTiles(grid, (tile, cx, cy, x, y) => {
     if (tile === TILE.runnerStart) {
       if (!drawStill(ctx, sheet, "runner1", x, y, 1)) drawRunner(ctx, x, y, 1, false, 0);
     } else if (tile === TILE.player2Start) {
       if (!drawStill(ctx, sheet, "runner2", x, y, 1)) drawRunner(ctx, x, y, 1, false, 1);
     } else if (tile === TILE.monkStart) {
       if (!drawStill(ctx, sheet, "monk", x, y, -1)) drawMonkAt(ctx, x, y, -1, false);
-    } else drawTileArt(ctx, sheet, tile, x, y, false, true);
+    } else drawTileArt(ctx, sheet, grid, cx, cy, x, y, false, true);
   });
   // Faint cell lines, so empty cells can be aimed at.
   ctx.fillStyle = COLOR.gridLine;
@@ -413,11 +433,18 @@ export function brickLeft(age: number): number {
  */
 function drawHole(
   ctx: CanvasRenderingContext2D,
+  sheet: SpriteSheet,
   tile: string,
   left: number,
   x: number,
   y: number,
 ): void {
+  const slab = slabOf(tile) ?? "soft";
+  const stage = dugStage(left);
+  if (stage === 0) return;
+  // A whole brick in a hole (dug from below, or about to be dug) is a plain slab.
+  const key = stage === DUG_STAGES ? `slab:${slab}:15:0` : `dug:${slab}:${String(stage)}`;
+  if (drawSprite(ctx, sheet, key, x, y)) return;
   const h = Math.round(TILE_PX * left);
   if (h === 0) return;
   ctx.fillStyle = tile === TILE.bedrock ? COLOR.bedrock : COLOR.brick;
@@ -431,18 +458,27 @@ function drawHole(
 function drawTileArt(
   ctx: CanvasRenderingContext2D,
   sheet: SpriteSheet,
-  tile: string,
+  rows: readonly string[],
+  cx: number,
+  cy: number,
   x: number,
   y: number,
   exitOpen: boolean,
   editor = false,
 ): void {
+  const tile = rows[cy]?.charAt(cx) ?? TILE.empty;
   const hidden = !editor && (tile === TILE.hiddenLadder || (tile === TILE.exit && !exitOpen));
-  if (hidden || !drawSprite(ctx, sheet, tileArt(tile), x, y)) {
+  // The editor shows what the game hides, faded: a hidden ladder, the exit before the gold.
+  const faded = editor && (tile === TILE.hiddenLadder || tile === TILE.exit);
+  if (faded) ctx.globalAlpha = 0.45;
+  const drawn = !hidden && drawSprite(ctx, sheet, cellSprite(rows, cx, cy), x, y);
+  ctx.globalAlpha = 1;
+  if (!drawn) {
     drawTile(ctx, tile, x, y, exitOpen, editor);
-  } else if (editor && tile === TILE.trapdoor) {
-    drawTrapdoorMark(ctx, x, y);
+    return;
   }
+  if (tile === TILE.gooeyTurf) drawSprite(ctx, sheet, "goo-coat", x, y);
+  if (editor && tile === TILE.trapdoor) drawTrapdoorMark(ctx, x, y);
 }
 
 function drawTrapdoorMark(ctx: CanvasRenderingContext2D, x: number, y: number): void {
@@ -650,6 +686,24 @@ function drawActorSprite(
   return drawn;
 }
 
+/** Sprite `key` shrunk by `scale`, its top-left corner at (x, y); false without art. */
+function drawSmall(
+  ctx: CanvasRenderingContext2D,
+  sheet: SpriteSheet,
+  key: string | null,
+  x: number,
+  y: number,
+  scale: number,
+): boolean {
+  if (key === null || !sheet.frames.has(key)) return false;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(scale, scale);
+  const drawn = drawSprite(ctx, sheet, key, 0, 0);
+  ctx.restore();
+  return drawn;
+}
+
 /** An actor standing still at pixel (x, y), as the editor shows a start marker. */
 function drawStill(
   ctx: CanvasRenderingContext2D,
@@ -723,13 +777,18 @@ function drawMonk(
   m: Monk,
   tick: number,
   sprite: () => boolean = () => false,
+  sheet: SpriteSheet = NO_ART,
 ): void {
   if (m.mode === "dead" || m.warp > 0) return;
   const x = m.x * PX_PER_SUB;
   const y = m.y * PX_PER_SUB;
   if (sprite()) {
-    if (m.carry > 0 && m.mode !== "snared") {
-      // The gold it carries, held over its head (gold art: B-033).
+    if (
+      m.carry > 0 &&
+      m.mode !== "snared" &&
+      !drawSmall(ctx, sheet, "gold:plain", x + 5, y - 16, 0.6)
+    ) {
+      // The gold it carries, held over its head.
       ctx.fillStyle = COLOR.gold;
       ctx.fillRect(x + 7, y - 5, 10, 4);
     }
