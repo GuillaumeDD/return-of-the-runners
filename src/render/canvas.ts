@@ -294,12 +294,30 @@ function drawPlayer(
   const dead = p.mode !== "alive";
   const x = p.x * PX_PER_SUB;
   const y = p.y * PX_PER_SUB;
-  // A hiding runner is drawn in shadow.
-  if (p.hidden) ctx.globalAlpha = 0.45;
+  // A hiding runner is drawn in shadow, and so is the item in its hand.
+  const shadow = p.hidden ? HIDDEN_ALPHA : 1;
+  ctx.globalAlpha = shadow;
   const drawn = sprite();
   ctx.globalAlpha = 1;
   if (!drawn) drawRunner(ctx, x, y, p.facing, dead, index, p.hidden);
   if (p.item === "") return;
+  ctx.globalAlpha = shadow;
+  drawHeldItem(ctx, sheet, p, x, y, drawn);
+  ctx.globalAlpha = 1;
+}
+
+/** How opaque a runner hiding in an alcove is drawn. */
+const HIDDEN_ALPHA = 0.45;
+
+/** The item a player holds, small, in its hand at pixel (x, y). */
+function drawHeldItem(
+  ctx: CanvasRenderingContext2D,
+  sheet: SpriteSheet,
+  p: Player,
+  x: number,
+  y: number,
+  drawn: boolean,
+): void {
   // The item it holds, small, in its hand: its art when there is some.
   if (
     drawn &&
