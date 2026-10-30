@@ -1,6 +1,7 @@
 # Step 4 plan, part A: the look (art direction, sprites, worlds)
 
-Status: **proposed** (awaiting Guillaume's review). Roadmap: `docs/PRD.md` §7, step 4.
+Status: **approved**; direction chosen by Guillaume on 2026-10-30: the illustrated
+diorama (B-030, style guide in ARCHITECTURE § Art direction). Roadmap: `docs/PRD.md` §7, step 4.
 Backlog items: B-030 to B-036. Source ids (`S-…`) refer to [`../SOURCES.md`](../SOURCES.md).
 
 ## Goal
@@ -78,9 +79,9 @@ so they compare like for like.
    neon accents. The most readable and the quickest to produce, but the furthest from
    TLR.
 
-Leaning (to confirm on the mockups): **2**, with direction 1's light and particles. It
-keeps the painted feel of TLR, scales to any screen, and can be drawn and maintained in
-code review. Guillaume chooses; the mockups decide, not this paragraph.
+Leaning before the mockups: **2**, with direction 1's light and particles. It keeps the
+painted feel of TLR, scales to any screen, and can be drawn and maintained in code
+review. Guillaume chose it on the mockups on 2026-10-30.
 
 Common to all three, because it is what "modern" means in 2026–27 beyond the style:
 

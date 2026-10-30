@@ -430,6 +430,57 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
   anything else is play. The game loop and its key listeners run only while the play
   screen is shown; coming back resumes the same game without catch-up ticks.
 
+## Art direction
+
+Chosen by Guillaume on 2026-10-30 from the B-030 mockups (`plans/step-4.md` § The
+mockups): the **illustrated diorama**, with light from the neo-pixel direction. This is
+the style guide for B-031 to B-036; the mockup code (`tools/mockup/`) is its reference
+drawing, not production code. Items marked _provisional_ were not part of the choice and
+wait for Guillaume's playtest.
+
+- **Medium.** Vectors and procedural textures in code (seeded noise, never
+  `Math.random`), rasterized at load to sprite sheets at the canvas's device pixel
+  ratio. No image is traced or extracted from the original game; every asset has its
+  `ASSETS.md` entry.
+- **Sizes.** Art is drawn in a 32-unit tile, scaled to the screen with
+  `devicePixelRatio` (crisp, never upscaled from a smaller bitmap). Actors are about
+  24 units tall and 12 to 16 wide (half a tile, as in TLR, S-014 @ 3:00); items fit the
+  bottom half of their tile, gold under 20 × 10.
+- **Layers, back to front.** Painted backdrop (dimmed by 25 %, low contrast); terrain
+  with a soft drop shadow (blur 14, offset 3 × 6) onto the backdrop; ladders and bars;
+  items; monks; runners; effects; additive light; a vignette (up to 42 % black at the
+  corners).
+- **Terrain.** One slab per connected region of the same material: outer corners
+  rounded (radius 8), a lit top edge (5 units), a lighter left and darker right edge,
+  a shaded bottom edge. Diggable blocks show a faint seam per cell; bedrock is heavier
+  and darker, with a bevel. Gooey turf is a glossy magenta coat with drips, in every
+  world (_provisional_).
+- **Outlines.** Actors and items get a dark outline (1.5 units, `rgba(20,10,5,0.85)`) so
+  they read on any backdrop; terrain gets none.
+- **Light.** Gold is the brightest thing on screen (warm glow, radius about 30); the
+  exit, teleporters (cyan entrance, violet exit) and the runner's lamp glow too; lava
+  worlds add a warm light from below. Light never changes what the state shows.
+- **Palettes.** Each world owns one terrain colour and a dim backdrop of the same hue.
+  Moss: moss greens `#2f6b25` → `#a6d867`, top edge `#c8f27a`, grey stone bedrock, a
+  jungle backdrop `#1c3a24` → `#0b1c12`. Lava: rock `#8a3a14` → `#f2a35e`, pale crust
+  `#ffd9a0`, dark basalt bedrock, a cave and lava river `#3a0f08` → `#1a0503`. The
+  other eight worlds land with B-035, in the same pattern.
+- **Actors** (_provisional_, with the hero names, PRD § Open questions). Runner 1:
+  white suit, cyan helmet with a lamp. Runner 2: lavender suit, pink scarf. They differ
+  by silhouette as well as colour. Monks: red hooded robes with glowing yellow eyes,
+  the loudest colour in every world.
+- **Keys and doors** differ by shape and colour: red circle, green square, blue
+  triangle.
+- **Animations** (B-032), picked from the simulation state and the render frame's time,
+  never fed back: idle, run (8 frames), climb (4), hand over hand on a bar (4), fall
+  (2), dig left and right (4), die, respawn; monks also trapped, climbing out,
+  carrying gold, snared, dazed. Facing flips the sprite, not the frame list.
+- **Frame and HUD** (B-036). A riveted dark metal frame; a status bar at the bottom, as
+  in TLR (_provisional_, open question 1 of the plan): per player lives, score, item
+  slot and bombs, the level number in the middle, between carved spirals.
+- **Reduced motion.** Under `prefers-reduced-motion`: no screen shake, no flashes, a
+  quarter of the particles; idle loops and glows stay still.
+
 ## Level format
 
 Code: `src/level/format.ts` (types, tile alphabet, limits) and `src/level/parse.ts`
