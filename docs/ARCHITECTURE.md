@@ -152,17 +152,22 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
 ### Tools
 
 - `tools.ts`: the jackhammer `j` and the pickaxe `k` are items (see above), used from
-  the slot with the use key (`PlayerInput.use`), once per press (`Player.useHeld`).
+  the slot with the use key (`PlayerInput.use`), once per press (`Player.useHeld`); the
+  jackhammer instead works for as long as the key is held.
   Using an empty slot or a key does nothing; nothing works while falling, busy, in
   transit or dead, nor from a spot where snapping to the nearest cell would leave the
   player falling (as for digging). Tools are never used up (S-019, S-021).
-- **Jackhammer** (S-019 @ 2:28–2:43): the player snaps onto its nearest cell and drills
+- **Jackhammer** (S-019 @ 2:28–2:43): only while the use key is held (Guillaume,
+  2026-10-30). The player snaps onto its nearest cell and drills
   the cell below if it is brick or bedrock, inside the level, not already dug, and no
   monk is in it (a ladder, a door, gooey turf or an empty cell stop it). The drilled
   cell is an ordinary hole that starts at a negative age, so it stays solid for
   `DRILL_TICKS` (100) instead of `HOLE_TICKS.digging` while the player waits
-  (busy); then it opens, the player falls in, and `Player.drill` makes it drill the
-  next cell on landing, until it cannot or no longer holds the jackhammer. The shaft refills behind like any hole, bedrock
+  (busy, `Player.drill`); then it opens and the player falls in. Still holding the key,
+  it drills the next cell on landing, and so on until the cell below cannot be drilled.
+  Let go before a cell opens, the drill stops: that cell stays solid (its hole is
+  dropped) and the player can move at once. Held while walking, it drills as soon as
+  the player stands over a drillable cell. The shaft refills behind like any hole, bedrock
   included, and kills whoever is still in a cell when it fills; monks can fall into it
   and are trapped as in a dug hole.
 - **Pickaxe** (S-021 @ 0:06–0:15): the cell in front of the player (`facing`) must be
@@ -667,6 +672,7 @@ as gameplay is implemented.
 | Bomb victims                    | every monk and player in play whose centre is in the blast                                | **Provisional**            |
 | Jackhammer                      | rides straight down through brick, ≈ 5 tiles in 9 s; tool kept                            | S-019 @ 2:33–2:43          |
 | Jackhammer through bedrock      | drills bedrock too, as brick                                                              | Guillaume, 2026-10-29      |
+| Jackhammer control              | drills only while the use key is held; let go, it stops                                   | Guillaume, 2026-10-30      |
 | Jackhammer timing               | 100 ticks a cell, then falls in; the shaft refills like a dug hole                        | **Provisional**, to check  |
 | Gas gun                         | cloud ≈ 3 cells in front for ≈ 6.5 s; monks inside stuck; gun kept; clouds can stack      | S-021 @ 0:53–1:05          |
 | Gas: daze after the cloud       | ≈ 2.5 s, stars over the monk's head                                                       | S-021 @ 1:01–1:03.5        |
