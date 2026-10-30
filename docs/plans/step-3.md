@@ -1,7 +1,7 @@
 # Step 3 plan: TLR specifics (terrain, tools, two players)
 
 Status: **approved** (PR #28). Roadmap: `docs/PRD.md` §7, step 3.
-Backlog items: B-019 to B-029 (B-029 is a bug fix found in play), then B-038 (a fix found later), B-039 (the default level) and B-042 (a fix from Guillaume's playtest). Source ids (`S-…`) refer to [`../SOURCES.md`](../SOURCES.md).
+Backlog items: B-019 to B-029 (B-029 is a bug fix found in play), then B-038 (a fix found later), B-039 (the default level), B-040 and B-042 (fixes from Guillaume's playtest). Source ids (`S-…`) refer to [`../SOURCES.md`](../SOURCES.md).
 
 ## Goal
 
@@ -323,7 +323,7 @@ gold is taken, and a door on the exit cell still needs its key.
 ### B-025 — Tools, part 1: slot, jackhammer, pickaxe
 
 _Done. As built: a new use key (V alone; M and F with two players) acts once per
-press. The jackhammer drills brick and bedrock, 100 ticks a cell (provisional), and
+press (the jackhammer: while held, since B-040). The jackhammer drills brick and bedrock, 100 ticks a cell (provisional), and
 each drilled cell is an ordinary hole, so the shaft refills behind and kills whoever
 stays in it. Pickaxe rubble falls one sub-unit a tick, lands solid like bedrock and
 crumbles after 420 ticks; while it falls it crushes monks and also players
@@ -494,6 +494,27 @@ Tests:
   bundled level stays winnable;
 - `tests/level/file.test.ts`: the "no `teleports` field" export check uses a fixture
   without teleporters, since the bundled level now has one.
+
+### B-040 — Fix: the jackhammer drills only while the key is held
+
+- Found by Guillaume in play (2026-10-30): one press of the use key drilled all the way
+  down. He wants the jackhammer active only while the key is held.
+- `src/sim/step.ts`: the jackhammer starts whenever the use key is held (not only on a
+  press) and the player is free, so a player holding it drills again each time it lands;
+  letting go while a cell is being drilled drops that cell's hole (it stays solid) and
+  frees the player at once. `Player.drill` now only marks a cell being drilled;
+  `keepDrilling` is gone.
+- The `tools` and `default-level` replays now hold the key while drilling; both end on
+  the same tick, status and hash as before.
+
+`tests/sim/tools.test.ts`
+
+- held, the jackhammer drills brick then bedrock and stops on a ladder;
+- let go mid-cell: no hole, the brick is whole, the player walks off;
+- let go once a cell opened: the player falls in and drills no further; held again, it
+  goes on;
+- held while walking: it drills once the player is over a drillable cell;
+- dropping the jackhammer while holding the key stops the drill.
 
 ### B-042 — Fix: the pickaxe needs a ceiling
 
