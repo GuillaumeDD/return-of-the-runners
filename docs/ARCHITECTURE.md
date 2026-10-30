@@ -211,6 +211,23 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
   after its move, may walk into a snare or be dazed; the clouds then thin out, after
   the monks and before the holes age.
 
+### Goo bucket
+
+- `goo.ts`: the goo bucket `u` is an item, used up on its first throw. The use key
+  (not while falling or busy) throws the goo along the player's row: the floor under
+  each of the `GOO_CELLS` (3) cells in front turns into **gooey turf** `~` in `tiles`,
+  for the rest of the level (S-022 @ 3:16–3:17, where it spreads over about half a
+  second; here it appears at once). The player snaps onto its cell and is busy
+  `GOO_THROW_TICKS` (45, 0.75 s).
+- The goo runs outward from the cell next to the player and stops at the first cell an
+  actor cannot stand in (a wall, the level's edge), or whose floor is not intact brick,
+  bedrock or goo: a gap, a ladder, a door, a hole (even one still being dug), a crater
+  or rubble. When not even the first cell can take goo, nothing happens and the bucket
+  is kept. These limits are provisional: S-022 only shows goo thrown on a plain floor.
+- The goo is ordinary gooey turf (see Terrain): runners and monks walk on it at
+  `GOO_PERIOD`, which is how a monk "gets stuck" in it (S-022 @ 3:19–3:36), it cannot
+  be dug (provisional), and a big blast destroys it.
+
 ### Bombs
 
 - `bombs.ts`: small bombs `o` and big bombs `O` lie in cells of `tiles` and read as
@@ -441,9 +458,8 @@ step 3 item (B-020 to B-028, see [`plans/step-3.md`](plans/step-3.md)). Done so 
 `Q` (B-020), the terrain `% ~ h R n` (B-022, see Terrain), the teleporters `T t`
 (B-023, see Teleporters), the keys and doors `a b c A B C` (B-024, see Items, keys
 and doors), the tools `j k` (B-025, see Tools) and the bombs `o O` (B-026, see
-Bombs). Until then the game does
-not draw a tile, and it is neither solid nor climbable: nothing in the editor palette
-places one, but an imported v2 file may hold some.
+Bombs), the snare and gas gun `s g` (B-027, see Snares and gas) and the goo bucket
+`u` (B-028, see Goo bucket): every tile now has its behavior and its palette entry.
 
 | Rule              | Limit                                                             | Error code                                  |
 | ----------------- | ----------------------------------------------------------------- | ------------------------------------------- |
@@ -666,7 +682,9 @@ as gameplay is implemented.
 | Pickaxe rubble                  | falls 1 sub-unit a tick, lands solid as bedrock, crumbles after 420 ticks (7 s)           | **Provisional**, to check  |
 | Rubble on a player              | crushes it, like a monk                                                                   | Guillaume, 2026-10-29      |
 | Rubble on gold, items, exit     | never rests there: crumbles instead of sealing them                                       | Guillaume, 2026-10-29      |
-| Goo bucket                      | goo 2–3 cells in front, rest of the level; one use; stops monks                           | S-022 @ 3:16, @ 3:36       |
+| Goo bucket                      | the floor under the 3 cells in front turns to goo for good; one use; slows monks          | S-022 @ 3:16–3:17, @ 3:36  |
+| Goo bucket: where               | stops at a wall, a gap, a ladder, a hole, rubble or a door; covers bedrock                | **Provisional**            |
+| Goo bucket: digging             | bucket goo is gooey turf: it cannot be dug                                                | **Provisional**, to check  |
 | Teleporter                      | step in, reappear at the linked spot ≈ 0.5–1 s later (45 ticks, 0.75 s)                   | S-025; Guillaume, 10-29    |
 | Teleporter: monks, blocked exit | monks use them; a monk on the exit delays the jump                                        | **Provisional**, to check  |
 | Teleporter: player in transit   | monks keep chasing it, toward its exit                                                    | Guillaume, 2026-10-29      |

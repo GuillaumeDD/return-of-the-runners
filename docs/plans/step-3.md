@@ -408,12 +408,36 @@ Done (2026-10-29), measured on S-018 and S-021 at 2 frames per second.
 
 ### B-028 — Goo bucket
 
-- Using the bucket covers the floor in front of the player with goo, about 2–3 cells
-  wide, for the rest of the level; the bucket is used up (S-022 @ 3:16–3:17). A monk
-  walking into goo gets stuck (S-022 @ 3:36).
+_Done._
 
-`tests/sim/goo.test.ts`: goo is placed only on solid floor; it slows monks and players
-like B-022's gooey turf; it does not block digging the cell under it (to confirm).
+- `src/sim/goo.ts`: the use key throws the bucket's goo; the floor under the 3 cells in
+  front of the player (`GOO_CELLS`) becomes gooey turf for the rest of the level, and
+  the bucket is used up (S-022 @ 3:16–3:17). A monk walking into goo is slowed to
+  `GOO_PERIOD`, which reads as stuck (S-022 @ 3:19–3:36). The goo stops at a wall, a
+  gap, a ladder, a door, a hole, a crater or rubble (provisional). Bucket goo is gooey
+  turf, so it cannot be dug (provisional; the plan had left digging open).
+- Drawing: the bucket in a cell and in the player's hand; the editor palette and the
+  tile name (EN + FR).
+
+`tests/sim/goo.test.ts`
+
+- picked up and swapped like any item;
+- the floor under the 3 cells in front turns to goo, the bucket is used up, the player
+  is busy `GOO_THROW_TICKS`, its own floor is untouched; thrown the way it faces;
+- bedrock and goo are covered too; the goo stays for the rest of the level;
+- stops at a wall or the level's edge; at a gap, a ladder or a door under the cell; at
+  a hole, even one still being dug, which it does not fill;
+- kept when nothing can take goo (against a wall), while falling, or while busy
+  digging; nothing with an empty slot; one throw per press;
+- the runner walks on it at `GOO_PERIOD`; a monk crossing it is far slower than on
+  brick; it cannot be dug.
+
+`tests/render/grid.test.ts`: the bucket is drawn in a cell (game and editor) and in
+the player's hand. `tests/editor/keys.test.ts`: the palette holds the bucket.
+
+`tests/fixtures/replays/goo.json`: the runner throws goo in front of a monk, fetches the
+gold and climbs away; `replay.test.ts` checks that with the same inputs and no bucket
+the monk catches the runner.
 
 ### B-029 — Fix: a runner on a hole holds the monk in it
 

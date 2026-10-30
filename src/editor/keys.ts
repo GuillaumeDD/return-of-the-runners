@@ -32,6 +32,7 @@ export const PALETTE: readonly { readonly tile: TileChar; readonly name: Message
   { tile: TILE.bigBomb, name: "tileBigBomb" },
   { tile: TILE.snare, name: "tileSnare" },
   { tile: TILE.gasSpray, name: "tileGasSpray" },
+  { tile: TILE.gooBucket, name: "tileGooBucket" },
 ];
 
 /**
