@@ -1,7 +1,9 @@
 {
   "format": "return-of-the-runners/level",
-  "version": 2,
+  "version": 3,
   "name": "First steps",
+  "world": "moss",
+  "night": false,
   "width": 28,
   "height": 16,
   "grid": [

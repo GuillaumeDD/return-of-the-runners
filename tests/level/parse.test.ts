@@ -28,9 +28,11 @@ describe("parseLevel: valid fixtures", () => {
       "grid",
       "height",
       "name",
+      "night",
       "teleports",
       "version",
       "width",
+      "world",
     ]);
   });
 });
@@ -69,6 +71,8 @@ describe("parseLevel: invalid fixtures", () => {
       "no-gold",
       "no-exit",
       "too-many-monks",
+      "invalid-world",
+      "invalid-night",
     ]) {
       expect(covered, code).toContain(code);
     }

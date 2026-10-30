@@ -7,7 +7,7 @@ export const LEVEL_FILE_EXTENSION = ".rotr.json";
 const MAX_FILE_STEM = 60;
 
 /**
- * The exported file of a level: its exact v2 document, pretty-printed (two spaces, one
+ * The exported file of a level: its exact v3 document, pretty-printed (two spaces, one
  * grid row and one teleporter link per line, a final newline) so it reads well in a
  * text editor and diffs cleanly.
  */

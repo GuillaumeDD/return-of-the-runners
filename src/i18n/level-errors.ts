@@ -30,6 +30,8 @@ export const LEVEL_ERROR_MESSAGE: Readonly<Record<LevelErrorCode, MessageKey>> =
   "teleport-not-exit": "errTeleportNotExit",
   "teleport-duplicate": "errTeleportDuplicate",
   "teleport-unlinked": "errTeleportUnlinked",
+  "invalid-world": "errInvalidWorld",
+  "invalid-night": "errInvalidNight",
   "unreadable-file": "errUnreadableFile",
   "too-long": "errTooLong",
   "not-base64": "errNotBase64",

@@ -1,14 +1,16 @@
 import { LEVEL_FORMAT_ID, LEVEL_FORMAT_VERSION, type LevelDraft } from "./format";
 
 /**
- * The v2 document of a level (or a draft), fields in their canonical order. `teleports`
- * is written only when the level has some.
+ * The current (v3) document of a level (or a draft), fields in their canonical order.
+ * `teleports` is written only when the level has some.
  */
 export function levelDocument(level: LevelDraft): Record<string, unknown> {
   return {
     format: LEVEL_FORMAT_ID,
     version: LEVEL_FORMAT_VERSION,
     name: level.name,
+    world: level.world,
+    night: level.night,
     width: level.width,
     height: level.height,
     grid: level.grid,
@@ -24,5 +26,7 @@ export function draftOf(level: LevelDraft): LevelDraft {
     height: level.height,
     grid: level.grid,
     teleports: level.teleports,
+    world: level.world,
+    night: level.night,
   };
 }

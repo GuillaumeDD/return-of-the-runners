@@ -21,7 +21,7 @@ import type { Level, LevelErrorCode } from "./level/format";
 import { parseLevel } from "./level/parse";
 import { decodeLevel } from "./share/link";
 import firstSteps from "./levels/first-steps.json?raw";
-import { BACKGROUND, canvasSize, context2d, render } from "./render/canvas";
+import { canvasSize, context2d, fillBackdrop, render } from "./render/canvas";
 import { detectEvents, drawEffects, type Effect, shakeAt, updateEffects } from "./render/effects";
 import { fitCanvas } from "./render/scale";
 import { type Motion, trackMotion } from "./render/actors";
@@ -233,11 +233,14 @@ function createGame(
     const reduced = reducedMotion.matches;
     const shake = shakeAt(effects, now, reduced);
     const size = canvasSize(session.state);
-    context.fillStyle = BACKGROUND; // what a shaken scene uncovers at the edges
+    const sheet = sheetAt(scale, level.world);
+    const scene = { world: level.world, night: level.night };
+    // What a shaken scene uncovers at the edges.
+    fillBackdrop(context, size.width, size.height, sheet, scene);
     context.fillRect(0, 0, size.width, size.height);
     context.save();
     context.translate(shake.x, shake.y);
-    render(context, session.state, sheetAt(scale), now, motion);
+    render(context, session.state, sheet, now, motion, scene);
     drawEffects(context, effects, now, reduced);
     context.restore();
     frameId = requestAnimationFrame(frame);
@@ -280,6 +283,8 @@ const editor = createEditorView(
     canvas: byId("editor-grid", HTMLCanvasElement),
     palette: byId("editor-palette", HTMLDivElement),
     name: byId("editor-name", HTMLInputElement),
+    world: byId("editor-world", HTMLSelectElement),
+    night: byId("editor-night", HTMLInputElement),
     width: byId("editor-width", HTMLInputElement),
     height: byId("editor-height", HTMLInputElement),
     undo: byId("editor-undo", HTMLButtonElement),
@@ -289,6 +294,8 @@ const editor = createEditorView(
     errorList: byId("editor-error-list", HTMLUListElement),
     labels: {
       name: byId("editor-name-label", HTMLSpanElement),
+      world: byId("editor-world-label", HTMLSpanElement),
+      night: byId("editor-night-label", HTMLSpanElement),
       width: byId("editor-width-label", HTMLSpanElement),
       height: byId("editor-height-label", HTMLSpanElement),
       hint: byId("editor-hint", HTMLParagraphElement),

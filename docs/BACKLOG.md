@@ -4,7 +4,7 @@ Scoped work items. Ideas start in the Growth section of `docs/PRD.md`.
 Each item lands in its own commit, which also flips its status here.
 Step 1 (B-004 to B-010) is planned in [`plans/step-1.md`](plans/step-1.md), step 2 (B-011 to
 B-017) in [`plans/step-2.md`](plans/step-2.md), step 3 (B-019 to B-029, then B-038 to B-042) in
-[`plans/step-3.md`](plans/step-3.md), step 4 part A, the look (B-030 to B-036), in
+[`plans/step-3.md`](plans/step-3.md), step 4 part A, the look (B-030 to B-036, then B-043 to B-045), in
 [`plans/step-4.md`](plans/step-4.md), each with its delivery order.
 
 Statuses: `todo` / `in-progress` / `done`.
@@ -45,7 +45,7 @@ Statuses: `todo` / `in-progress` / `done`.
 | B-032 | Runners and monks                                       | Two distinct runners and monks, animated for every action (run, climb, bar, fall, dig, die, trapped, snared…); one animation per action (tested)            | done   |
 | B-033 | Terrain and items (Moss world)                          | Every v2 tile and step 3 item drawn; hole refill stages shown; keys and doors differ by shape and colour                                                    | done   |
 | B-034 | Effects                                                 | Dust, sparkle, blasts, gas, teleport, death; capped (randomized); off or reduced under `prefers-reduced-motion`                                             | done   |
-| B-035 | Worlds and day/night                                    | Ten world sets and backdrops, night variant; format v3 `world`/`night` with v2 → v3 migration and fixtures; editor picker (EN + FR)                         | todo   |
+| B-035 | Worlds and day/night                                    | Format v3 `world`/`night`, v2 → v3 migration and fixtures; editor picker (EN + FR); ten world palettes by day and by night, terrain and backdrop            | done   |
 | B-036 | Frame, HUD and editor                                   | Framed playfield and status bar per player in the chosen style; editor palette shows the art; strings EN + FR                                               | todo   |
 | B-037 | Fix: touching a cell favours moving right               | Reaching a cell (gold, exit, monk) takes the same distance both ways (today 1 sub-unit less to the right); a mirrored race is a draw; regression test       | todo   |
 | B-038 | Fix: a monk stops at the edge of a pit                  | A monk whose way down is a pit or trapdoor turf walks to its column and drops, from either side; regression test; affected replays re-recorded              | done   |
@@ -55,3 +55,4 @@ Statuses: `todo` / `in-progress` / `done`.
 | B-042 | Fix: the pickaxe needs a ceiling                        | Rubble only comes down when the cell above the target is solid (level top counts, a dug cell does not); regression test; replays still win                  | done   |
 | B-043 | Fix: a hiding runner's item is in shadow too            | Hidden in an alcove, the item in hand (key, tool, spray…) is drawn at the runner's opacity, with art or placeholders; regression test                       | done   |
 | B-044 | Rubble, laid snare and lit bomb drawn                   | Pickaxe rubble (fading before it crumbles), a laid snare and a lit bomb with a glowing spark use the Moss art; placeholders without art                     | done   |
+| B-045 | World backdrops and details                             | Painted backdrop per world, by day and by night; world details on the terrain (icicles, crystals, rivets…); dimmed and low contrast as in the style guide   | todo   |
