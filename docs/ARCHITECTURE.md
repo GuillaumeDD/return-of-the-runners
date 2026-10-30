@@ -9,7 +9,7 @@ in [`../CLAUDE.md`](../CLAUDE.md).
 | ------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------ |
 | Language      | TypeScript (`strict`)                  | Pinned to 6.0.x: `typescript-eslint` 8.x supports TS < 6.1                                       |
 | Build / dev   | Vite                                   | `base: "/return-of-the-runners/"` for GitHub Pages                                               |
-| Rendering     | Canvas 2D, 640×480 logical resolution  | Scaled with `image-rendering: pixelated`                                                         |
+| Rendering     | Canvas 2D, 24 px tiles (logical)       | Backing store sized to device pixels (`render/scale.ts`); art drawn in code (`sprites.ts`)       |
 | Audio         | WebAudio                               | (step 4)                                                                                         |
 | Unit tests    | Vitest                                 | `tests/**/*.test.ts`; tests have their own `tsconfig` with Node types, which `src/` does not get |
 | Browser tests | Playwright                             | `e2e/`: replay determinism and share links in Chromium, Firefox and WebKit                       |
@@ -421,8 +421,16 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
   above the play and test canvases; switching restarts the level. The last choice
   applies to the next game. The message under the canvas gives each mode's controls
   and goal, and how the level ended (in versus: the winner, or a draw).
-- The renderer draws the state with placeholder shapes, `TILE_PX = 24` pixels per tile
-  (3 per sub-unit); the canvas is sized to the level and scaled by CSS.
+- The renderer draws the state in logical pixels, `TILE_PX = 24` a tile (3 per
+  sub-unit). `render/scale.ts` sizes each canvas's backing store to the device pixels
+  it covers (its CSS width × `devicePixelRatio`, rounded down to whole device pixels a
+  tile, at most ×4), nudges the CSS width to match so a canvas pixel is one device
+  pixel, and refits on resize; drawing goes through a scale transform.
+- `render/sprites.ts` draws the art in code once per scale into a sprite sheet (one
+  offscreen canvas, no image request) and copies frames from it. `TILE_ART` names each
+  tile's sprite; a tile or actor without art, or a sprite whose drawing fails, falls
+  back to the placeholder shapes of `render/canvas.ts`. Animation frames come from
+  render time only (`frameAt`), never from or into the simulation.
 - Bundled levels go through `parseLevel` like any imported level.
 - **Screens** (`app/route.ts`): the URL hash picks the screen, so the back button works
   without a server. `#edit` is the editor, `#level=<payload>` a shared level (of any

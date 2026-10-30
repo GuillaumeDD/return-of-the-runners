@@ -37,8 +37,7 @@ header p,
 }
 
 canvas {
-  /* Keep pixel art crisp when scaled. */
-  image-rendering: pixelated;
+  /* Sized to the device pixels it covers (render/scale.ts): never upscaled. */
   width: min(100%, 1344px);
   height: auto;
   background: #111;
@@ -115,6 +114,8 @@ button {
 }
 
 .palette canvas {
+  /* Palette swatches stay 24 × 24 bitmaps: keep them sharp when zoomed. */
+  image-rendering: pixelated;
   width: 24px;
   height: 24px;
 }
