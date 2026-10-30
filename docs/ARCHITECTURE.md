@@ -489,9 +489,10 @@ wait for Guillaume's playtest.
   snared (2, upside down), dazed (2, eyes half shut). An actor counts as moving for
   `STILL_AFTER` ticks after its last step (the slowest gait, on goo), so a walker never
   flickers to idle between steps; standing still holds frame 0. Facing mirrors the
-  sprite, not the frame list. A hiding runner is drawn at 45 % opacity. Poses are
-  _provisional_; the respawn flash belongs to the effects (B-034). A monk's carried
-  gold is drawn small over its head, a runner's item in hand at half size in front.
+  sprite, not the frame list. A hiding runner is drawn at 45 % opacity, and so is the
+  item in its hand. Poses are _provisional_; the respawn flash belongs to the effects
+  (B-034). A monk's carried gold is drawn small over its head, a runner's item in hand
+  at half size in front.
 - **Terrain and items** (B-033, `render/terrain.ts`, drawn by `render/art/tiles.ts`,
   Moss world). Slabs are autotiled: brick, trapdoor turf and gooey turf form one
   diggable slab, bedrock another; each cell's sprite depends on which of its four
