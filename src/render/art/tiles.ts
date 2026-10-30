@@ -551,3 +551,60 @@ export function drawGooBucket(ctx: CanvasRenderingContext2D): void {
   ctx.lineWidth = 1.5;
   ctx.stroke();
 }
+
+/**
+ * Pickaxe rubble: a heap of broken stones filling the cell, lighter on top (seeded, the
+ * same heap every load).
+ */
+export function drawRubble(ctx: CanvasRenderingContext2D): void {
+  const rand = prng(0x5eed42);
+  const stones: [number, number, number][] = [];
+  for (let row = 0; row < 4; row++) {
+    for (let col = 0; col < 4; col++) {
+      const r = 4.2 + rand() * 1.6;
+      const x = 4 + col * 8 + (rand() - 0.5) * 3 + (row % 2) * 2;
+      const y = 6 + row * 7.5 + (rand() - 0.5) * 2;
+      stones.push([x, y, r]);
+    }
+  }
+  for (const [x, y, r] of stones) {
+    ctx.beginPath();
+    // A stone: an irregular pentagon.
+    for (let k = 0; k < 5; k++) {
+      const a = (k / 5) * TAU + rand() * 0.5;
+      const d = r * (0.8 + rand() * 0.3);
+      const px = x + Math.cos(a) * d;
+      const py = y + Math.sin(a) * d * 0.85;
+      if (k === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    const g = ctx.createLinearGradient(x, y - r, x, y + r);
+    const light = Math.round(150 - y * 1.6 + rand() * 20);
+    g.addColorStop(0, `rgb(${String(light + 20)},${String(light + 8)},${String(light - 10)})`);
+    g.addColorStop(1, `rgb(${String(light - 40)},${String(light - 48)},${String(light - 60)})`);
+    finish(ctx, g, 1.2);
+  }
+}
+
+/** A snare laid on the floor: an open noose of rope pegged at both ends. */
+export function drawSetSnare(ctx: CanvasRenderingContext2D): void {
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.ellipse(16, 29, 12, 2.6, 0, 0, TAU);
+  ctx.strokeStyle = OUTLINE;
+  ctx.lineWidth = 3.6;
+  ctx.stroke();
+  ctx.strokeStyle = "#c8a165";
+  ctx.lineWidth = 2.2;
+  ctx.stroke();
+  for (const x of [4, 28]) {
+    ctx.beginPath();
+    ctx.rect(x - 1.5, 25, 3, 6);
+    finish(ctx, "#6b4a2a", 1);
+  }
+  // The slip knot.
+  ctx.beginPath();
+  ctx.arc(16, 26.6, 1.8, 0, TAU);
+  finish(ctx, "#e0c08a", 1);
+}

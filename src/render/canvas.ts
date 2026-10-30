@@ -1,7 +1,7 @@
 import { DOOR_KEY, TILE, type Teleport } from "../level/format";
 import { blastCells, type Blast, type Fuse } from "../sim/bombs";
 import { craterAt, holeAt, holePhase } from "../sim/holes";
-import { BLAST_TICKS, HOLE_TICKS, SUB } from "../sim/rules";
+import { BLAST_TICKS, HOLE_TICKS, RUBBLE_TICKS, SUB } from "../sim/rules";
 import type { GameState, Monk, Player } from "../sim/state";
 import type { Cloud } from "../sim/gas";
 import type { Snare } from "../sim/snares";
@@ -126,9 +126,26 @@ export function render(
       drawTileArt(ctx, sheet, state.tiles, cx, cy, x, y, exitOpen);
     } else drawHole(ctx, sheet, tile, brickLeft(hole.age), x, y);
   });
-  for (const r of state.rubble) drawRubble(ctx, r);
-  for (const n of state.snares) drawArmedSnare(ctx, n);
-  for (const f of state.fuses) drawLitBomb(ctx, f);
+  for (const r of state.rubble) {
+    const x = r.cx * TILE_PX;
+    const y = r.y * PX_PER_SUB;
+    // Landed rubble fades over its last ticks, as it crumbles.
+    ctx.globalAlpha = r.landed < 0 ? 1 : Math.min(1, (RUBBLE_TICKS - r.landed) / RUBBLE_FADE);
+    const drawn = drawSprite(ctx, sheet, "rubble", x, y);
+    ctx.globalAlpha = 1;
+    if (!drawn) drawRubble(ctx, r);
+  }
+  for (const n of state.snares) {
+    if (!drawSprite(ctx, sheet, "snare:set", n.cx * TILE_PX, n.cy * TILE_PX)) {
+      drawArmedSnare(ctx, n);
+    }
+  }
+  for (const f of state.fuses) {
+    const x = f.cx * TILE_PX;
+    const y = f.cy * TILE_PX;
+    if (drawSprite(ctx, sheet, f.big ? "bomb:big" : "bomb:small", x, y)) drawFuseSpark(ctx, f);
+    else drawLitBomb(ctx, f);
+  }
   state.monks.forEach((m, i) => {
     drawMonk(
       ctx,
@@ -154,6 +171,31 @@ export function render(
   });
   for (const c of state.clouds) drawCloud(ctx, c);
   for (const b of state.blasts) drawBlast(ctx, b, state.width, state.height);
+}
+
+/** Ticks over which landed rubble fades out before it crumbles (drawing only). */
+const RUBBLE_FADE = 30;
+
+/**
+ * The spark on a lit bomb's fuse, over its sprite (see `drawBomb` in `art/tiles.ts`:
+ * the fuse ends 5 units above and 4 right of the body's top): a glow that flickers as it
+ * burns, from the fuse's ticks left.
+ */
+function drawFuseSpark(ctx: CanvasRenderingContext2D, f: Fuse): void {
+  const k = TILE_PX / 32;
+  const r = f.big ? 8.5 : 5.5;
+  const x = f.cx * TILE_PX + 20 * k;
+  const y = f.cy * TILE_PX + (31 - 2 * r - 5) * k;
+  const size = ((f.left >> 2) % 2 === 0 ? 5 : 3.5) * k;
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+  const g = ctx.createRadialGradient(x, y, 0, x, y, size * 2);
+  g.addColorStop(0, "#ffffff");
+  g.addColorStop(0.3, "#ffd84a");
+  g.addColorStop(1, "rgba(255, 122, 47, 0)");
+  ctx.fillStyle = g;
+  ctx.fillRect(x - size * 2, y - size * 2, size * 4, size * 4);
+  ctx.restore();
 }
 
 /** An armed snare: a loop of rope lying open on the floor. */

@@ -501,6 +501,9 @@ wait for Guillaume's playtest.
   refilling hole shows one of three stages of crumbled brick between whole and gone
   (`dugStage`), so a closing hole is always visible; drilled bedrock the same. In
   play, a hidden ladder and a closed exit are not drawn; the editor shows both faded.
+  What the state adds on top has art too (B-044): pickaxe rubble is a heap of stones
+  that fades over its last 30 ticks, a laid snare an open noose pegged to the floor,
+  and a lit bomb its item sprite with a glowing spark that flickers as the fuse burns.
   Item and tile shapes are _provisional_.
 - **Frame and HUD** (B-036). A riveted dark metal frame; a status bar at the bottom, as
   in TLR (_provisional_, open question 1 of the plan): per player lives, score, item

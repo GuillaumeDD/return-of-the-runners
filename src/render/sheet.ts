@@ -112,6 +112,8 @@ function tileSprites(): SpriteDef[] {
       tiles.drawBomb(c, true);
     }),
     tile("snare", tiles.drawSnare),
+    tile("snare:set", tiles.drawSetSnare),
+    tile("rubble", tiles.drawRubble),
     tile("gas-spray", tiles.drawGasSpray),
     tile("goo-bucket", tiles.drawGooBucket),
   );
