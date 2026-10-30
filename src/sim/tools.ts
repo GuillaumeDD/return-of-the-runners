@@ -8,13 +8,16 @@ import { canLaySnare, type Snare } from "./snares";
 import type { Actor, Player } from "./state";
 
 /**
- * Tools, held in the item slot (`items.ts`) and used with the use key, once per press.
- * Using an empty slot or a key does nothing. Tools are never used up (S-019, S-021).
+ * Tools, held in the item slot (`items.ts`) and used with the use key, once per press
+ * (the jackhammer: while it is held). Using an empty slot or a key does nothing. Tools
+ * are never used up (S-019, S-021).
  *
- * - **Jackhammer** (S-019 @ 2:28–2:43): the player drills the cell below (brick or
- *   bedrock, not a ladder, a door or anything else), waits `DRILL_TICKS` while it
- *   opens, falls in, and goes on drilling down until the cell below cannot be drilled.
- *   Each drilled cell is a hole, so the shaft refills behind like any hole.
+ * - **Jackhammer** (S-019 @ 2:28–2:43): while the use key is held, the player drills
+ *   the cell below (brick or bedrock, not a ladder, a door or anything else), waits
+ *   `DRILL_TICKS` while it opens, falls in, and drills the next cell on landing, until
+ *   the key is let go or the cell below cannot be drilled. Let go before a cell opens,
+ *   it stays solid (`step.ts`). Each drilled cell is a hole, so the shaft refills
+ *   behind like any hole.
  * - **Pickaxe** (S-021 @ 0:06–0:15): the player swings at the cell in front of it,
  *   which must be empty; rubble appears there, falls to the first support and stays
  *   `RUBBLE_TICKS`, solid like bedrock. Rubble crushes any monk or player it touches
@@ -98,7 +101,7 @@ function drill(t: Terrain, p: Player, cx: number, cy: number): ToolResult | null
 }
 
 /**
- * A press of the use key with the held item. `falling`: the player is falling (no tool
+ * The use key with the held item: a press, or the key held with the jackhammer. `falling`: the player is falling (no tool
  * works then). Returns null when nothing happens.
  */
 export function useTool(
@@ -130,19 +133,6 @@ export function useTool(
     hole: null,
     rubble: { cx: fx, y: fy * SUB, landed: -1 },
   };
-}
-
-/**
- * A drilling player that has landed goes on: it drills the next cell below, or stops
- * when that cannot be drilled, or when it no longer holds the jackhammer.
- */
-export function keepDrilling(t: Terrain, p: Player, falling: boolean): ToolResult {
-  const none = { hole: null, rubble: null };
-  if (p.drill && p.item !== TILE.jackhammer) return { player: { ...p, drill: false }, ...none };
-  if (!p.drill || p.busy > 0 || falling) return { player: p, ...none };
-  if (offsetOf(p.x) !== 0 || offsetOf(p.y) !== 0)
-    return { player: { ...p, drill: false }, ...none };
-  return drill(t, p, cellOf(p.x), cellOf(p.y)) ?? { player: { ...p, drill: false }, ...none };
 }
 
 /**

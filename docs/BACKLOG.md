@@ -3,7 +3,7 @@
 Scoped work items. Ideas start in the Growth section of `docs/PRD.md`.
 Each item lands in its own commit, which also flips its status here.
 Step 1 (B-004 to B-010) is planned in [`plans/step-1.md`](plans/step-1.md), step 2 (B-011 to
-B-017) in [`plans/step-2.md`](plans/step-2.md), step 3 (B-019 to B-029, then B-038 and B-039) in
+B-017) in [`plans/step-2.md`](plans/step-2.md), step 3 (B-019 to B-029, then B-038 to B-040) in
 [`plans/step-3.md`](plans/step-3.md), step 4 part A, the look (B-030 to B-036), in
 [`plans/step-4.md`](plans/step-4.md), each with its delivery order.
 
@@ -50,3 +50,4 @@ Statuses: `todo` / `in-progress` / `done`.
 | B-037 | Fix: touching a cell favours moving right               | Reaching a cell (gold, exit, monk) takes the same distance both ways (today 1 sub-unit less to the right); a mirrored race is a draw; regression test       | todo   |
 | B-038 | Fix: a monk stops at the edge of a pit                  | A monk whose way down is a pit or trapdoor turf walks to its column and drops, from either side; regression test; affected replays re-recorded              | done   |
 | B-039 | Default level shows step 3                              | Bundled level uses every step 3 feature so far and has a player 2 start; a replay wins it with its monk; updated again at the end of step 3                 | done   |
+| B-040 | Fix: the jackhammer drills only while the key is held   | Drills while the use key is held, cell after cell; let go, it stops and the cell it was drilling stays solid; regression test; replays still win            | done   |

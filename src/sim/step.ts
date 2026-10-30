@@ -8,7 +8,7 @@ import { openDoor, pickUp } from "./items";
 import { inSight, stepMonks } from "./monks";
 import { inTransit, tryTeleport } from "./teleport";
 import type { Snare } from "./snares";
-import { keepDrilling, rubbleHits, stepRubble, useTool, type Rubble } from "./tools";
+import { rubbleHits, stepRubble, useTool, type Rubble } from "./tools";
 import { isFalling, overlapsCell, stepActor } from "./move";
 import { cellOf, monkAt, tileAt, type Terrain } from "./physics";
 import { HOLE_TICKS, MONK_TICKS, PLAYER_RESPAWN_TICKS, RUNNER_PERIOD, SUB } from "./rules";
@@ -23,8 +23,8 @@ import type { Actor, Facing, GameState, Monk, Player } from "./state";
  * on a teleporter entrance jumps (see `teleport.ts`). A player in play then picks up,
  * swaps or drops an item if it just pressed the pick-up key, opens a door next to it
  * that its key fits (`items.ts`), uses its tool if it just pressed the use key (laying a
- * snare or firing gas among them), or goes on drilling down (`tools.ts`), picks up the gold and the bombs it touches, and lays a
- * bomb if it just pressed the bomb key (`bombs.ts`).
+ * snare or firing gas among them; the jackhammer while the key is held, `tools.ts`),
+ * picks up the gold and the bombs it touches, and lays a bomb if it just pressed the bomb key (`bombs.ts`).
  * Once the last gold is taken, hidden ladders appear. A player touching the open exit
  * wins the level (`playersAtExit`). Unless it was won, the monks then act in order: a
  * monk walking into a snare hangs in it, one in a gas cloud is dazed, and a monk
@@ -52,9 +52,18 @@ export function step(state: GameState, inputs: TickInput): GameState {
   for (let i = 0; i < state.players.length; i++) {
     const before = state.players[i];
     if (before === undefined) continue;
-    const t: Terrain = { ...state, tiles, holes, rubble };
     const input = inputs[i] ?? NO_INPUT;
-    const acted = actPlayer(t, before, input, tick, anyAlive);
+    let start = before;
+    // The jackhammer only drills while the use key is held: let go before the cell
+    // opens and it stays solid (its hole is dropped), and the player is free at once.
+    if (before.drill && !input.use) {
+      const cx = cellOf(before.x);
+      const below = cellOf(before.y) + 1;
+      holes = holes.filter((h) => !(h.cx === cx && h.cy === below && h.age < HOLE_TICKS.digging));
+      start = { ...before, busy: 0, drill: false };
+    }
+    const t: Terrain = { ...state, tiles, holes, rubble };
+    const acted = actPlayer(t, start, input, tick, anyAlive);
     let p: Player = {
       ...acted.player,
       pickHeld: input.pickUp,
@@ -62,11 +71,13 @@ export function step(state: GameState, inputs: TickInput): GameState {
       bombHeld: input.bomb,
     };
     if (acted.hole !== null) holes = [...holes, acted.hole];
+    // A drilled cell that just opened: the player falls in.
+    if (p.drill && p.busy === 0) p = { ...p, drill: false };
     if (p.mode === "alive") p = tryTeleport(state, p, state.monks);
-    if (inTransit(p)) p = { ...p, drill: false };
     if (p.mode === "alive" && !inTransit(p)) {
       // The pick-up and use keys act on the tick they are pressed, unless the player is
-      // busy (digging, drilling or swinging).
+      // busy (digging, drilling or swinging); the jackhammer works whenever the use key
+      // is held, so a player holding it drills again each time it lands.
       if (input.pickUp && !before.pickHeld && p.busy === 0) {
         ({ tiles, player: p } = pickUp(tiles, p));
       }
@@ -74,9 +85,9 @@ export function step(state: GameState, inputs: TickInput): GameState {
       const here: Terrain = { ...state, tiles, holes, rubble };
       const falling = isFalling(here, p);
       const used =
-        input.use && !before.useHeld && p.busy === 0
+        input.use && p.busy === 0 && (!before.useHeld || p.item === TILE.jackhammer)
           ? useTool(here, p, falling, snares)
-          : keepDrilling(here, p, falling);
+          : null;
       if (used !== null) {
         p = used.player;
         if (used.hole !== null) holes = [...holes, used.hole];
