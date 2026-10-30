@@ -1,7 +1,7 @@
 # Step 3 plan: TLR specifics (terrain, tools, two players)
 
 Status: **approved** (PR #28). Roadmap: `docs/PRD.md` §7, step 3.
-Backlog items: B-019 to B-029 (B-029 is a bug fix found in play), then B-038 (a fix found later) and B-039 (the default level). Source ids (`S-…`) refer to [`../SOURCES.md`](../SOURCES.md).
+Backlog items: B-019 to B-029 (B-029 is a bug fix found in play), then B-038 (a fix found later), B-039 (the default level) and B-042 (a fix from Guillaume's playtest). Source ids (`S-…`) refer to [`../SOURCES.md`](../SOURCES.md).
 
 ## Goal
 
@@ -468,6 +468,21 @@ Tests:
   bundled level stays winnable;
 - `tests/level/file.test.ts`: the "no `teleports` field" export check uses a fixture
   without teleporters, since the bundled level now has one.
+
+### B-042 — Fix: the pickaxe needs a ceiling
+
+- Found by Guillaume in play (2026-10-30): the pickaxe worked anywhere. The rubble comes
+  out of the ceiling, so it now needs one.
+- `src/sim/tools.ts`: a swing does nothing unless the cell above the target is solid
+  (`tileAt`, so landed rubble counts and a dug or blown-open cell does not; above the
+  top row reads as bedrock, so the top of the level counts).
+- The `tools` replay level gets a bedrock block above the swing; same tick and status,
+  new hash (the level changed).
+
+`tests/sim/tools.test.ts`
+
+- under open air nothing happens (no rubble, not busy); under brick, bedrock or the
+  level's top, rubble comes down; under a dug-open brick, nothing.
 
 ## Open questions (faithfulness)
 

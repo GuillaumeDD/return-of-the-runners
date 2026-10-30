@@ -120,6 +120,29 @@ describe("the jackhammer", () => {
 });
 
 describe("the pickaxe", () => {
+  // Regression (Guillaume's playtest, B-042): the pickaxe worked under open sky.
+  it("works only under a ceiling: a solid cell above the cell in front", () => {
+    // Open air above the cell in front: nothing happens.
+    const open = holding(stateFrom(["....", "P...", "@@@@"]), TILE.pickaxe);
+    const none = stepOne(open, use);
+    expect([none.rubble, p1(none).busy]).toEqual([[], 0]);
+    // Brick, bedrock or the top of the level above it: rubble comes down.
+    for (const top of ["#", "@"]) {
+      const s = holding(stateFrom([`.${top}..`, "P...", "@@@@"]), TILE.pickaxe);
+      expect(
+        stepOne(s, use).rubble.map((r) => [r.cx, r.y]),
+        top,
+      ).toEqual([[1, SUB]]);
+    }
+    const edge = holding(stateFrom(["P...", "@@@@"]), TILE.pickaxe);
+    expect(stepOne(edge, use).rubble).toHaveLength(1);
+    // A ceiling brick dug open is no ceiling.
+    const dug = holding(stateFrom(["P#..", "....", "@@@@"]), TILE.pickaxe);
+    const opened = { ...dug, holes: [{ cx: 1, cy: 0, age: HOLE_TICKS.digging }] };
+    expect(stepOne(withPlayer(dug, { y: SUB }), use).rubble).toHaveLength(1);
+    expect(stepOne(withPlayer(opened, { y: SUB }), use).rubble).toEqual([]);
+  });
+
   it("brings rubble down in front, which falls to the first support and lands", () => {
     let s = holding(stateFrom(["P...", "@...", "@...", "@#@@"]), TILE.pickaxe);
     s = stepOne(s, use);

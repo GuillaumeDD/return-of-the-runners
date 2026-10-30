@@ -1,5 +1,5 @@
 {
-  "about": "Tools (B-025): the runner takes the pickaxe and swings it: the rubble lands in front and walls the monk out. It swaps the pickaxe for the jackhammer, drills down through two cells of bedrock, stops on the ladder, takes the gold and leaves by the exit.",
+  "about": "Tools (B-025): the runner takes the pickaxe and swings it under a bedrock ceiling: the rubble lands in front and walls the monk out. It swaps the pickaxe for the jackhammer, drills down through two cells of bedrock, stops on the ladder, takes the gold and leaves by the exit.",
   "replay": {
     "format": "return-of-the-runners/replay",
     "version": 2,
@@ -13,7 +13,7 @@
       "grid": [
         "..............",
         "..............",
-        "..............",
+        ".....@........",
         "P.k.j.......M.",
         "@@@@@###@@@@@@",
         "@@@@@@@@@@@@@@",
@@ -73,6 +73,6 @@
   "expected": {
     "tick": 450,
     "status": "won",
-    "hash": 769906055
+    "hash": 2518627777
   }
 }
