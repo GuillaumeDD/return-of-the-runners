@@ -64,6 +64,7 @@ export function hashState(s: GameState): number {
     int(p.bombs.length);
     for (let i = 0; i < p.bombs.length; i++) int(p.bombs.charCodeAt(i));
     int(p.bombHeld ? 1 : 0);
+    int(p.hidden ? 1 : 0);
   }
   int(s.holes.length);
   for (const h of s.holes) {
@@ -121,6 +122,9 @@ export function hashState(s: GameState): number {
     int(m.carry);
     int(m.holeX);
     int(m.holeY);
+    int(m.roamX);
+    int(m.roamY);
+    int(m.roamLeft);
   }
   int(STATUS_CODE[s.status]);
   // When adding a field to GameState, add it here too (hash.test.ts checks each field).

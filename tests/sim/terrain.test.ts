@@ -1,12 +1,29 @@
 import { describe, expect, it } from "vitest";
 import { TILE } from "../../src/level/format";
 import { NO_INPUT, type PlayerInput } from "../../src/sim/input";
-import { isHidden, respawnCell } from "../../src/sim/monks";
-import { GOO_PERIOD, MONK_PERIOD, MONK_TICKS, RUNNER_PERIOD, SUB } from "../../src/sim/rules";
+import { respawnCell } from "../../src/sim/monks";
+import {
+  GOO_PERIOD,
+  MONK_PERIOD,
+  MONK_TICKS,
+  ROAM_TICKS,
+  RUNNER_PERIOD,
+  SUB,
+} from "../../src/sim/rules";
 import { newMonk, type GameState, type Monk } from "../../src/sim/state";
 import { step } from "../../src/sim/step";
 import { makeRng, randInt } from "../helpers/rng";
-import { atCell, cell, p1, press, run, stateFrom, stepOne, withPlayer } from "./helpers";
+import {
+  atCell,
+  cell,
+  p1,
+  placeRunner,
+  press,
+  run,
+  stateFrom,
+  stepOne,
+  withPlayer,
+} from "./helpers";
 
 const digRight: PlayerInput = { ...NO_INPUT, digRight: true };
 
@@ -137,9 +154,12 @@ describe("alcove", () => {
   // The player hides in the alcove at (3, 1); a monk walks along the row.
   const rows = ["........", "M..n....", "########"];
 
-  function hiding(): GameState {
+  /** Player 1 standing in the alcove, and hiding there if `hide` (it pressed up). */
+  function inAlcove(hide: boolean): GameState {
     let s = stateFrom(["P.......", ...rows.slice(1)]);
     s = atCell(s, 3, 1);
+    s = { ...s, monks: [] };
+    if (hide) s = stepOne(s, press.up);
     return { ...s, monks: [{ ...newMonk(0, 1), facing: 1 }] };
   }
 
@@ -148,12 +168,50 @@ describe("alcove", () => {
     expect(cell(run(s, press.none, 2 * SUB))).toEqual({ x: 3, y: 1 });
   });
 
+  // Regression (Guillaume's playtest, B-041): walking into an alcove hid the player.
+  it("walking through it does not hide: a monk catches a player in it who did not press up", () => {
+    let s = stateFrom(["P.......", ...rows.slice(1)]);
+    s = atCell(s, 2, 1);
+    s = { ...s, monks: [{ ...newMonk(0, 1), facing: 1 }] };
+    s = run(s, press.right, SUB * RUNNER_PERIOD.walk);
+    expect(cell(s)).toEqual({ x: 3, y: 1 });
+    expect(p1(s).hidden).toBe(false);
+    s = run(s, press.none, 4 * SUB * MONK_PERIOD.walk);
+    expect(s.status).toBe("dead");
+  });
+
+  it("up hides the player (snapped onto the cell); it stays put until down brings it out", () => {
+    let s = stateFrom(["P.......", "...n....", "########"]);
+    s = placeRunner(s, 3 * SUB - 3, SUB);
+    s = stepOne(s, press.up);
+    expect(p1(s)).toMatchObject({ hidden: true, x: 3 * SUB, y: SUB });
+    // Hidden, it neither walks nor digs.
+    s = run(s, press.right, 2 * SUB * RUNNER_PERIOD.walk);
+    s = run(s, digRight, 2);
+    expect(p1(s)).toMatchObject({ hidden: true, x: 3 * SUB });
+    expect(s.holes).toEqual([]);
+    s = stepOne(s, press.down);
+    expect(p1(s)).toMatchObject({ hidden: false, x: 3 * SUB, y: SUB });
+    s = run(s, press.right, 2 * SUB * RUNNER_PERIOD.walk);
+    expect(p1(s).x).toBeGreaterThan(3 * SUB);
+  });
+
+  it("up does nothing outside an alcove, nor while falling into one", () => {
+    const s = atCell(stateFrom(["P.......", "...n....", "########"]), 2, 1);
+    expect(p1(stepOne(s, press.up)).hidden).toBe(false);
+    const falling = stateFrom(["...P....", "...n....", "########"]);
+    expect(p1(stepOne(falling, press.up)).hidden).toBe(false);
+  });
+
   it("a monk walking through it does not catch the player hiding in it", () => {
     // Player 2, in sight at the far end, draws the monk along the row through the alcove.
     let s = stateFrom(["P......Q", ...rows.slice(1)], 1, 2);
     s = atCell(s, 3, 1);
     s = withPlayer(s, { x: 7 * SUB, y: SUB }, 1);
-    expect(isHidden(s.tiles, p1(s))).toBe(true);
+    s = { ...s, monks: [] };
+    s = step(s, [press.up, NO_INPUT]);
+    s = { ...s, monks: [{ ...newMonk(0, 1), facing: 1 }] };
+    expect(p1(s).hidden).toBe(true);
     let passed = false;
     for (let i = 0; i < 6 * SUB * MONK_PERIOD.walk; i++) {
       s = step(s, [NO_INPUT, NO_INPUT]);
@@ -163,27 +221,28 @@ describe("alcove", () => {
     expect(passed).toBe(true);
   });
 
-  it("a monk landing on it from above does not catch the player", () => {
-    let s = stateFrom(["...M....", "P..n....", "########"]);
-    s = atCell(s, 3, 1);
+  it("a monk landing on it from above does not catch the hiding player", () => {
+    let s = stateFrom(["........", "P..n....", "########"]);
+    s = stepOne(atCell(s, 3, 1), press.up);
+    s = { ...s, monks: [newMonk(3, 0)] };
     s = run(s, press.none, 3 * SUB * MONK_PERIOD.fall);
     expect(Math.round(monk(s).y / SUB)).toBe(1);
     expect(s.status).toBe("playing");
   });
 
-  it("the same player one cell away is caught", () => {
-    let s = hiding();
-    s = atCell(s, 2, 1);
-    expect(isHidden(s.tiles, p1(s))).toBe(false);
+  it("a player that came out is caught again", () => {
+    let s = inAlcove(true);
+    s = stepOne(s, press.down);
     s = run(s, press.none, 4 * SUB * MONK_PERIOD.walk);
     expect(s.status).toBe("dead");
   });
 
   // Regression (self-review): a dead player kept waiting for a monk on its start to
-  // leave while the only other player hid, and hidden players freeze monks: a stall.
+  // leave while the only other player hid: a stall.
   it("a dead player reappears even with a monk on its start, when the other is hiding", () => {
     let s = stateFrom(["P......Q", ...rows.slice(1)], 1, 2);
     s = atCell(s, 3, 1);
+    s = withPlayer(s, { hidden: true });
     s = withPlayer(s, { mode: "dead", timer: 1 }, 1);
     s = { ...s, monks: [{ ...newMonk(7, 0) }] };
     const next = step(s, [NO_INPUT, NO_INPUT]);
@@ -191,18 +250,36 @@ describe("alcove", () => {
     expect(p1(next, 1).lives).toBeLessThan(p1(s, 1).lives);
   });
 
-  it("monks do not see a hiding player: with nobody else in sight they wait", () => {
-    const s = hiding();
-    const later = run(s, press.none, 30);
-    expect(monk(later).x).toBe(monk(s).x);
-    // With player 2 in sight, they chase it instead.
+  it("monks do not see a hiding player: they roam instead of chasing it", () => {
+    // A wider level: the monk wanders over the floor and the ladder, the player safe.
+    let s = stateFrom(["P..........H", "...n.......H", "############"]);
+    s = { ...s, monks: [] };
+    s = stepOne(atCell(s, 3, 1), press.up);
+    s = { ...s, monks: [newMonk(9, 1)] };
+    const seen = new Set<string>();
+    for (let i = 0; i < 4 * ROAM_TICKS; i++) {
+      s = stepOne(s, press.none);
+      seen.add(`${String(monk(s).x)},${String(monk(s).y)}`);
+    }
+    expect(s.status).toBe("playing");
+    // It kept moving: many places, not a stand-still.
+    expect(seen.size).toBeGreaterThan(2 * SUB);
+  });
+
+  it("with player 2 in sight, monks chase it instead", () => {
     let two = stateFrom(["P......Q", ...rows.slice(1)], 1, 2);
-    two = atCell(two, 3, 1);
+    two = withPlayer(atCell(two, 3, 1), { hidden: true });
     two = withPlayer(two, { x: 7 * SUB, y: SUB }, 1);
     two = { ...two, monks: [{ ...newMonk(0, 1) }] };
     let moved = two;
     for (let i = 0; i < 30; i++) moved = step(moved, [NO_INPUT, NO_INPUT]);
     expect(monk(moved).x).toBeGreaterThan(0);
+  });
+
+  it("a player hiding when its alcove is blown away comes out", () => {
+    let s = inAlcove(true);
+    s = { ...s, tiles: s.tiles.map((r, y) => (y === 1 ? "........" : r)), monks: [] };
+    expect(p1(stepOne(s, press.none)).hidden).toBe(false);
   });
 });
 
