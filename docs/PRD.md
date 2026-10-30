@@ -106,7 +106,7 @@ their own levels.
 | 0    | Repo, TS/Vite skeleton, CI, GitHub Pages deploy                                      | A link that opens         | done              |
 | 1    | Core engine: grid, movement, ladders, bars, falling, digging, gold, monks + AI, exit | First playable level      | done (2026-10-25) |
 | 2    | Editor v1: paint, test, save, export, share by link                                  | We can create levels      | done (2026-10-26) |
-| 3    | TLR specifics: terrain, tools, 2-player co-op and versus                             | The "real" Legend Returns | in progress       |
+| 3    | TLR specifics: terrain, tools, 2-player co-op and versus                             | The "real" Legend Returns | done (2026-10-30) |
 | 4    | The look (art, worlds, day/night), then music, packs, menus, scores, EN/FR           | Complete game             | later             |
 
 ## 8. Growth
@@ -121,6 +121,7 @@ rejects the feature.
 | Local importer for files from one's own copy of the original    | proposed | Reverse-engineering track; nothing redistributed |
 | Replays (record/playback from input log)                        | proposed | Format and player exist (B-010); needs the UI    |
 | Editor warning for gold or exit unreachable without digging     | proposed | Only if makers ask for it; never blocking        |
+| Screenshots and GIFs rendered from a replay at chosen ticks     | proposed | By hand, real-time keys drift from the plan      |
 | "Edit a copy" twice opens the existing copy, not a duplicate    | proposed | B-017 review; duplicates are visible, deletable  |
 | A pack of several levels in one file or link                    | proposed | Trading levels one by one is tedious             |
 | Recreated art in the style of TLR (1994): sprites, tile sets    | planned  | Modernized look; `plans/step-4.md`, B-030–B-036  |

@@ -99,6 +99,8 @@ Format:
 - TypeScript `strict: true`; no `any` (use `unknown` + narrowing); no non-null `!`
   without a comment explaining why it is safe.
 - ESLint + Prettier, enforced in CI; formatting is never mixed into a feature diff.
+  When a Markdown table cell outgrows its column, Prettier realigns the whole table:
+  reword the cell to fit, or realign the table in a commit of its own.
 - Commits follow **Conventional Commits** (`feat:`, `fix:`, `test:`, `docs:`, …).
 - Small PRs: one feature or fix per PR.
 
@@ -130,6 +132,9 @@ Format:
 - Before opening or updating a PR, run a self-review of the diff (`/code-review`)
   and fix confirmed findings first. Always ask: can an async result (file read,
   compression, clipboard, decoding) land after the state it was started for changed?
+  For a new monk or player mode, item or state field, also ask: does every place
+  that checks modes (catching, blocking a start or teleporter exit, holes, carried
+  gold, the hash) handle it?
 - Run `/security-review` on any PR that touches untrusted input (level import,
   share links, file loading), dependencies, or CI/deployment config.
 - CI must be green (typecheck, lint, tests, build) before merge.
@@ -181,6 +186,8 @@ specific. Focus on it:
   - per module, the test files;
   - per test file, the specific behaviors they assert.
 - A "correctness strategy" paragraph is not a substitute for the enumerated test list.
+- A replay for a new item or rule proves it matters: the test also runs the same
+  inputs without it (no item, rule off) and asserts a different outcome.
 
 ### Determinism & reproducibility
 
@@ -209,6 +216,10 @@ specific. Focus on it:
 - Log every external source consulted (page, video, person) in `docs/SOURCES.md` the
   day it is used, with what it gave; cite its id (`S-001`, `S-010 @ 12:34`) where a
   fact is recorded.
+- How a player triggers a mechanic is gameplay too: which key, press or hold, and
+  where it works. When no source shows it, mark the choice **provisional** like any
+  rule and list it in the PR, so Guillaume's playtest checks it (B-040 to B-042
+  fixed three such guesses).
 
 ### Planning & backlog
 
