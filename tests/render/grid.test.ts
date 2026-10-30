@@ -371,3 +371,30 @@ describe("snares and gas", () => {
     expect(fillsIn(thin.fills, 2, 0)).toContain(GAS_THIN);
   });
 });
+
+describe("the goo bucket", () => {
+  const BUCKET = "#8a8f99";
+  const GOO = "#4f8f3a";
+
+  it("is drawn as a pail of goo, in the game and the editor", () => {
+    const rows = ["P..u", "@@@@"];
+    for (const draw of [
+      (c: CanvasRenderingContext2D) => {
+        render(c, stateFrom(rows));
+      },
+      (c: CanvasRenderingContext2D) => {
+        renderGrid(c, rows);
+      },
+    ]) {
+      const { ctx, fills } = recorder();
+      draw(ctx);
+      expect(fillsIn(fills, 3, 0)).toEqual(expect.arrayContaining([BUCKET, GOO]));
+    }
+  });
+
+  it("the bucket a player holds is drawn in its hand", () => {
+    const { ctx, fills } = recorder();
+    render(ctx, withPlayer(stateFrom(["P...", "@@@@"]), { item: "u" }));
+    expect(fillsIn(fills, 0, 0)).toEqual(expect.arrayContaining([BUCKET, GOO]));
+  });
+});

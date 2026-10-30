@@ -3,7 +3,7 @@
 Scoped work items. Ideas start in the Growth section of `docs/PRD.md`.
 Each item lands in its own commit, which also flips its status here.
 Step 1 (B-004 to B-010) is planned in [`plans/step-1.md`](plans/step-1.md), step 2 (B-011 to
-B-017) in [`plans/step-2.md`](plans/step-2.md), step 3 (B-019 to B-029, then B-038 and B-039) in
+B-017) in [`plans/step-2.md`](plans/step-2.md), step 3 (B-019 to B-029, then B-038, B-039 and B-041) in
 [`plans/step-3.md`](plans/step-3.md), step 4 part A, the look (B-030 to B-036), in
 [`plans/step-4.md`](plans/step-4.md), each with its delivery order.
 
@@ -38,7 +38,7 @@ Statuses: `todo` / `in-progress` / `done`.
 | B-025 | Tools: jackhammer, pickaxe                              | Used from the item slot; jackhammer digs bedrock; pickaxe rubble falls and blocks; item count never changes (randomized)                                    | done   |
 | B-026 | Bombs                                                   | Per-level bomb counter; fuse; small bomb: temporary crater, bedrock intact; big bomb: permanent, spares the exit; chain reactions; kills actors in range    | done   |
 | B-027 | Snare and gas                                           | Snare holds the first monk that walks in, for good; gas dazes every monk in its cloud, not on ladders or bars; replay fixture                               | done   |
-| B-028 | Goo bucket                                              | Turns the floor in front into gooey turf; slows players and monks; replay fixture                                                                           | todo   |
+| B-028 | Goo bucket                                              | Turns the floor under the 3 cells in front into gooey turf; slows players and monks; replay fixture                                                         | done   |
 | B-029 | Fix: a runner on a hole holds the monk in it            | A trapped monk cannot climb while the runner stands in the cell above its hole; it climbs out once the runner leaves; regression test                       | done   |
 | B-030 | Art direction                                           | Three mockups (neo-pixel, illustrated, flat glow) of one level in two worlds; Guillaume picks one; style guide in ARCHITECTURE; nothing extracted           | todo   |
 | B-031 | Sprite renderer                                         | Sprite sheets from `'self'`; DPR-aware canvas; placeholder fallback; every tile has art or a placeholder (tested); all replay hashes unchanged              | todo   |

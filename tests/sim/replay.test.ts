@@ -28,6 +28,7 @@ describe("committed replays (Node)", () => {
       "coop-monks",
       "default-level",
       "first-steps-random",
+      "goo",
       "keys",
       "monk-trap-respawn",
       "snare-gas",
@@ -123,6 +124,19 @@ describe("committed replays (Node)", () => {
     expect(out.players[0]?.hidden).toBe(false);
     expect(out.monks[0]).toMatchObject({ roamX: -1, roamY: -1 });
     expect(runReplay(f.replay).state.status).toBe("won");
+  });
+
+  it("goo: the goo lies under the three cells left of the ladder; without it the monk wins", () => {
+    const f = fixtures.find((x) => x.name === "goo");
+    if (f === undefined) throw new Error("missing goo");
+    const end = runReplay(f.replay).state;
+    expect([end.status, end.players[0]?.item]).toEqual(["won", ""]);
+    expect(end.tiles[7]?.slice(10, 15)).toBe("@~~~@");
+    // The same inputs with no bucket to pick up: the monk catches the runner.
+    const grid = f.replay.level.grid.map((r) => r.replace("u", "."));
+    const plain = runReplay({ ...f.replay, level: { ...f.replay.level, grid } }).state;
+    expect(plain.status).not.toBe("won");
+    expect(plain.players[0]?.mode).toBe("dead");
   });
 
   it("tools: the rubble walls the monk out while the runner drills down and wins", () => {

@@ -61,6 +61,8 @@ const COLOR = {
   ropeDark: "#7a5a2e",
   gun: "#3f7f5f",
   gunTank: "#9fdc8a",
+  bucket: "#8a8f99",
+  bucketRim: "#c5cad3",
   // Translucent, so what is in the cloud still shows through.
   gas: "rgba(120, 210, 110, 0.45)",
   gasThin: "rgba(120, 210, 110, 0.22)",
@@ -228,6 +230,11 @@ function drawPlayer(ctx: CanvasRenderingContext2D, p: Player, index: number, los
     ctx.fillRect(hand, y + 10, 6, 3); // barrel
     ctx.fillStyle = COLOR.gunTank;
     ctx.fillRect(p.facing === 1 ? hand : hand + 3, y + 7, 3, 3); // tank
+  } else if (p.item === TILE.gooBucket) {
+    ctx.fillStyle = COLOR.bucket;
+    ctx.fillRect(hand, y + 10, 6, 5); // pail
+    ctx.fillStyle = COLOR.goo;
+    ctx.fillRect(hand + 1, y + 10, 4, 2); // goo
   }
 }
 
@@ -507,6 +514,19 @@ function drawTile(
       ctx.fillRect(x + 6, y + s - 6, 4, 5); // grip
       ctx.fillStyle = COLOR.gunTank;
       ctx.fillRect(x + 9, y + s - 17, 8, 6); // tank
+      break;
+    case TILE.gooBucket:
+      // A pail full of green goo, with a handle.
+      ctx.fillStyle = COLOR.bucketRim;
+      ctx.fillRect(x + 6, y + s - 17, s - 12, 2); // handle
+      ctx.fillRect(x + 6, y + s - 17, 2, 5);
+      ctx.fillRect(x + s - 8, y + s - 17, 2, 5);
+      ctx.fillStyle = COLOR.bucket;
+      ctx.fillRect(x + 5, y + s - 12, s - 10, 11); // pail
+      ctx.fillStyle = COLOR.goo;
+      ctx.fillRect(x + 6, y + s - 12, s - 12, 3); // goo
+      ctx.fillStyle = COLOR.gooDrip;
+      ctx.fillRect(x + 9, y + s - 9, 3, 4); // a drip down the side
       break;
     case TILE.doorRed:
     case TILE.doorGreen:

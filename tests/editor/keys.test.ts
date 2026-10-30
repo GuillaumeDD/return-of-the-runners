@@ -15,8 +15,7 @@ const key = (
 });
 
 describe("palette", () => {
-  it("holds every base tile, the player 2 start, the terrain, the teleporters, keys, doors, tools, bombs, the snare and the gas gun once; every name is translated", () => {
-    // The goo bucket joins the palette with its behavior (B-028).
+  it("holds every base tile, the player 2 start, the terrain, the teleporters, keys, doors, tools, bombs, the snare, the gas gun and the goo bucket once; every name is translated", () => {
     const expected = new Set([
       ...Object.values(TILE_BASE),
       TILE.player2Start,
@@ -39,6 +38,7 @@ describe("palette", () => {
       TILE.bigBomb,
       TILE.snare,
       TILE.gasSpray,
+      TILE.gooBucket,
     ]);
     expect(new Set(PALETTE.map((p) => p.tile))).toEqual(expected);
     expect(PALETTE).toHaveLength(expected.size);
