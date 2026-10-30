@@ -75,7 +75,16 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
   the same (B-023 added `teleports` and `warp`, B-025 `rubble`, `useHeld` and
   `drill`, B-026 `craters`, `fuses`, `blasts`, `bombs` and `bombHeld`, B-041 `hidden`,
   `roamX`, `roamY` and `roamLeft`); say so in the PR
-  as well.
+  as well. Prove it before rehashing: hashed without the new fields, every replay
+  keeps its old hash (the stronger check), or at least its tick and status. A level
+  change in a fixture (new tiles, even ones the replay never touches) changes its hash
+  too.
+- **Two branches that both change a replay fixture conflict on its hash.** Merge (do
+  not pick a side), check that the merged replay keeps its tick and status, then
+  recompute the hash from the merged state.
+- **Vitest cache:** after adding a fixture file, delete `node_modules/.vitest-cache`;
+  a stale cache can keep the old list of files that `import.meta.glob` found, so the
+  new fixture is not run.
 
 ### Movement model
 

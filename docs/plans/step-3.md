@@ -1,6 +1,6 @@
 # Step 3 plan: TLR specifics (terrain, tools, two players)
 
-Status: **approved** (PR #28). Roadmap: `docs/PRD.md` §7, step 3.
+Status: **done** (2026-10-30; approved in PR #28). Roadmap: `docs/PRD.md` §7, step 3.
 Backlog items: B-019 to B-029 (B-029 is a bug fix found in play), then B-038 (a fix found later), B-039 (the default level), B-040 to B-042 (fixes from Guillaume's playtest). Source ids (`S-…`) refer to [`../SOURCES.md`](../SOURCES.md).
 
 ## Goal
