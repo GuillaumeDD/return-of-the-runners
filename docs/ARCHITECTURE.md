@@ -37,6 +37,7 @@ tests/                           Vitest tests, mirroring src/
 tests/fixtures/levels/           one fixture set per level format version
 tests/fixtures/replays/          committed replays and the result each must reach
 e2e/                             Playwright: replays and share links in real browser engines
+tools/mockup/                    art direction mockups (B-030): drawn in code, rendered to PNG
 ```
 
 ## Simulation
