@@ -22,6 +22,8 @@ import { parseLevel } from "./level/parse";
 import { decodeLevel } from "./share/link";
 import firstSteps from "./levels/first-steps.json?raw";
 import { canvasSize, context2d, render } from "./render/canvas";
+import { fitCanvas } from "./render/scale";
+import { sheetAt } from "./render/sprites";
 import type { ValidTest } from "./editor/view";
 import { createState, maxPlayers } from "./sim/state";
 
@@ -135,6 +137,10 @@ function createGame(
   onStatus: (key: MessageKey) => void,
 ): Game {
   const context = context2d(target);
+  let scale = 1;
+  const fit = (): void => {
+    scale = fitCanvas(target, context, canvasSize(session.state));
+  };
   let mode = modeFor(level, picked);
   let count = playerCount(mode);
   let session = newSession();
@@ -212,7 +218,7 @@ function createGame(
       els.hud.textContent = text;
       els.hud.hidden = text === "";
     }
-    render(context, session.state);
+    render(context, session.state, sheetAt(scale));
     frameId = requestAnimationFrame(frame);
   };
 
@@ -220,9 +226,8 @@ function createGame(
     resume() {
       if (frameId !== null) return;
       // Sized on every resume: a shared level and the bundled one share the play canvas.
-      const size = canvasSize(session.state);
-      target.width = size.width;
-      target.height = size.height;
+      fit();
+      window.addEventListener("resize", fit);
       showPlayers();
       window.addEventListener("keydown", onKeyDown);
       window.addEventListener("keyup", onKeyUp);
@@ -238,6 +243,7 @@ function createGame(
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
       window.removeEventListener("blur", onBlur);
+      window.removeEventListener("resize", fit);
       for (const m of PLAY_MODES) els.buttons[m].removeEventListener("click", onChoose[m]);
       held = new Set();
     },

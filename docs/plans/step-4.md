@@ -188,9 +188,9 @@ check (a script with its threshold and its tests) before the first generated ima
 
 ### B-031 — Sprite renderer
 
-- `src/render/sprites.ts`: loads the sprite sheets (same origin), maps each tile and
-  actor state to a sprite and frame; falls back to the placeholder shape for anything
-  not drawn yet.
+- `src/render/sprites.ts`: draws the sprite sheets in code at load (no image request),
+  maps each tile and actor state to a sprite and frame; falls back to the placeholder
+  shape for anything not drawn yet.
 - `src/render/scale.ts`: canvas backing store at `devicePixelRatio`, integer scaling
   where the style needs it.
 

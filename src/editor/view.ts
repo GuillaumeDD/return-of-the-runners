@@ -3,6 +3,8 @@ import { levelErrorMessage } from "../i18n/level-errors";
 import type { LevelErrorCode } from "../level/format";
 import { LIMITS, TILE } from "../level/format";
 import { context2d, gridCanvasSize, renderGrid } from "../render/canvas";
+import { fitCanvas } from "../render/scale";
+import { sheetAt } from "../render/sprites";
 import { parseSize, relabelName } from "./fields";
 import { PALETTE, shortcutFor, tileForKey } from "./keys";
 import { redo, rename, resize, selectLinkTool, selectTile, undo, type EditorState } from "./model";
@@ -116,10 +118,8 @@ export function createEditorView(els: EditorElements, options: EditorOptions): E
   els.height.max = String(LIMITS.maxHeight);
 
   function draw(): void {
-    const size = gridCanvasSize(editor.grid);
-    if (els.canvas.width !== size.width) els.canvas.width = size.width;
-    if (els.canvas.height !== size.height) els.canvas.height = size.height;
-    renderGrid(ctx, editor.grid, editor.teleports, editor.linkFrom);
+    const scale = fitCanvas(els.canvas, ctx, gridCanvasSize(editor.grid));
+    renderGrid(ctx, editor.grid, editor.teleports, editor.linkFrom, sheetAt(scale));
   }
 
   function syncFields(): void {
@@ -270,10 +270,12 @@ export function createEditorView(els: EditorElements, options: EditorOptions): E
   return {
     show() {
       window.addEventListener("keydown", onKeyDown);
+      window.addEventListener("resize", draw);
       draw();
     },
     hide() {
       window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("resize", draw);
       if (drag !== null) pointer({ kind: "end", pointer: drag.pointer });
     },
     setLocale,

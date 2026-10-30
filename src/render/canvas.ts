@@ -6,6 +6,10 @@ import type { GameState, Monk, Player } from "../sim/state";
 import type { Cloud } from "../sim/gas";
 import type { Snare } from "../sim/snares";
 import type { Rubble } from "../sim/tools";
+import { drawSprite, type SpriteSheet, tileArt } from "./sprites";
+
+/** No art: everything is drawn as a placeholder. */
+const NO_ART: SpriteSheet = { scale: 1, image: null, frames: new Map() };
 
 /** On-screen size of one tile, in canvas pixels. A multiple of SUB keeps motion crisp. */
 export const TILE_PX = 24;
@@ -84,7 +88,11 @@ export function canvasSize(state: Pick<GameState, "width" | "height">): {
   return { width: state.width * TILE_PX, height: state.height * TILE_PX };
 }
 
-export function render(ctx: CanvasRenderingContext2D, state: GameState): void {
+export function render(
+  ctx: CanvasRenderingContext2D,
+  state: GameState,
+  sheet: SpriteSheet = NO_ART,
+): void {
   const { width, height } = canvasSize(state);
   ctx.fillStyle = COLOR.background;
   ctx.fillRect(0, 0, width, height);
@@ -94,7 +102,7 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState): void {
     const hole = holeAt(state.holes, cx, cy);
     const crater = craterAt(state.craters, cx, cy);
     if (crater !== undefined) drawHole(ctx, tile, craterLeft(crater.left), x, y);
-    else if (hole === undefined) drawTile(ctx, tile, x, y, exitOpen);
+    else if (hole === undefined) drawTileArt(ctx, sheet, tile, x, y, exitOpen);
     else drawHole(ctx, tile, brickLeft(hole.age), x, y);
   });
   for (const r of state.rubble) drawRubble(ctx, r);
@@ -275,6 +283,7 @@ export function renderGrid(
   grid: readonly string[],
   links: readonly Teleport[] = [],
   picked: { readonly cx: number; readonly cy: number } | null = null,
+  sheet: SpriteSheet = NO_ART,
 ): void {
   const size = gridCanvasSize(grid);
   ctx.fillStyle = COLOR.background;
@@ -283,7 +292,7 @@ export function renderGrid(
     if (tile === TILE.runnerStart) drawRunner(ctx, x, y, 1, false, 0);
     else if (tile === TILE.player2Start) drawRunner(ctx, x, y, 1, false, 1);
     else if (tile === TILE.monkStart) drawMonkAt(ctx, x, y, -1, false);
-    else drawTile(ctx, tile, x, y, false, true);
+    else drawTileArt(ctx, sheet, tile, x, y, false, true);
   });
   // Faint cell lines, so empty cells can be aimed at.
   ctx.fillStyle = COLOR.gridLine;
@@ -377,6 +386,32 @@ function drawHole(
   ctx.fillRect(x, y + TILE_PX - h, TILE_PX, h);
 }
 
+/**
+ * A tile: its sprite when it has art, else its placeholder. Tiles the game hides stay
+ * hidden either way; the editor's marks are drawn over the art.
+ */
+function drawTileArt(
+  ctx: CanvasRenderingContext2D,
+  sheet: SpriteSheet,
+  tile: string,
+  x: number,
+  y: number,
+  exitOpen: boolean,
+  editor = false,
+): void {
+  const hidden = !editor && (tile === TILE.hiddenLadder || (tile === TILE.exit && !exitOpen));
+  if (hidden || !drawSprite(ctx, sheet, tileArt(tile), x, y)) {
+    drawTile(ctx, tile, x, y, exitOpen, editor);
+  } else if (editor && tile === TILE.trapdoor) {
+    drawTrapdoorMark(ctx, x, y);
+  }
+}
+
+function drawTrapdoorMark(ctx: CanvasRenderingContext2D, x: number, y: number): void {
+  ctx.fillStyle = COLOR.trapdoorMark;
+  for (let i = 2; i < TILE_PX - 2; i += 5) ctx.fillRect(x + i, y + i, 3, 3);
+}
+
 /** A tile; `editor` shows the tiles the game hides (see `renderGrid`). */
 function drawTile(
   ctx: CanvasRenderingContext2D,
@@ -394,10 +429,7 @@ function drawTile(
     case TILE.trapdoor:
       // Looks like brick in the game: that is the trap.
       drawBrick(ctx, x, y);
-      if (editor) {
-        ctx.fillStyle = COLOR.trapdoorMark;
-        for (let i = 2; i < s - 2; i += 5) ctx.fillRect(x + i, y + i, 3, 3);
-      }
+      if (editor) drawTrapdoorMark(ctx, x, y);
       break;
     case TILE.gooeyTurf:
       ctx.fillStyle = COLOR.goo;
