@@ -23,6 +23,14 @@ describe("bundled levels", () => {
     expect(result.ok && maxPlayers(result.level)).toBe(2);
   });
 
+  it("the play screen's level shows every step 3 feature: terrain, teleporter, key and door, tools, bombs", () => {
+    const result = parseLevel(readFileSync(join(DIR, "first-steps.json"), "utf8"));
+    const tiles = new Set(result.ok ? result.level.grid.join("") : "");
+    // Player 2 start, terrain, teleporter, red key and door, tools, bombs, snare, gas, goo.
+    const step3 = Array.from("Q%~hRnTtaAjkoOsgu");
+    expect(step3.filter((tile) => !tiles.has(tile))).toEqual([]);
+  });
+
   it("the play screen's level can be won with its monk: the default-level replay plays it", () => {
     const result = parseLevel(readFileSync(join(DIR, "first-steps.json"), "utf8"));
     const replay = replayFixtures().find((f) => f.name === "default-level");

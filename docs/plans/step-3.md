@@ -483,15 +483,18 @@ the monk catches the runner.
   trapdoor turf, gooey turf, a hidden ladder, alcoves, a teleporter, a red key and door,
   the jackhammer (a pocket of gold under bedrock), the pickaxe, small and big bombs, a
   monk respawn point, diggable brick, and a player 2 start. One monk.
-- To update again at the end of step 3, with the snare, gas and goo bucket (B-027,
-  B-028).
+- Updated at the end of step 3 (2026-10-30) with the snare (lower floor), the gas gun
+  (middle floor) and the goo bucket (top floor, where the monk walks from its respawn
+  point). They lie off the replay's route and its pick-ups, so the replay is unchanged
+  but for its hash.
 
 Tests:
 
 - `tests/fixtures/replays/default-level.json`: one player wins the level with its monk in
   play (bomb, door, a held monk, jackhammer, teleporter, hidden ladder);
 - `tests/levels/bundled.test.ts`: that replay's level is the bundled level, so the
-  bundled level stays winnable;
+  bundled level stays winnable; the bundled level holds every step 3 tile kind (player 2
+  start, terrain, teleporter, red key and door, tools, bombs, snare, gas gun, goo bucket);
 - `tests/level/file.test.ts`: the "no `teleports` field" export check uses a fixture
   without teleporters, since the bundled level now has one.
 
