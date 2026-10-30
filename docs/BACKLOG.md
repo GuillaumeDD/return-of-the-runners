@@ -3,7 +3,7 @@
 Scoped work items. Ideas start in the Growth section of `docs/PRD.md`.
 Each item lands in its own commit, which also flips its status here.
 Step 1 (B-004 to B-010) is planned in [`plans/step-1.md`](plans/step-1.md), step 2 (B-011 to
-B-017) in [`plans/step-2.md`](plans/step-2.md), step 3 (B-019 to B-029, then B-038 to B-042) in
+B-017) in [`plans/step-2.md`](plans/step-2.md), step 3 (B-019 to B-029, then B-038, B-039 and B-042) in
 [`plans/step-3.md`](plans/step-3.md), step 4 part A, the look (B-030 to B-036), in
 [`plans/step-4.md`](plans/step-4.md), each with its delivery order.
 
