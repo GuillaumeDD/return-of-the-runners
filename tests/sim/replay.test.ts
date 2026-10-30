@@ -29,6 +29,7 @@ describe("committed replays (Node)", () => {
       "first-steps-random",
       "keys",
       "monk-trap-respawn",
+      "snare-gas",
       "teleport",
       "terrain",
       "tools",
@@ -86,6 +87,21 @@ describe("committed replays (Node)", () => {
     const end = runReplay(f.replay).state;
     expect(end.status).toBe("won");
     expect(end.tiles[4]).toBe("@@@@@@@@@@.....@");
+  });
+
+  it("snare-gas: both monks dazed in the first cloud; one snared, one dazed at the end", () => {
+    const f = fixtures.find((x) => x.name === "snare-gas");
+    if (f === undefined) throw new Error("missing snare-gas");
+    const at = (ticks: number) =>
+      runReplay({
+        ...f.replay,
+        inputs: f.replay.inputs.map((log) => encodeInputs(decodeInputs(log).slice(0, ticks))),
+      }).state;
+    expect(at(200).monks.map((m) => m.mode)).toEqual(["dazed", "dazed"]);
+    expect(at(700).monks.map((m) => m.mode)).toEqual(["free", "free"]);
+    const end = runReplay(f.replay).state;
+    expect([end.status, end.snares, end.players[0]?.item]).toEqual(["won", [], "g"]);
+    expect(end.monks.map((m) => m.mode)).toEqual(["snared", "dazed"]);
   });
 
   it("tools: the rubble walls the monk out while the runner drills down and wins", () => {

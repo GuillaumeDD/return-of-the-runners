@@ -131,7 +131,8 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
 
 ### Items, keys and doors
 
-- `items.ts`: items lie in cells of `tiles` (keys `a b c` and tools `j k` so far) and read as
+- `items.ts`: items lie in cells of `tiles` (keys `a b c`, tools `j k`, the snare `s` and
+  the gas gun `g`) and read as
   **empty** for movement, support and digging, so a brick can be dug under one, as
   under gold. Monks never take them.
 - Each player has one **item slot** (`Player.item`, `""` when empty). The pick-up key
@@ -180,6 +181,35 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
   in play that it touches (their boxes overlap), after the holes age, so a monk right
   in front of the swing is buried at once (S-021 @ 0:08). A crushed monk is dead as if
   buried (it keeps its gold); a crushed player dies as if caught (agreed by Guillaume, 2026-10-29).
+
+### Snares and gas
+
+- `snares.ts`: the snare `s` is an item. The use key lays it, armed, in the player's
+  cell (`GameState.snares`) if that cell is empty (`.`: not a ladder, a bar, gold or an
+  item; not while falling, nor where one is already armed), which empties the slot. The first monk whose centre enters that cell is `snared`: aligned
+  on the cell, it hangs there for good (S-018 @ 0:22–0:48; S-100), moves no more and
+  catches nobody, and it is **not a body** (`monkAt`): players and other monks pass it
+  (S-018 @ 0:30). The snare is used up. Only death frees it (a blast, rubble, a hole
+  refilling on it), and it then reappears free like any dead monk. A monk caught with
+  gold drops it in the snare's cell, or the cell above, whichever is empty. A snared
+  monk blocks neither a player's start nor a teleporter's exit. Players walk over
+  armed snares unharmed: players are never caught (S-100).
+- `gas.ts`: the gas gun `g` is an item, never used up. The use key fires a **cloud**
+  (`GameState.clouds`: first cell, row, width, ticks left) over the `GAS_CELLS` (3)
+  cells in front of the player, on its row, stopping at the first solid cell (none
+  against a wall); it lasts `GAS_TICKS` (390, 6.5 s) and the player is busy
+  `GAS_FIRE_TICKS`. Several clouds can be out at once (S-021 @ 0:58).
+- A free monk whose centre is in a cloud, after its move, is `dazed`: it stands still
+  (it still falls if nothing holds it up), catches nobody and is still a body, so the
+  monks behind it queue up (S-021 @ 0:55–1:00). A dazed monk that falls into a hole is
+  trapped as a free one would be. Its daze restarts at `DAZE_TICKS`
+  (150, 2.5 s) every tick it is in a cloud, so it wears off 2.5 s after the cloud is
+  gone (S-021 @ 1:01–1:03.5). A monk on a ladder or a bar, or falling, is not affected
+  (S-005); nor is a monk trapped in or climbing out of a hole. Players pass through
+  clouds unharmed (S-021 @ 0:58–1:00).
+- Order in a tick: a player lays the snare or fires as it uses a tool; then each monk,
+  after its move, may walk into a snare or be dazed; the clouds then thin out, after
+  the monks and before the holes age.
 
 ### Bombs
 
@@ -316,10 +346,12 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
   monk drops its gold on top of the hole and waits two cells, so it does not take it
   back while climbing out. Carried gold still counts in `goldLeft`.
 - **Catching**: a monk whose centre cell is a player's catches that player (any player
-  in play, not only its target). A monk standing over a dig target blocks the dig.
+  in play, not only its target); a snared or dazed monk catches nobody. A monk
+  standing over a dig target blocks the dig.
   A dead monk never reappears on a player's cell.
 - Order within a tick: players, gold and exit as above, then each monk in order (move,
-  gold, trap, catch), then holes age and kill whoever they fill.
+  gold, snare, trap, teleporter, gas, catch), then the clouds thin out, then holes age
+  and kill whoever they fill.
 
 ## Game loop, input and rendering
 
@@ -618,7 +650,10 @@ as gameplay is implemented.
 | Jackhammer                      | rides straight down through brick, ≈ 5 tiles in 9 s; tool kept                            | S-019 @ 2:33–2:43          |
 | Jackhammer through bedrock      | drills bedrock too, as brick                                                              | Guillaume, 2026-10-29      |
 | Jackhammer timing               | 100 ticks a cell, then falls in; the shaft refills like a dug hole                        | **Provisional**, to check  |
-| Gas gun                         | cloud ≈ 2 tiles for ≈ 6 s; monks inside stuck; gun kept                                   | S-021 @ 0:54–1:04          |
+| Gas gun                         | cloud ≈ 3 cells in front for ≈ 6.5 s; monks inside stuck; gun kept; clouds can stack      | S-021 @ 0:53–1:05          |
+| Gas: daze after the cloud       | ≈ 2.5 s, stars over the monk's head                                                       | S-021 @ 1:01–1:03.5        |
+| Gas and players                 | the runner walks through the cloud and the stuck monks unharmed                           | S-021 @ 0:58–1:00          |
+| Gas on ladders and bars         | no effect                                                                                 | S-005, to check            |
 | Two-player race                 | mirrored halves, exits appear with the gold, first out wins                               | S-025                      |
 | Versus end                      | first player out wins                                                                     | S-025 @ 0:04–1:24          |
 | Versus gold and exits           | shared, as in co-op (any gold, any exit); both out on the same tick: draw                 | Guillaume, 2026-10-29      |
@@ -637,6 +672,8 @@ as gameplay is implemented.
 | Teleporter: player in transit   | monks keep chasing it, toward its exit                                                    | Guillaume, 2026-10-29      |
 | Big bomb                        | same counter; round blast ≈ 5 cells, permanent; chain reactions                           | S-025 @ 1:04–1:15          |
 | Snare                           | holds the first monk that walks in for good; others walk past                             | S-018 @ 0:23–0:48          |
+| Snare: laid and used up         | picked up as an item, laid in the player's cell, one monk per snare                       | S-018 @ 0:22–0:48          |
+| Snare and players               | never caught: players walk over armed snares unharmed                                     | S-100 (2026-10-30)         |
 | Alcove                          | hiding place: a player inside cannot be caught                                            | S-018 @ 0:02–0:19, S-100   |
 | Alcove: monks' sight            | monks do not see a hiding player (they chase another, or stand still)                     | Guillaume, 2026-10-29      |
 | Trapdoor turf                   | drawn like brick; actors fall through; cannot be dug                                      | S-002, S-008               |

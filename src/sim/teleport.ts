@@ -45,7 +45,10 @@ export function tryTeleport<A extends Actor>(
   if (s.tiles[cy]?.charAt(cx) !== TILE.teleportEntrance) return a;
   const exit = exitOf(s.teleports, cx, cy);
   if (exit === null) return a;
-  const blocked = monks.some((m) => m.mode !== "dead" && overlapsCell(m, exit.cx, exit.cy));
+  // A snared monk is not a body (`snares.ts`): it does not block the exit.
+  const blocked = monks.some(
+    (m) => m.mode !== "dead" && m.mode !== "snared" && overlapsCell(m, exit.cx, exit.cy),
+  );
   if (blocked) return a;
   return { ...a, x: exit.cx * SUB, y: exit.cy * SUB, warp: TELEPORT_TICKS };
 }

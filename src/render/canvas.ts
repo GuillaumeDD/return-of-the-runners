@@ -3,6 +3,8 @@ import { blastCells, type Blast, type Fuse } from "../sim/bombs";
 import { craterAt, holeAt, holePhase } from "../sim/holes";
 import { BLAST_TICKS, HOLE_TICKS, SUB } from "../sim/rules";
 import type { GameState, Monk, Player } from "../sim/state";
+import type { Cloud } from "../sim/gas";
+import type { Snare } from "../sim/snares";
 import type { Rubble } from "../sim/tools";
 
 /** On-screen size of one tile, in canvas pixels. A multiple of SUB keeps motion crisp. */
@@ -53,6 +55,14 @@ const COLOR = {
   spark: "#ffd84a",
   blast: "#ff7a2f",
   blastBig: "#ffe38a",
+  rope: "#c8a165",
+  ropeDark: "#7a5a2e",
+  gun: "#3f7f5f",
+  gunTank: "#9fdc8a",
+  // Translucent, so what is in the cloud still shows through.
+  gas: "rgba(120, 210, 110, 0.45)",
+  gasThin: "rgba(120, 210, 110, 0.22)",
+  daze: "#ffd84a",
   gridLine: "#222",
 } as const;
 
@@ -84,8 +94,9 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState): void {
     else drawHole(ctx, tile, brickLeft(hole.age), x, y);
   });
   for (const r of state.rubble) drawRubble(ctx, r);
+  for (const n of state.snares) drawArmedSnare(ctx, n);
   for (const f of state.fuses) drawLitBomb(ctx, f);
-  for (const m of state.monks) drawMonk(ctx, m);
+  for (const m of state.monks) drawMonk(ctx, m, state.tick);
   // Actors in a teleporter show as a sparkle at the exit.
   for (const a of [...state.monks, ...state.players]) {
     if (a.warp > 0) drawSparkle(ctx, a.x * PX_PER_SUB, a.y * PX_PER_SUB);
@@ -93,8 +104,36 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState): void {
   state.players.forEach((p, i) => {
     drawPlayer(ctx, p, i, state.status === "dead");
   });
+  for (const c of state.clouds) drawCloud(ctx, c);
   for (const b of state.blasts) drawBlast(ctx, b, state.width, state.height);
 }
+
+/** An armed snare: a loop of rope lying open on the floor. */
+function drawArmedSnare(ctx: CanvasRenderingContext2D, n: Snare): void {
+  const x = n.cx * TILE_PX;
+  const y = n.cy * TILE_PX;
+  const s = TILE_PX;
+  ctx.fillStyle = COLOR.rope;
+  ctx.fillRect(x + 3, y + s - 3, s - 6, 2);
+  ctx.fillRect(x + 3, y + s - 6, 2, 3);
+  ctx.fillRect(x + s - 5, y + s - 6, 2, 3);
+  ctx.fillStyle = COLOR.ropeDark;
+  ctx.fillRect(x + s / 2 - 1, y + s - 8, 2, 5);
+}
+
+/** A gas cloud over its cells; it thins out over its last ticks. */
+function drawCloud(ctx: CanvasRenderingContext2D, c: Cloud): void {
+  ctx.fillStyle = c.left > TICKS_FADING ? COLOR.gas : COLOR.gasThin;
+  for (let i = 0; i < c.width; i++) {
+    const x = (c.cx + i) * TILE_PX;
+    const y = c.cy * TILE_PX;
+    ctx.fillRect(x, y + 3, TILE_PX, TILE_PX - 5);
+    ctx.fillRect(x + 3, y + 1, TILE_PX - 6, TILE_PX - 1);
+  }
+}
+
+/** Ticks before a cloud is gone when it starts to look thin (drawing only). */
+const TICKS_FADING = 60;
 
 /**
  * How much of a blown-away brick is visible: none while the crater is open, then it
@@ -176,6 +215,17 @@ function drawPlayer(ctx: CanvasRenderingContext2D, p: Player, index: number, los
     ctx.fillRect(hand + 2, y + 9, 2, 8); // handle
     ctx.fillStyle = COLOR.steel;
     ctx.fillRect(hand, y + 8, 6, 2); // head
+  } else if (p.item === TILE.snare) {
+    ctx.fillStyle = COLOR.rope;
+    ctx.fillRect(hand, y + 9, 6, 2); // coil
+    ctx.fillRect(hand, y + 13, 6, 2);
+    ctx.fillRect(hand, y + 9, 2, 6);
+    ctx.fillRect(hand + 4, y + 9, 2, 6);
+  } else if (p.item === TILE.gasSpray) {
+    ctx.fillStyle = COLOR.gun;
+    ctx.fillRect(hand, y + 10, 6, 3); // barrel
+    ctx.fillStyle = COLOR.gunTank;
+    ctx.fillRect(p.facing === 1 ? hand : hand + 3, y + 7, 3, 3); // tank
   }
 }
 
@@ -438,6 +488,24 @@ function drawTile(
     case TILE.bigBomb:
       drawBomb(ctx, x, y, tile === TILE.bigBomb);
       break;
+    case TILE.snare:
+      // A coil of rope.
+      ctx.fillStyle = COLOR.rope;
+      ctx.fillRect(x + 5, y + s - 12, s - 10, 3);
+      ctx.fillRect(x + 5, y + s - 4, s - 10, 3);
+      ctx.fillRect(x + 4, y + s - 11, 3, 9);
+      ctx.fillRect(x + s - 7, y + s - 11, 3, 9);
+      ctx.fillStyle = COLOR.ropeDark;
+      ctx.fillRect(x + 9, y + s - 8, s - 18, 2);
+      break;
+    case TILE.gasSpray:
+      // A gun with a green tank on top.
+      ctx.fillStyle = COLOR.gun;
+      ctx.fillRect(x + 3, y + s - 11, s - 6, 5); // barrel
+      ctx.fillRect(x + 6, y + s - 6, 4, 5); // grip
+      ctx.fillStyle = COLOR.gunTank;
+      ctx.fillRect(x + 9, y + s - 17, 8, 6); // tank
+      break;
     case TILE.doorRed:
     case TILE.doorGreen:
     case TILE.doorBlue:
@@ -512,10 +580,37 @@ function drawRunner(
   ctx.fillRect(facing === 1 ? x + 13 : x + 9, y + 4, 2, 2); // eye shows facing
 }
 
-/** A monk: a robed figure; a gold band on its head while it carries gold. */
-function drawMonk(ctx: CanvasRenderingContext2D, m: Monk): void {
+/**
+ * A monk: a robed figure; a gold band on its head while it carries gold. A snared monk
+ * hangs upside down from a rope; a dazed one has stars spinning over its head.
+ */
+function drawMonk(ctx: CanvasRenderingContext2D, m: Monk, tick: number): void {
   if (m.mode === "dead" || m.warp > 0) return;
-  drawMonkAt(ctx, m.x * PX_PER_SUB, m.y * PX_PER_SUB, m.facing, m.carry > 0);
+  const x = m.x * PX_PER_SUB;
+  const y = m.y * PX_PER_SUB;
+  if (m.mode === "snared") {
+    drawSnaredMonk(ctx, x, y);
+    return;
+  }
+  drawMonkAt(ctx, x, y, m.facing, m.carry > 0);
+  if (m.mode === "dazed") {
+    ctx.fillStyle = COLOR.daze;
+    const turn = (tick >> 3) % 2 === 0;
+    ctx.fillRect(x + (turn ? 4 : 16), y - 2, 3, 3);
+    ctx.fillRect(x + (turn ? 16 : 4), y, 3, 3);
+  }
+}
+
+/** A monk hanging upside down by its feet, from a rope tied to the top of its cell. */
+function drawSnaredMonk(ctx: CanvasRenderingContext2D, x: number, y: number): void {
+  const s = TILE_PX;
+  ctx.fillStyle = COLOR.rope;
+  ctx.fillRect(x + 11, y, 2, 4);
+  ctx.fillStyle = COLOR.monk;
+  ctx.fillRect(x + 5, y + 4, 14, s - 13); // robe, upside down
+  ctx.fillRect(x + 8, y + s - 9, 8, 7); // head, at the bottom
+  ctx.fillStyle = COLOR.monkFace;
+  ctx.fillRect(x + 11, y + s - 5, 2, 2);
 }
 
 function drawMonkAt(

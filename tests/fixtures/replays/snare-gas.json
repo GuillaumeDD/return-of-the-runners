@@ -1,0 +1,98 @@
+{
+  "about": "Snare and gas (B-027): the runner picks up the snare and lays it, then picks up the gas gun and fires it at the two monks coming. Both stop in the cloud, dazed, until it clears and the daze wears off. The runner waits behind the snare: the first monk hangs in it, the second walks past it, and a second cloud stops it. The runner walks through the cloud, past both monks, takes the gold and leaves by the exit.",
+  "replay": {
+    "format": "return-of-the-runners/replay",
+    "version": 2,
+    "seed": 1,
+    "level": {
+      "format": "return-of-the-runners/level",
+      "version": 2,
+      "name": "Snare and gas",
+      "width": 20,
+      "height": 8,
+      "grid": [
+        "....................",
+        "....................",
+        "....................",
+        "....................",
+        "....................",
+        "....................",
+        "...P.s..g.....MM.$.E",
+        "@@@@@@@@@@@@@@@@@@@@"
+      ]
+    },
+    "inputs": [
+      [
+        [
+          32,
+          "R"
+        ],
+        [
+          1,
+          "I"
+        ],
+        [
+          1,
+          ""
+        ],
+        [
+          1,
+          "X"
+        ],
+        [
+          1,
+          ""
+        ],
+        [
+          48,
+          "R"
+        ],
+        [
+          1,
+          "I"
+        ],
+        [
+          1,
+          ""
+        ],
+        [
+          1,
+          "X"
+        ],
+        [
+          1,
+          ""
+        ],
+        [
+          80,
+          "L"
+        ],
+        [
+          1,
+          "R"
+        ],
+        [
+          596,
+          ""
+        ],
+        [
+          1,
+          "X"
+        ],
+        [
+          15,
+          ""
+        ],
+        [
+          231,
+          "R"
+        ]
+      ]
+    ]
+  },
+  "expected": {
+    "tick": 1012,
+    "status": "won",
+    "hash": 12385788
+  }
+}

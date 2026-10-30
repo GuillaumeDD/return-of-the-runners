@@ -6,6 +6,8 @@ import { NO_INPUT, type PlayerInput } from "./input";
 import { every, isFalling, overlapsCell, stepActor, tryHorizontal } from "./move";
 import { cellOf, isBar, isLadder, isPassable, isSolid, offsetOf, type Terrain } from "./physics";
 import { prngInt } from "./prng";
+import { gasMonk } from "./gas";
+import { catchInSnare, type Snare } from "./snares";
 import { inTransit, tryTeleport } from "./teleport";
 import { rubbleAt, rubbleIn } from "./tools";
 import { MONK_CARRY, MONK_PERIOD, MONK_TICKS, SUB } from "./rules";
@@ -18,6 +20,8 @@ export interface MonksResult {
   readonly rng: number;
   /** `caught[i]`: a monk touched player i. */
   readonly caught: readonly boolean[];
+  /** The snares still armed (a monk walking into one uses it up). */
+  readonly snares: readonly Snare[];
 }
 
 const INPUT: Readonly<Record<MonkMove, PlayerInput>> = {
@@ -103,6 +107,7 @@ export function stepMonks(state: GameState, tick: number): MonksResult {
   const monks = [...state.monks];
   let tiles = state.tiles;
   let rng = state.rng;
+  let snares = state.snares;
   const caught = state.players.map(() => false);
 
   for (let i = 0; i < monks.length; i++) {
@@ -137,6 +142,17 @@ export function stepMonks(state: GameState, tick: number): MonksResult {
       case "escaping":
         m = escape(t, m, view(state, m), tick, state.players);
         break;
+      case "snared":
+        break;
+      case "dazed": {
+        // Stands still (it still falls if unsupported) until the daze wears off.
+        const moved = stepActor(t, m, NO_INPUT, tick, MONK_PERIOD);
+        m =
+          m.timer > 1
+            ? { ...m, ...moved, timer: m.timer - 1 }
+            : { ...m, ...moved, mode: "free", timer: 0 };
+        break;
+      }
       case "free": {
         // No player in play and in sight: the monk waits (it still falls if unsupported).
         const v = view(state, m);
@@ -150,7 +166,10 @@ export function stepMonks(state: GameState, tick: number): MonksResult {
     // Monks never overlap: a move into another monk is cancelled, mode change included.
     if (m.mode !== "dead" && (m.x !== before.x || m.y !== before.y)) {
       // A monk in transit counts: it is already on its exit.
-      if (others.some((o) => o.mode !== "dead" && overlaps(m, o))) m = before;
+      // A snared monk is not a body: monks pass it.
+      if (others.some((o) => o.mode !== "dead" && o.mode !== "snared" && overlaps(m, o))) {
+        m = before;
+      }
     }
 
     if (m.mode === "free" || m.mode === "escaping") {
@@ -160,7 +179,9 @@ export function stepMonks(state: GameState, tick: number): MonksResult {
       rng = carried.rng;
     }
 
-    if (m.mode === "free" && aligned(m)) {
+    ({ snares, tiles, monk: m } = catchInSnare(snares, tiles, m));
+    // A dazed monk that falls into a hole is trapped there like a free one.
+    if ((m.mode === "free" || m.mode === "dazed") && aligned(m)) {
       const { cx, cy } = centerCell(m);
       if (isDugOut(state.holes, cx, cy)) {
         const trapped = trap(m, cx, cy, tiles);
@@ -169,8 +190,10 @@ export function stepMonks(state: GameState, tick: number): MonksResult {
       }
     }
     if (m.mode === "free") m = tryTeleport({ ...state, tiles }, m, others);
+    m = gasMonk({ ...t, tiles }, state.clouds, m);
 
-    if (m.mode !== "dead" && !inTransit(m)) {
+    // Snared and dazed monks catch nobody.
+    if ((m.mode === "free" || m.mode === "trapped" || m.mode === "escaping") && !inTransit(m)) {
       state.players.forEach((p, j) => {
         if (inSight(tiles, p) && !inTransit(p) && sameCell(m, p)) caught[j] = true;
       });
@@ -178,7 +201,7 @@ export function stepMonks(state: GameState, tick: number): MonksResult {
     monks[i] = m;
   }
 
-  return { monks, tiles, rng, caught };
+  return { monks, tiles, rng, caught, snares };
 }
 
 /**

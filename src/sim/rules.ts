@@ -68,6 +68,17 @@ export const FUSE_TICKS = 150;
  */
 export const CRATER_TICKS = 780;
 
+/**
+ * Gas gun (S-021 @ 0:53–1:05, read at 2 frames per second; provisional): a cloud covers
+ * `GAS_CELLS` cells in front of the player for `GAS_TICKS` (6.5 s: fired @ 0:54, gone
+ * @ 1:01); a monk caught in it stays dazed `DAZE_TICKS` more once it clears (2.5 s, the
+ * stars spin until @ 1:03.5). Firing keeps the player busy `GAS_FIRE_TICKS`.
+ */
+export const GAS_CELLS = 3;
+export const GAS_TICKS = 390;
+export const DAZE_TICKS = 150;
+export const GAS_FIRE_TICKS = 15;
+
 /** Ticks a blast is drawn after it goes off (drawing only, but kept in the state). */
 export const BLAST_TICKS = 20;
 

@@ -2,7 +2,9 @@ import { TILE } from "../level/format";
 import { craterAt, holeAt, isOpened, type Hole } from "./holes";
 import { isFalling, overlapsCell } from "./move";
 import { cellOf, isSolid, offsetOf, tileAt, type Terrain } from "./physics";
-import { DRILL_TICKS, HOLE_TICKS, PICK_TICKS, RUBBLE_TICKS, SUB } from "./rules";
+import { fireGas, type Cloud } from "./gas";
+import { DRILL_TICKS, GAS_FIRE_TICKS, HOLE_TICKS, PICK_TICKS, RUBBLE_TICKS, SUB } from "./rules";
+import { canLaySnare, type Snare } from "./snares";
 import type { Actor, Player } from "./state";
 
 /**
@@ -18,6 +20,8 @@ import type { Actor, Player } from "./state";
  *   `RUBBLE_TICKS`, solid like bedrock. Rubble crushes any monk or player it touches
  *   while it falls, so a monk right in front is buried at once (S-021 @ 0:08;
  *   provisional for players).
+ * - **Snare** and **gas gun**: see `snares.ts` and `gas.ts`. A snare is laid in the
+ *   player's cell and used up; the gun is kept.
  */
 
 /** Rubble from a pickaxe: in column `cx`, at `y` (sub-units, top edge). */
@@ -51,6 +55,10 @@ export interface ToolResult {
   readonly player: Player;
   readonly hole: Hole | null;
   readonly rubble: Rubble | null;
+  /** A snare laid this tick. */
+  readonly snare?: Snare;
+  /** A gas cloud fired this tick. */
+  readonly cloud?: Cloud;
 }
 
 /**
@@ -93,10 +101,25 @@ function drill(t: Terrain, p: Player, cx: number, cy: number): ToolResult | null
  * A press of the use key with the held item. `falling`: the player is falling (no tool
  * works then). Returns null when nothing happens.
  */
-export function useTool(t: Terrain, p: Player, falling: boolean): ToolResult | null {
+export function useTool(
+  t: Terrain,
+  p: Player,
+  falling: boolean,
+  snares: readonly Snare[],
+): ToolResult | null {
   const at = footing(t, p, falling);
   if (at === null) return null;
   if (p.item === TILE.jackhammer) return drill(t, p, at.cx, at.cy);
+  if (p.item === TILE.snare) {
+    if (!canLaySnare(t.tiles, snares, at.cx, at.cy)) return null;
+    return { player: { ...p, item: "" }, hole: null, rubble: null, snare: at };
+  }
+  if (p.item === TILE.gasSpray) {
+    const cloud = fireGas(t, at.cx, at.cy, p.facing);
+    if (cloud === null) return null;
+    const player = { ...p, x: at.cx * SUB, y: at.cy * SUB, busy: GAS_FIRE_TICKS };
+    return { player, hole: null, rubble: null, cloud };
+  }
   if (p.item !== TILE.pickaxe) return null;
   const fx = at.cx + p.facing;
   const fy = at.cy;

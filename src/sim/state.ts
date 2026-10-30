@@ -2,6 +2,8 @@ import { TILE, type Level, type Teleport } from "../level/format";
 import { countGold, revealLadders } from "./gold";
 import type { Crater, Hole } from "./holes";
 import type { Blast, Fuse } from "./bombs";
+import type { Cloud } from "./gas";
+import type { Snare } from "./snares";
 import type { Rubble } from "./tools";
 import { START_LIVES, SUB } from "./rules";
 
@@ -24,9 +26,10 @@ export interface Actor {
 /**
  * What a monk is doing. `free`: chasing. `trapped`: stuck in a hole for `timer` ticks.
  * `escaping`: climbing out of the hole at (`holeX`, `holeY`). `dead`: waiting `timer`
- * ticks to reappear.
+ * ticks to reappear. `snared`: hanging in a snare for good (`snares.ts`). `dazed`: stopped
+ * by gas, for `timer` more ticks once out of every cloud (`gas.ts`).
  */
-export type MonkMode = "free" | "trapped" | "escaping" | "dead";
+export type MonkMode = "free" | "trapped" | "escaping" | "dead" | "snared" | "dazed";
 
 export interface Monk extends Actor {
   readonly mode: MonkMode;
@@ -112,6 +115,10 @@ export interface GameState {
   readonly fuses: readonly Fuse[];
   /** Blasts still drawn, ordered by when they went off (`bombs.ts`). */
   readonly blasts: readonly Blast[];
+  /** Snares laid and still empty, ordered by when they were laid (`snares.ts`). */
+  readonly snares: readonly Snare[];
+  /** Gas clouds, ordered by when they were fired (`gas.ts`). */
+  readonly clouds: readonly Cloud[];
   /** Player 1, then player 2 in a two-player game; this order is the update order. */
   readonly players: readonly Player[];
   /** Monks in level reading order (row by row); this order is the update order. */
@@ -212,6 +219,8 @@ export function createState(level: Level, seed: number, players: PlayerCount = 1
     craters: [],
     fuses: [],
     blasts: [],
+    snares: [],
+    clouds: [],
     players:
       p2 === null ? [newPlayer(p1.cx, p1.cy)] : [newPlayer(p1.cx, p1.cy), newPlayer(p2.cx, p2.cy)],
     monks,

@@ -6,6 +6,8 @@ const MONK_MODE_CODE: Readonly<Record<MonkMode, number>> = {
   trapped: 1,
   escaping: 2,
   dead: 3,
+  snared: 4,
+  dazed: 5,
 };
 
 const PLAYER_MODE_CODE: Readonly<Record<PlayerMode, number>> = { alive: 0, dead: 1, out: 2 };
@@ -94,6 +96,18 @@ export function hashState(s: GameState): number {
     int(b.cy);
     int(b.big ? 1 : 0);
     int(b.age);
+  }
+  int(s.snares.length);
+  for (const n of s.snares) {
+    int(n.cx);
+    int(n.cy);
+  }
+  int(s.clouds.length);
+  for (const c of s.clouds) {
+    int(c.cx);
+    int(c.cy);
+    int(c.width);
+    int(c.left);
   }
   int(s.monks.length);
   for (const m of s.monks) {

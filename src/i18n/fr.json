@@ -105,6 +105,8 @@
   "tilePickaxe": "Pioche",
   "tileSmallBomb": "Petite bombe",
   "tileBigBomb": "Grosse bombe",
+  "tileSnare": "Piège",
+  "tileGasSpray": "Pistolet à gaz",
   "editorLinkTool": "Relier les téléporteurs",
   "editorLinkHint": "Cliquer sur une entrée de téléporteur, puis sur la sortie où elle doit mener. Une nouvelle entrée mène à la sortie la plus proche.",
   "controls2": "Joueur 1 : flèches, : et ! pour creuser, ; pour prendre, la virgule pour utiliser un outil, N pour poser une bombe (clavier AZERTY). Joueur 2 : Z Q S D, A et E pour creuser, R pour prendre, F pour utiliser un outil, G pour poser une bombe. Ramassez tout l'or : dès qu'un joueur atteint la sortie, le niveau est gagné.",
