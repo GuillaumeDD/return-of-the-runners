@@ -6,6 +6,16 @@ import type { GameState, Monk, Player } from "../sim/state";
 import type { Cloud } from "../sim/gas";
 import type { Snare } from "../sim/snares";
 import type { Rubble } from "../sim/tools";
+import {
+  type ActorKind,
+  MONK_ANIMS,
+  type Motion,
+  monkPose,
+  playerPose,
+  type Pose,
+  poseSprite,
+  RUNNER_ANIMS,
+} from "./actors";
 import { drawSprite, type SpriteSheet, tileArt } from "./sprites";
 
 /** No art: everything is drawn as a placeholder. */
@@ -14,6 +24,8 @@ const NO_ART: SpriteSheet = { scale: 1, image: null, frames: new Map() };
 /** On-screen size of one tile, in canvas pixels. A multiple of SUB keeps motion crisp. */
 export const TILE_PX = 24;
 const PX_PER_SUB = TILE_PX / SUB;
+/** How far above its cell an actor sprite starts (see `sheet.ts`, `ACTOR_SPRITE`). */
+export const ACTOR_TOP = TILE_PX / 2;
 
 // Placeholder palette: real art comes later, with ASSETS.md entries.
 const COLOR = {
@@ -88,10 +100,17 @@ export function canvasSize(state: Pick<GameState, "width" | "height">): {
   return { width: state.width * TILE_PX, height: state.height * TILE_PX };
 }
 
+/**
+ * Draws `state`. With a sprite `sheet`, actors and tiles that have art use it, animated
+ * by the render time `time` (ms) and the `motion` record (`trackMotion`: which actors
+ * are moving); the rest is drawn as placeholders.
+ */
 export function render(
   ctx: CanvasRenderingContext2D,
   state: GameState,
   sheet: SpriteSheet = NO_ART,
+  time = 0,
+  motion: Motion | null = null,
 ): void {
   const { width, height } = canvasSize(state);
   ctx.fillStyle = COLOR.background;
@@ -108,13 +127,19 @@ export function render(
   for (const r of state.rubble) drawRubble(ctx, r);
   for (const n of state.snares) drawArmedSnare(ctx, n);
   for (const f of state.fuses) drawLitBomb(ctx, f);
-  for (const m of state.monks) drawMonk(ctx, m, state.tick);
+  state.monks.forEach((m, i) => {
+    drawMonk(ctx, m, state.tick, () =>
+      drawActorSprite(ctx, sheet, monkPose(state, motion, i), time, m.x, m.y),
+    );
+  });
   // Actors in a teleporter show as a sparkle at the exit.
   for (const a of [...state.monks, ...state.players]) {
     if (a.warp > 0) drawSparkle(ctx, a.x * PX_PER_SUB, a.y * PX_PER_SUB);
   }
   state.players.forEach((p, i) => {
-    drawPlayer(ctx, p, i, state.status === "dead");
+    drawPlayer(ctx, p, i, state.status === "dead", () =>
+      drawActorSprite(ctx, sheet, playerPose(state, motion, i), time, p.x, p.y),
+    );
   });
   for (const c of state.clouds) drawCloud(ctx, c);
   for (const b of state.blasts) drawBlast(ctx, b, state.width, state.height);
@@ -204,12 +229,22 @@ function drawBlast(ctx: CanvasRenderingContext2D, b: Blast, width: number, heigh
  * alcove; a player who is out is not drawn, unless the level is lost, when everyone
  * shows where they fell. The item it holds is drawn small, in its hand.
  */
-function drawPlayer(ctx: CanvasRenderingContext2D, p: Player, index: number, lost: boolean): void {
+function drawPlayer(
+  ctx: CanvasRenderingContext2D,
+  p: Player,
+  index: number,
+  lost: boolean,
+  sprite: () => boolean,
+): void {
   if ((p.mode === "out" && !lost) || p.warp > 0) return;
   const dead = p.mode !== "alive";
   const x = p.x * PX_PER_SUB;
   const y = p.y * PX_PER_SUB;
-  drawRunner(ctx, x, y, p.facing, dead, index, p.hidden);
+  // A hiding runner is drawn in shadow.
+  if (p.hidden) ctx.globalAlpha = 0.45;
+  const drawn = sprite();
+  ctx.globalAlpha = 1;
+  if (!drawn) drawRunner(ctx, x, y, p.facing, dead, index, p.hidden);
   const hand = p.facing === 1 ? x + 17 : x + 1;
   const color = KEY_COLOR[p.item];
   if (color !== undefined) {
@@ -289,10 +324,13 @@ export function renderGrid(
   ctx.fillStyle = COLOR.background;
   ctx.fillRect(0, 0, size.width, size.height);
   drawTiles(grid, (tile, _cx, _cy, x, y) => {
-    if (tile === TILE.runnerStart) drawRunner(ctx, x, y, 1, false, 0);
-    else if (tile === TILE.player2Start) drawRunner(ctx, x, y, 1, false, 1);
-    else if (tile === TILE.monkStart) drawMonkAt(ctx, x, y, -1, false);
-    else drawTileArt(ctx, sheet, tile, x, y, false, true);
+    if (tile === TILE.runnerStart) {
+      if (!drawStill(ctx, sheet, "runner1", x, y, 1)) drawRunner(ctx, x, y, 1, false, 0);
+    } else if (tile === TILE.player2Start) {
+      if (!drawStill(ctx, sheet, "runner2", x, y, 1)) drawRunner(ctx, x, y, 1, false, 1);
+    } else if (tile === TILE.monkStart) {
+      if (!drawStill(ctx, sheet, "monk", x, y, -1)) drawMonkAt(ctx, x, y, -1, false);
+    } else drawTileArt(ctx, sheet, tile, x, y, false, true);
   });
   // Faint cell lines, so empty cells can be aimed at.
   ctx.fillStyle = COLOR.gridLine;
@@ -587,6 +625,45 @@ function drawTile(
   }
 }
 
+/**
+ * An actor's sprite for `pose` at sub-unit position (sx, sy), mirrored when it faces
+ * left; false (nothing drawn) when the sheet has no art for it.
+ */
+function drawActorSprite(
+  ctx: CanvasRenderingContext2D,
+  sheet: SpriteSheet,
+  pose: Pose,
+  time: number,
+  sx: number,
+  sy: number,
+): boolean {
+  const key = poseSprite(pose, time);
+  if (!sheet.frames.has(key)) return false;
+  const x = sx * PX_PER_SUB;
+  const y = sy * PX_PER_SUB - ACTOR_TOP;
+  if (pose.facing === 1) return drawSprite(ctx, sheet, key, x, y);
+  ctx.save();
+  ctx.translate(x + TILE_PX, 0);
+  ctx.scale(-1, 1);
+  const drawn = drawSprite(ctx, sheet, key, 0, y);
+  ctx.restore();
+  return drawn;
+}
+
+/** An actor standing still at pixel (x, y), as the editor shows a start marker. */
+function drawStill(
+  ctx: CanvasRenderingContext2D,
+  sheet: SpriteSheet,
+  kind: ActorKind,
+  x: number,
+  y: number,
+  facing: -1 | 1,
+): boolean {
+  const anim = kind === "monk" ? MONK_ANIMS.idle : RUNNER_ANIMS.idle;
+  const pose = { kind, anim, moving: false, facing };
+  return drawActorSprite(ctx, sheet, pose, 0, x / PX_PER_SUB, y / PX_PER_SUB);
+}
+
 /** A small four-pointed star, centred in the tile at (x, y). */
 function drawSparkle(ctx: CanvasRenderingContext2D, x: number, y: number): void {
   const s = TILE_PX;
@@ -641,15 +718,27 @@ function drawRunner(
  * A monk: a robed figure; a gold band on its head while it carries gold. A snared monk
  * hangs upside down from a rope; a dazed one has stars spinning over its head.
  */
-function drawMonk(ctx: CanvasRenderingContext2D, m: Monk, tick: number): void {
+function drawMonk(
+  ctx: CanvasRenderingContext2D,
+  m: Monk,
+  tick: number,
+  sprite: () => boolean = () => false,
+): void {
   if (m.mode === "dead" || m.warp > 0) return;
   const x = m.x * PX_PER_SUB;
   const y = m.y * PX_PER_SUB;
-  if (m.mode === "snared") {
+  if (sprite()) {
+    if (m.carry > 0 && m.mode !== "snared") {
+      // The gold it carries, held over its head (gold art: B-033).
+      ctx.fillStyle = COLOR.gold;
+      ctx.fillRect(x + 7, y - 5, 10, 4);
+    }
+  } else if (m.mode === "snared") {
     drawSnaredMonk(ctx, x, y);
     return;
+  } else {
+    drawMonkAt(ctx, x, y, m.facing, m.carry > 0);
   }
-  drawMonkAt(ctx, x, y, m.facing, m.carry > 0);
   if (m.mode === "dazed") {
     ctx.fillStyle = COLOR.daze;
     const turn = (tick >> 3) % 2 === 0;
