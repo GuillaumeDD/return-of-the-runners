@@ -1,7 +1,7 @@
 # Step 3 plan: TLR specifics (terrain, tools, two players)
 
 Status: **approved** (PR #28). Roadmap: `docs/PRD.md` §7, step 3.
-Backlog items: B-019 to B-029 (B-029 is a bug fix found in play), then B-038 (a fix found later) and B-039 (the default level). Source ids (`S-…`) refer to [`../SOURCES.md`](../SOURCES.md).
+Backlog items: B-019 to B-029 (B-029 is a bug fix found in play), then B-038 (a fix found later), B-039 (the default level), B-040 to B-042 (fixes from Guillaume's playtest). Source ids (`S-…`) refer to [`../SOURCES.md`](../SOURCES.md).
 
 ## Goal
 
@@ -245,7 +245,7 @@ comes with the item slot (B-024)._
 ### B-022 — Terrain
 
 _Done. As built: the alcove also hides the player from the monks' sight (they chase
-another player or stand still; provisional), and a monk with every respawn point taken
+another player or stand still; since B-041, hiding takes up and monks roam), and a monk with every respawn point taken
 waits `MONK_TICKS.respawn` before trying again. `GOO_PERIOD` is 6. Guillaume agreed to
 both choices (monks' sight, goo speed) on 2026-10-29: not checked against the original._
 
@@ -323,7 +323,7 @@ gold is taken, and a door on the exit cell still needs its key.
 ### B-025 — Tools, part 1: slot, jackhammer, pickaxe
 
 _Done. As built: a new use key (V alone; M and F with two players) acts once per
-press. The jackhammer drills brick and bedrock, 100 ticks a cell (provisional), and
+press (the jackhammer: while held, since B-040). The jackhammer drills brick and bedrock, 100 ticks a cell (provisional), and
 each drilled cell is an ordinary hole, so the shaft refills behind and kills whoever
 stays in it. Pickaxe rubble falls one sub-unit a tick, lands solid like bedrock and
 crumbles after 420 ticks; while it falls it crushes monks and also players
@@ -497,6 +497,74 @@ Tests:
   start, terrain, teleporter, red key and door, tools, bombs, snare, gas gun, goo bucket);
 - `tests/level/file.test.ts`: the "no `teleports` field" export check uses a fixture
   without teleporters, since the bundled level now has one.
+
+### B-040 — Fix: the jackhammer drills only while the key is held
+
+- Found by Guillaume in play (2026-10-30): one press of the use key drilled all the way
+  down. He wants the jackhammer active only while the key is held.
+- `src/sim/step.ts`: the jackhammer starts whenever the use key is held (not only on a
+  press) and the player is free, so a player holding it drills again each time it lands;
+  letting go while a cell is being drilled drops that cell's hole (it stays solid) and
+  frees the player at once. `Player.drill` now only marks a cell being drilled;
+  `keepDrilling` is gone.
+- The `tools` and `default-level` replays now hold the key while drilling; both end on
+  the same tick, status and hash as before.
+
+`tests/sim/tools.test.ts`
+
+- held, the jackhammer drills brick then bedrock and stops on a ladder;
+- let go mid-cell: no hole, the brick is whole, the player walks off;
+- let go once a cell opened: the player falls in and drills no further; held again, it
+  goes on;
+- held while walking: it drills once the player is over a drillable cell;
+- dropping the jackhammer while holding the key stops the drill.
+
+### B-041 — Fix: hiding in an alcove takes up, leaving takes down
+
+- Found by Guillaume in play (2026-10-30): walking through an alcove hid the player,
+  and while it hid the monks stood still. He wants: up to hide, down to come out; the
+  monks keep wandering, and one walking over the alcove does not see the player.
+- `src/sim/step.ts` (`tryHide`): `Player.hidden`, set by up with the centre in an
+  alcove (snapped onto it, not while falling), cleared by down, by the alcove being
+  destroyed, or by dying. A hidden player does nothing else.
+- `src/sim/monks.ts`: `inSight` reads `Player.hidden`. A free monk with nobody in sight
+  but a player in play roams (`roam`): toward a standable cell drawn from the PRNG,
+  redrawn on arrival, when stuck, or after `ROAM_TICKS`; kept in `Monk.roamX`, `roamY`,
+  `roamLeft` (provisional).
+- New state fields change every replay hash; with them left out of the hash, every
+  replay gives its old hash, so no gameplay in them changed.
+- The hiding player is drawn in shadow (`render/canvas.ts`).
+
+`tests/sim/terrain.test.ts`
+
+- walking into an alcove does not hide: a monk catches the player there;
+- up hides (snapped); hidden, right and dig do nothing; down comes out and it walks;
+- up does nothing outside an alcove or while falling into one;
+- a monk walking through, or landing on, the alcove does not catch the hiding player;
+- a player who came out is caught;
+- monks roam while the only player hides (many positions, no catch);
+- with player 2 in sight, monks chase it;
+- a dead player reappears with a monk on its start while the other hides (no stall);
+- a hiding player whose alcove is blown away comes out.
+
+`tests/sim/replay.test.ts`, `tests/fixtures/replays/alcove.json`: the runner hides, the
+monk roams over it twice, the runner comes out and wins. `tests/sim/hash.test.ts`: the
+new fields are hashed. `tests/render/grid.test.ts`: a hiding player is drawn in shadow.
+
+### B-042 — Fix: the pickaxe needs a ceiling
+
+- Found by Guillaume in play (2026-10-30): the pickaxe worked anywhere. The rubble comes
+  out of the ceiling, so it now needs one.
+- `src/sim/tools.ts`: a swing does nothing unless the cell above the target is solid
+  (`tileAt`, so landed rubble counts and a dug or blown-open cell does not; above the
+  top row reads as bedrock, so the top of the level counts).
+- The `tools` replay level gets a bedrock block above the swing; same tick and status,
+  new hash (the level changed).
+
+`tests/sim/tools.test.ts`
+
+- under open air nothing happens (no rubble, not busy); under brick, bedrock or the
+  level's top, rubble comes down; under a dug-open brick, nothing.
 
 ## Open questions (faithfulness)
 

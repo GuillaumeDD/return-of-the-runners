@@ -8,7 +8,7 @@ import { openDoor, pickUp } from "./items";
 import { inSight, stepMonks } from "./monks";
 import { inTransit, tryTeleport } from "./teleport";
 import type { Snare } from "./snares";
-import { keepDrilling, rubbleHits, stepRubble, useTool, type Rubble } from "./tools";
+import { rubbleHits, stepRubble, useTool, type Rubble } from "./tools";
 import { isFalling, overlapsCell, stepActor } from "./move";
 import { cellOf, monkAt, tileAt, type Terrain } from "./physics";
 import { HOLE_TICKS, MONK_TICKS, PLAYER_RESPAWN_TICKS, RUNNER_PERIOD, SUB } from "./rules";
@@ -20,11 +20,13 @@ import type { Actor, Facing, GameState, Monk, Player } from "./state";
  *
  * Order within a tick: each player in order acts (dig or move) on the current terrain;
  * a dead player counts down, then reappears at its start; a player that ends its move
- * on a teleporter entrance jumps (see `teleport.ts`). A player in play then picks up,
+ * on a teleporter entrance jumps (see `teleport.ts`). A player in an alcove hides with
+ * up and comes out with down (`tryHide`). A player in play and not hiding then picks up,
  * swaps or drops an item if it just pressed the pick-up key, opens a door next to it
  * that its key fits (`items.ts`), uses its tool if it just pressed the use key (laying a
- * snare, firing gas or throwing goo among them), or goes on drilling down (`tools.ts`), picks up the gold and the bombs it touches, and lays a
- * bomb if it just pressed the bomb key (`bombs.ts`).
+ * snare, firing gas or throwing goo among them; the jackhammer while the key is held,
+ * `tools.ts`), picks up the gold and the bombs it touches, and lays a bomb if it just
+ * pressed the bomb key (`bombs.ts`).
  * Once the last gold is taken, hidden ladders appear. A player touching the open exit
  * wins the level (`playersAtExit`). Unless it was won, the monks then act in order: a
  * monk walking into a snare hangs in it, one in a gas cloud is dazed, and a monk
@@ -46,15 +48,24 @@ export function step(state: GameState, inputs: TickInput): GameState {
   let snares: readonly Snare[] = state.snares;
   let clouds: readonly Cloud[] = state.clouds;
   const players: Player[] = [];
-  // Monks only move while they can see someone: hiding players do not count (players
-  // in transit do: they are seen at their exit).
-  const anyAlive = state.players.some((p) => inSight(state.tiles, p));
+  // Someone monks can see (players in transit are seen at their exit; hiding players
+  // are not): a dead player waits for a monk to leave its start only then.
+  const anyAlive = state.players.some((p) => inSight(p));
   for (let i = 0; i < state.players.length; i++) {
     const before = state.players[i];
     if (before === undefined) continue;
-    const t: Terrain = { ...state, tiles, holes, rubble };
     const input = inputs[i] ?? NO_INPUT;
-    const acted = actPlayer(t, before, input, tick, anyAlive);
+    let start = before;
+    // The jackhammer only drills while the use key is held: let go before the cell
+    // opens and it stays solid (its hole is dropped), and the player is free at once.
+    if (before.drill && !input.use) {
+      const cx = cellOf(before.x);
+      const below = cellOf(before.y) + 1;
+      holes = holes.filter((h) => !(h.cx === cx && h.cy === below && h.age < HOLE_TICKS.digging));
+      start = { ...before, busy: 0, drill: false };
+    }
+    const t: Terrain = { ...state, tiles, holes, rubble };
+    const acted = actPlayer(t, start, input, tick, anyAlive);
     let p: Player = {
       ...acted.player,
       pickHeld: input.pickUp,
@@ -62,11 +73,13 @@ export function step(state: GameState, inputs: TickInput): GameState {
       bombHeld: input.bomb,
     };
     if (acted.hole !== null) holes = [...holes, acted.hole];
+    // A drilled cell that just opened: the player falls in.
+    if (p.drill && p.busy === 0) p = { ...p, drill: false };
     if (p.mode === "alive") p = tryTeleport(state, p, state.monks);
-    if (inTransit(p)) p = { ...p, drill: false };
-    if (p.mode === "alive" && !inTransit(p)) {
+    if (p.mode === "alive" && !inTransit(p) && !p.hidden) {
       // The pick-up and use keys act on the tick they are pressed, unless the player is
-      // busy (digging, drilling or swinging).
+      // busy (digging, drilling or swinging); the jackhammer works whenever the use key
+      // is held, so a player holding it drills again each time it lands.
       if (input.pickUp && !before.pickHeld && p.busy === 0) {
         ({ tiles, player: p } = pickUp(tiles, p));
       }
@@ -74,9 +87,9 @@ export function step(state: GameState, inputs: TickInput): GameState {
       const here: Terrain = { ...state, tiles, holes, rubble };
       const falling = isFalling(here, p);
       const used =
-        input.use && !before.useHeld && p.busy === 0
+        input.use && p.busy === 0 && (!before.useHeld || p.item === TILE.jackhammer)
           ? useTool(here, p, falling, snares)
-          : keepDrilling(here, p, falling);
+          : null;
       if (used !== null) {
         p = used.player;
         if (used.hole !== null) holes = [...holes, used.hole];
@@ -201,9 +214,10 @@ export function playersAtExit(s: Pick<GameState, "tiles" | "goldLeft" | "players
  */
 function die(p: Player, solo: boolean): Player {
   const lives = p.lives - 1;
-  if (lives <= 0) return { ...p, lives: 0, mode: "out", timer: 0, busy: 0, drill: false };
+  const reset = { busy: 0, drill: false, hidden: false };
+  if (lives <= 0) return { ...p, lives: 0, mode: "out", timer: 0, ...reset };
   const timer = solo ? 0 : PLAYER_RESPAWN_TICKS;
-  return { ...p, lives, mode: "dead", timer, busy: 0, drill: false };
+  return { ...p, lives, mode: "dead", timer, ...reset };
 }
 
 /**
@@ -240,11 +254,31 @@ function actPlayer(
       // In a teleporter: waits at the exit until it appears.
       if (inTransit(p)) return { player: { ...p, warp: p.warp - 1 }, hole: null };
       if (p.busy > 0) return { player: { ...p, busy: p.busy - 1 }, hole: null };
+      const hide = tryHide(t, p, input);
+      if (hide !== null) return { player: hide, hole: null };
       const dig = tryDig(t, p, input);
       if (dig !== null) return { player: { ...p, ...dig.runner }, hole: dig.hole };
       return { player: { ...p, ...stepActor(t, p, input, tick, RUNNER_PERIOD) }, hole: null };
     }
   }
+}
+
+/**
+ * Hiding in an alcove (Guillaume, 2026-10-30): a player standing with its centre in an
+ * alcove hides there by pressing up (it snaps onto the cell), and comes out by pressing
+ * down. While hidden it does nothing else (no moving, digging or items) and monks
+ * neither see nor catch it (`monks.ts`, `inSight`); it comes out by itself if the
+ * alcove is destroyed. Returns the player's new state when hiding decides this tick,
+ * else null (the player acts as usual).
+ */
+function tryHide(t: Terrain, p: Player, input: PlayerInput): Player | null {
+  const { cx, cy } = centerCell(p);
+  const inAlcove = t.tiles[cy]?.charAt(cx) === TILE.alcove;
+  if (p.hidden) return input.down || !inAlcove ? { ...p, hidden: false } : p;
+  if (!input.up || !inAlcove || isFalling(t, p)) return null;
+  const snapped: Player = { ...p, x: cx * SUB, y: cy * SUB };
+  if (isFalling(t, snapped)) return null;
+  return { ...snapped, hidden: true };
 }
 
 /**

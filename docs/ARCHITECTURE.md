@@ -73,7 +73,8 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
   with an intentional rules change, and say so in the PR (the failing test prints the
   new values). A new state field also changes every hash while tick and status stay
   the same (B-023 added `teleports` and `warp`, B-025 `rubble`, `useHeld` and
-  `drill`, B-026 `craters`, `fuses`, `blasts`, `bombs` and `bombHeld`); say so in the PR
+  `drill`, B-026 `craters`, `fuses`, `blasts`, `bombs` and `bombHeld`, B-041 `hidden`,
+  `roamX`, `roamY` and `roamLeft`); say so in the PR
   as well.
 
 ### Movement model
@@ -107,8 +108,13 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
 - **Hidden ladders** stay `h` in `tiles` (not drawn) until `goldLeft` reaches 0; on that
   tick, after the players collect gold, `revealLadders` turns every `h` into a ladder
   (`H`). A level without gold starts with them revealed.
-- **Alcove**: a player whose centre is in one is hidden: monks neither catch it nor see
-  it (`monks.ts`, `isHidden`), so with no other player in sight they stand still.
+- **Alcove** (Guillaume, 2026-10-30): walking through one does nothing. A player
+  standing with its centre in one hides by pressing **up** (it snaps onto the cell,
+  `step.ts`, `tryHide`, `Player.hidden`) and comes out by pressing **down**. While
+  hidden it does nothing else (no moving, digging or items), and monks neither see nor
+  catch it (`monks.ts`, `inSight`), even walking over or landing on it. Monks with no
+  other player in sight **roam** meanwhile (see Monks). A player whose alcove is blown
+  away comes out; one that dies is no longer hidden. Drawn in shadow while hiding.
 - **Monk respawn points** (`R`): not drawn in the game. See Monks.
 
 ### Teleporters
@@ -152,21 +158,28 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
 ### Tools
 
 - `tools.ts`: the jackhammer `j` and the pickaxe `k` are items (see above), used from
-  the slot with the use key (`PlayerInput.use`), once per press (`Player.useHeld`).
+  the slot with the use key (`PlayerInput.use`), once per press (`Player.useHeld`); the
+  jackhammer instead works for as long as the key is held.
   Using an empty slot or a key does nothing; nothing works while falling, busy, in
   transit or dead, nor from a spot where snapping to the nearest cell would leave the
   player falling (as for digging). Tools are never used up (S-019, S-021).
-- **Jackhammer** (S-019 @ 2:28–2:43): the player snaps onto its nearest cell and drills
+- **Jackhammer** (S-019 @ 2:28–2:43): only while the use key is held (Guillaume,
+  2026-10-30). The player snaps onto its nearest cell and drills
   the cell below if it is brick or bedrock, inside the level, not already dug, and no
   monk is in it (a ladder, a door, gooey turf or an empty cell stop it). The drilled
   cell is an ordinary hole that starts at a negative age, so it stays solid for
   `DRILL_TICKS` (100) instead of `HOLE_TICKS.digging` while the player waits
-  (busy); then it opens, the player falls in, and `Player.drill` makes it drill the
-  next cell on landing, until it cannot or no longer holds the jackhammer. The shaft refills behind like any hole, bedrock
+  (busy, `Player.drill`); then it opens and the player falls in. Still holding the key,
+  it drills the next cell on landing, and so on until the cell below cannot be drilled.
+  Let go before a cell opens, the drill stops: that cell stays solid (its hole is
+  dropped) and the player can move at once. Held while walking, it drills as soon as
+  the player stands over a drillable cell. The shaft refills behind like any hole, bedrock
   included, and kills whoever is still in a cell when it fills; monks can fall into it
   and are trapped as in a dug hole.
 - **Pickaxe** (S-021 @ 0:06–0:15): the cell in front of the player (`facing`) must be
-  empty (`.`) or an open hole, with no rubble. Rubble (`GameState.rubble`: column,
+  empty (`.`) or an open hole, with no rubble, and **under a ceiling**: the cell above
+  it solid (brick, bedrock, gooey turf, a door or landed rubble; the top of the level
+  counts, a dug or blown-open cell does not; Guillaume, 2026-10-30). Rubble (`GameState.rubble`: column,
   height in sub-units, ticks since landing or -1) appears there and the player is busy
   `PICK_TICKS`. Rubble falls one sub-unit a tick (as fast as a falling runner, faster
   than monks) until a solid tile, a ladder, landed rubble or the level floor holds it
@@ -340,7 +353,13 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
   is cancelled.
 - **Target** (`monks.ts`, `targetOf`): each tick, a monk chases the nearest player in
   play and in sight, not hiding in an alcove (`|dx| + |dy|` in sub-units; a tie goes to
-  player 1). With none (waiting to reappear, or hiding) it stands still. Below, "the runner" is that player.
+  player 1). Below, "the runner" is that player. With none in sight but one in play
+  (hiding), it **roams** (`roam`): it heads for a cell it can stand in (not solid, held
+  up), drawn from the PRNG, as if a player stood there, and draws another once there,
+  when the AI finds no move toward it, or after `ROAM_TICKS` (240); `Monk.roamX`,
+  `roamY`, `roamLeft` keep the spot, reset once it chases again (provisional: TLR's
+  wandering is not documented). With nobody in play (all waiting to reappear) it stands
+  still.
 - **Chase AI** (`ai.ts`): the classic 1982 algorithm, reimplemented. Same row and a
   walkable floor between them: go straight at the runner. Otherwise scan the monk's
   floor up to the walls and edges; from each column, see where falling or a ladder
@@ -667,6 +686,7 @@ as gameplay is implemented.
 | Bomb victims                    | every monk and player in play whose centre is in the blast                                | **Provisional**            |
 | Jackhammer                      | rides straight down through brick, ≈ 5 tiles in 9 s; tool kept                            | S-019 @ 2:33–2:43          |
 | Jackhammer through bedrock      | drills bedrock too, as brick                                                              | Guillaume, 2026-10-29      |
+| Jackhammer control              | drills only while the use key is held; let go, it stops                                   | Guillaume, 2026-10-30      |
 | Jackhammer timing               | 100 ticks a cell, then falls in; the shaft refills like a dug hole                        | **Provisional**, to check  |
 | Gas gun                         | cloud ≈ 3 cells in front for ≈ 6.5 s; monks inside stuck; gun kept; clouds can stack      | S-021 @ 0:53–1:05          |
 | Gas: daze after the cloud       | ≈ 2.5 s, stars over the monk's head                                                       | S-021 @ 1:01–1:03.5        |
@@ -681,6 +701,7 @@ as gameplay is implemented.
 | Two-player respawn delay        | 90 ticks (1.5 s) at the player's start                                                    | **Provisional**            |
 | Monk target with two players    | the nearest player; players do not block each other                                       | **Provisional**, to check  |
 | Pickaxe                         | rubble buries the monk on the next cell; ≥ 7 s; tool kept                                 | S-021 @ 0:08–0:15.5        |
+| Pickaxe needs a ceiling         | only under a solid cell (rubble comes out of the ceiling)                                 | Guillaume, 2026-10-30      |
 | Pickaxe rubble                  | falls 1 sub-unit a tick, lands solid as bedrock, crumbles after 420 ticks (7 s)           | **Provisional**, to check  |
 | Rubble on a player              | crushes it, like a monk                                                                   | Guillaume, 2026-10-29      |
 | Rubble on gold, items, exit     | never rests there: crumbles instead of sealing them                                       | Guillaume, 2026-10-29      |
@@ -695,7 +716,10 @@ as gameplay is implemented.
 | Snare: laid and used up         | picked up as an item, laid in the player's cell, one monk per snare                       | S-018 @ 0:22–0:48          |
 | Snare and players               | never caught: players walk over armed snares unharmed                                     | S-100 (2026-10-30)         |
 | Alcove                          | hiding place: a player inside cannot be caught                                            | S-018 @ 0:02–0:19, S-100   |
-| Alcove: monks' sight            | monks do not see a hiding player (they chase another, or stand still)                     | Guillaume, 2026-10-29      |
+| Alcove: monks' sight            | monks do not see a hiding player (they chase another, or roam)                            | Guillaume, 2026-10-29/30   |
+| Alcove: hiding                  | up to hide, down to come out; walking through does not hide                               | Guillaume, 2026-10-30      |
+| Monks while a player hides      | keep wandering, walk over the alcove without catching                                     | Guillaume, 2026-10-30      |
+| How monks wander                | toward random standable cells, new one every 4 s or on arrival                            | **Provisional**            |
 | Trapdoor turf                   | drawn like brick; actors fall through; cannot be dug                                      | S-002, S-008               |
 | Gooey turf speed                | 1 sub-unit per 6 ticks for runners and monks (3× slower runner, 2× slower monk)           | S-002; Guillaume, 10-29    |
 | Hidden ladder                   | appears when the last gold is taken                                                       | S-001, S-025 @ 0:00–0:04   |

@@ -59,16 +59,16 @@ describe("using an item", () => {
 });
 
 describe("the jackhammer", () => {
-  it("drills brick and bedrock straight down, cell after cell, until it cannot", () => {
+  it("drills brick and bedrock straight down while the use key is held, until it cannot", () => {
     // Brick, then bedrock, then a ladder: drills two cells, stops on the ladder.
     let s = holding(stateFrom(["P...", "#...", "@...", "H...", "@@@@"]), TILE.jackhammer);
     s = stepOne(s, use);
     expect(holesOf(s)).toEqual([[0, 1]]);
     expect(p1(s)).toMatchObject({ busy: DRILL_TICKS, drill: true });
     // Still on top while the cell opens: no moving meanwhile.
-    s = run(s, press.right, DRILL_TICKS - 1);
+    s = run(s, { ...use, right: true }, DRILL_TICKS - 1);
     expect(cell(s)).toEqual({ x: 0, y: 0 });
-    s = run(s, press.none, 2 * DRILL_TICKS + 3 * SUB);
+    s = run(s, use, 2 * DRILL_TICKS + 3 * SUB);
     expect(holesOf(s)).toEqual([
       [0, 1],
       [0, 2],
@@ -77,15 +77,53 @@ describe("the jackhammer", () => {
     expect(p1(s)).toMatchObject({ drill: false, item: TILE.jackhammer });
   });
 
+  // Regression (Guillaume's playtest, B-040): one press drilled down to the bottom.
+  it("stops when the use key is let go: the cell stays solid and the player is free", () => {
+    let s = holding(stateFrom(["P...", "#...", "#...", "@@@@"]), TILE.jackhammer);
+    s = run(s, use, DRILL_TICKS / 2);
+    expect(p1(s).drill).toBe(true);
+    s = stepOne(s, press.right);
+    expect(s.holes).toEqual([]);
+    expect(p1(s)).toMatchObject({ busy: 0, drill: false });
+    // It walks off at once, and the brick it stood on is whole.
+    s = run(s, press.right, SUB);
+    expect(p1(s).x).toBeGreaterThan(0);
+    expect(s.tiles[1]).toBe("#...");
+  });
+
+  it("a cell opened, the player falls in and drills no further once the key is let go", () => {
+    let s = holding(stateFrom(["P...", "#...", "#...", "#...", "@@@@"]), TILE.jackhammer);
+    s = run(s, use, DRILL_TICKS + 1);
+    s = run(s, NO_INPUT, 2 * DRILL_TICKS);
+    expect(holesOf(s)).toEqual([[0, 1]]);
+    expect(cell(s)).toEqual({ x: 0, y: 1 });
+    // Held again, it drills on from there.
+    s = stepOne(s, use);
+    expect(holesOf(s)).toEqual([
+      [0, 1],
+      [0, 2],
+    ]);
+  });
+
+  it("held while walking, it drills as soon as the player is over a drillable cell", () => {
+    // A door below the start cannot be drilled; the brick next to it can.
+    let s = holding(stateFrom(["P...", "A#@@", "@@@@"]), TILE.jackhammer);
+    s = run(s, use, 3);
+    expect(s.holes).toEqual([]);
+    s = run(s, { ...use, right: true }, 5 * SUB);
+    expect(holesOf(s)).toEqual([[1, 1]]);
+    expect(cell(s)).toEqual({ x: 1, y: 0 });
+  });
+
   // Regression (self-review): a player who dropped the jackhammer went on drilling.
   it("stops drilling when the jackhammer is dropped", () => {
     let s = holding(stateFrom(["P...", "#...", "#...", "#...", "@@@@"]), TILE.jackhammer);
     // Pressed on the tick the first cell opens, the player no longer busy.
-    s = run(stepOne(s, use), NO_INPUT, DRILL_TICKS - 1);
-    s = stepOne(s, { ...NO_INPUT, pickUp: true });
+    s = run(s, use, DRILL_TICKS);
+    s = stepOne(s, { ...use, pickUp: true });
     expect(s.tiles[0]?.charAt(0)).toBe(TILE.jackhammer);
-    // It falls into the open cell and stays there: no second cell is drilled.
-    s = run(s, NO_INPUT, 2 * DRILL_TICKS);
+    // It falls into the open cell and stays there, the key still held: no second cell.
+    s = run(s, use, 2 * DRILL_TICKS);
     expect(holesOf(s)).toEqual([[0, 1]]);
     expect(cell(s)).toEqual({ x: 0, y: 1 });
     expect(p1(s)).toMatchObject({ drill: false, item: "" });
@@ -112,7 +150,7 @@ describe("the jackhammer", () => {
   it("the shaft refills behind like a dug hole: whoever is still in it dies", () => {
     // One cell of bedrock over the floor: the player drills it and stays in it.
     let s = holding(stateFrom(["P..", "@..", "@@@"]), TILE.jackhammer);
-    s = run(stepOne(s, use), press.none, 600);
+    s = run(run(s, use, DRILL_TICKS + 1), press.none, 600);
     expect(s.status).toBe("dead");
     expect(s.holes).toEqual([]);
     expect(s.tiles[1]).toBe("@..");
@@ -120,6 +158,29 @@ describe("the jackhammer", () => {
 });
 
 describe("the pickaxe", () => {
+  // Regression (Guillaume's playtest, B-042): the pickaxe worked under open sky.
+  it("works only under a ceiling: a solid cell above the cell in front", () => {
+    // Open air above the cell in front: nothing happens.
+    const open = holding(stateFrom(["....", "P...", "@@@@"]), TILE.pickaxe);
+    const none = stepOne(open, use);
+    expect([none.rubble, p1(none).busy]).toEqual([[], 0]);
+    // Brick, bedrock or the top of the level above it: rubble comes down.
+    for (const top of ["#", "@"]) {
+      const s = holding(stateFrom([`.${top}..`, "P...", "@@@@"]), TILE.pickaxe);
+      expect(
+        stepOne(s, use).rubble.map((r) => [r.cx, r.y]),
+        top,
+      ).toEqual([[1, SUB]]);
+    }
+    const edge = holding(stateFrom(["P...", "@@@@"]), TILE.pickaxe);
+    expect(stepOne(edge, use).rubble).toHaveLength(1);
+    // A ceiling brick dug open is no ceiling.
+    const dug = holding(stateFrom(["P#..", "....", "@@@@"]), TILE.pickaxe);
+    const opened = { ...dug, holes: [{ cx: 1, cy: 0, age: HOLE_TICKS.digging }] };
+    expect(stepOne(withPlayer(dug, { y: SUB }), use).rubble).toHaveLength(1);
+    expect(stepOne(withPlayer(opened, { y: SUB }), use).rubble).toEqual([]);
+  });
+
   it("brings rubble down in front, which falls to the first support and lands", () => {
     let s = holding(stateFrom(["P...", "@...", "@...", "@#@@"]), TILE.pickaxe);
     s = stepOne(s, use);

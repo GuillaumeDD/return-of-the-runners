@@ -8,7 +8,7 @@ export interface PlayerInput {
   readonly digRight: boolean;
   /** Pick up, swap or drop an item (`items.ts`); acts once per press. */
   readonly pickUp: boolean;
-  /** Use the held tool (`tools.ts`); acts once per press. */
+  /** Use the held tool (`tools.ts`); acts once per press (the jackhammer: while held). */
   readonly use: boolean;
   /** Lay a bomb (`bombs.ts`); acts once per press. */
   readonly bomb: boolean;

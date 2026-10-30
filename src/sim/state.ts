@@ -43,6 +43,13 @@ export interface Monk extends Actor {
   /** The hole a trapped or escaping monk is in; -1 otherwise. */
   readonly holeX: number;
   readonly holeY: number;
+  /**
+   * Where a free monk roams while no player is in sight (`monks.ts`, `roam`), and the
+   * ticks left before it picks another spot; -1, -1, 0 while it chases.
+   */
+  readonly roamX: number;
+  readonly roamY: number;
+  readonly roamLeft: number;
 }
 
 /**
@@ -67,7 +74,10 @@ export interface Player extends Actor {
   readonly pickHeld: boolean;
   /** The use key was held last tick (as `pickHeld`). */
   readonly useHeld: boolean;
-  /** Drilling down with a jackhammer (`tools.ts`): goes on after each fall. */
+  /**
+   * Drilling the cell below with a jackhammer (`tools.ts`), busy until it opens; letting
+   * go of the use key stops it.
+   */
   readonly drill: boolean;
   /**
    * The bombs this player carries (`bombs.ts`), one bomb tile each, in the order they
@@ -76,6 +86,11 @@ export interface Player extends Actor {
   readonly bombs: string;
   /** The bomb key was held last tick (as `pickHeld`). */
   readonly bombHeld: boolean;
+  /**
+   * Hiding in an alcove (`step.ts`): entered with up, left with down. Monks neither see
+   * nor catch a hiding player.
+   */
+  readonly hidden: boolean;
 }
 
 /**
@@ -138,6 +153,9 @@ export function newMonk(cx: number, cy: number): Monk {
     carry: 0,
     holeX: -1,
     holeY: -1,
+    roamX: -1,
+    roamY: -1,
+    roamLeft: 0,
   };
 }
 
@@ -175,6 +193,7 @@ export function newPlayer(cx: number, cy: number): Player {
     drill: false,
     bombs: "",
     bombHeld: false,
+    hidden: false,
   };
 }
 

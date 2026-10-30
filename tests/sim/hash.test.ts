@@ -46,6 +46,9 @@ describe("hashState", () => {
       { ...m, carry: -1 },
       { ...m, holeX: 2 },
       { ...m, holeY: 2 },
+      { ...m, roamX: 2 },
+      { ...m, roamY: 2 },
+      { ...m, roamLeft: 2 },
     ];
     for (const v of variants) expect(hashState({ ...base, monks: [v] })).not.toBe(hashState(a));
     const n = newMonk(2, 1);
@@ -79,6 +82,7 @@ describe("hashState", () => {
       { bombs: "oO" },
       { bombs: "Oo" },
       { bombHeld: true },
+      { hidden: true },
     ];
     for (const v of variants) expect(hashState(withPlayer(base, v))).not.toBe(hashState(base));
     const swapped = { ...base, players: [...base.players].reverse() };
@@ -163,6 +167,7 @@ describe("hashState", () => {
       status: base.status,
       players: [
         {
+          hidden: p1(base).hidden,
           bombHeld: p1(base).bombHeld,
           bombs: p1(base).bombs,
           drill: p1(base).drill,
@@ -239,5 +244,5 @@ describe("hashState with monks", () => {
   });
 });
 
-const COMMITTED_MONK_HASH = 872502939;
-const COMMITTED_HASH = 4039276864;
+const COMMITTED_MONK_HASH = 1303579131;
+const COMMITTED_HASH = 2948648256;
