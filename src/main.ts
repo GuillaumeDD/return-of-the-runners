@@ -23,7 +23,8 @@ import { decodeLevel } from "./share/link";
 import firstSteps from "./levels/first-steps.json?raw";
 import { canvasSize, context2d, render } from "./render/canvas";
 import { fitCanvas } from "./render/scale";
-import { sheetAt } from "./render/sprites";
+import { type Motion, trackMotion } from "./render/actors";
+import { sheetAt } from "./render/sheet";
 import type { ValidTest } from "./editor/view";
 import { createState, maxPlayers } from "./sim/state";
 
@@ -138,6 +139,7 @@ function createGame(
 ): Game {
   const context = context2d(target);
   let scale = 1;
+  let motion: Motion | null = null;
   const fit = (): void => {
     scale = fitCanvas(target, context, canvasSize(session.state));
   };
@@ -218,7 +220,8 @@ function createGame(
       els.hud.textContent = text;
       els.hud.hidden = text === "";
     }
-    render(context, session.state, sheetAt(scale));
+    motion = trackMotion(motion, session.state);
+    render(context, session.state, sheetAt(scale), now, motion);
     frameId = requestAnimationFrame(frame);
   };
 

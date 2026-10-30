@@ -430,7 +430,9 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
   offscreen canvas, no image request) and copies frames from it. `TILE_ART` names each
   tile's sprite; a tile or actor without art, or a sprite whose drawing fails, falls
   back to the placeholder shapes of `render/canvas.ts`. Animation frames come from
-  render time only (`frameAt`), never from or into the simulation.
+  render time only (`frameAt`), never from or into the simulation. `render/sheet.ts`
+  lists every sprite; sheets are packed in rows of at most 4096 device pixels, each
+  sprite clipped to its box.
 - Bundled levels go through `parseLevel` like any imported level.
 - **Screens** (`app/route.ts`): the URL hash picks the screen, so the back button works
   without a server. `#edit` is the editor, `#level=<payload>` a shared level (of any
@@ -479,10 +481,17 @@ wait for Guillaume's playtest.
   the loudest colour in every world.
 - **Keys and doors** differ by shape and colour: red circle, green square, blue
   triangle.
-- **Animations** (B-032), picked from the simulation state and the render frame's time,
-  never fed back: idle, run (8 frames), climb (4), hand over hand on a bar (4), fall
-  (2), dig left and right (4), die, respawn; monks also trapped, climbing out,
-  carrying gold, snared, dazed. Facing flips the sprite, not the frame list.
+- **Animations** (B-032, `render/actors.ts`, drawn by `render/art/actors.ts`), picked
+  from the simulation state and the render frame's time, never fed back. Runners: idle,
+  run (8 frames), climb (4), hand over hand on a bar (4), fall (2), dig (4, also for a
+  pickaxe swing, a gas shot or a goo throw), drill (2), die (lying where it fell). Monks:
+  idle, run, climb, bar, fall, trapped (2, reaching for the rim), climbing out (4),
+  snared (2, upside down), dazed (2, eyes half shut). An actor counts as moving for
+  `STILL_AFTER` ticks after its last step (the slowest gait, on goo), so a walker never
+  flickers to idle between steps; standing still holds frame 0. Facing mirrors the
+  sprite, not the frame list. A hiding runner is drawn at 45 % opacity. Poses are
+  _provisional_; the respawn flash belongs to the effects (B-034), and the carried gold
+  and the item in hand stay placeholders until the items are drawn (B-033).
 - **Frame and HUD** (B-036). A riveted dark metal frame; a status bar at the bottom, as
   in TLR (_provisional_, open question 1 of the plan): per player lives, score, item
   slot and bombs, the level number in the middle, between carved spirals.

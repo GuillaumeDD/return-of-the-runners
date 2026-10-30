@@ -4,7 +4,7 @@ import type { LevelErrorCode } from "../level/format";
 import { LIMITS, TILE } from "../level/format";
 import { context2d, gridCanvasSize, renderGrid } from "../render/canvas";
 import { fitCanvas } from "../render/scale";
-import { sheetAt } from "../render/sprites";
+import { sheetAt } from "../render/sheet";
 import { parseSize, relabelName } from "./fields";
 import { PALETTE, shortcutFor, tileForKey } from "./keys";
 import { redo, rename, resize, selectLinkTool, selectTile, undo, type EditorState } from "./model";

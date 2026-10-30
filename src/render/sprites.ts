@@ -38,8 +38,12 @@ export type Surface = (
 /** One pixel between frames, so smoothing never bleeds a neighbour in. */
 const GAP = 1;
 
+/** Widest row of a sheet, in device pixels: well under every browser's canvas limit. */
+export const MAX_ROW = 4096;
+
 /**
- * Draws every sprite of `defs` at `scale` into one surface, on a single row. A sprite
+ * Draws every sprite of `defs` at `scale` into one surface, in rows of at most
+ * `MAX_ROW` pixels (a wider sprite gets a row of its own). A sprite
  * whose drawing throws is left out (it falls back), and so is everything when no
  * surface can be made: building a sheet never throws.
  */
@@ -54,8 +58,24 @@ export function buildSheet(
     sw: Math.ceil(d.width * scale),
     sh: Math.ceil(d.height * scale),
   }));
-  const width = sizes.reduce((sum, s) => sum + s.sw + GAP, 0);
-  const height = Math.max(...sizes.map((s) => s.sh));
+  // Shelf packing: left to right, a new row when the next sprite would overflow.
+  const places: { sx: number; sy: number }[] = [];
+  let x = 0;
+  let y = 0;
+  let row = 0;
+  let width = 0;
+  for (const s of sizes) {
+    if (x > 0 && x + s.sw > MAX_ROW) {
+      y += row + GAP;
+      x = 0;
+      row = 0;
+    }
+    places.push({ sx: x, sy: y });
+    x += s.sw + GAP;
+    row = Math.max(row, s.sh);
+    width = Math.max(width, x);
+  }
+  const height = y + row;
   let made: ReturnType<Surface>;
   try {
     made = surface(width, height);
@@ -64,20 +84,24 @@ export function buildSheet(
   }
   if (made === null) return empty;
   const frames = new Map<string, Frame>();
-  let sx = 0;
   defs.forEach((d, i) => {
     const s = sizes[i] ?? { sw: 0, sh: 0 };
+    const { sx, sy } = places[i] ?? { sx: 0, sy: 0 };
     made.ctx.save();
     try {
-      made.ctx.setTransform(scale, 0, 0, scale, sx, 0);
+      made.ctx.setTransform(scale, 0, 0, scale, sx, sy);
+      // Nothing a sprite draws outside its box may land on a neighbour's.
+      made.ctx.beginPath();
+      made.ctx.rect(0, 0, d.width, d.height);
+      made.ctx.clip();
       d.draw(made.ctx);
-      frames.set(d.key, { sx, sy: 0, ...s, width: d.width, height: d.height });
+      frames.set(d.key, { sx, sy, ...s, width: d.width, height: d.height });
     } catch {
-      made.ctx.clearRect(sx, 0, s.sw, s.sh);
+      made.ctx.setTransform(1, 0, 0, 1, 0, 0);
+      made.ctx.clearRect(sx, sy, s.sw, s.sh);
     } finally {
       made.ctx.restore();
     }
-    sx += s.sw + GAP;
   });
   return { scale, image: made.image, frames };
 }
@@ -159,28 +183,4 @@ export const TILE_ART: Readonly<Record<TileChar, string | null>> = {
 /** The sprite key of a tile character, if it has art. */
 export function tileArt(tile: string): string | null {
   return Object.hasOwn(TILE_ART, tile) ? (TILE_ART[tile as TileChar] ?? null) : null;
-}
-
-/** Every sprite of the game, drawn into the sheet. Empty until B-032 and B-033. */
-export const SPRITES: readonly SpriteDef[] = [];
-
-/** A surface backed by a DOM canvas; null where the browser has no 2D canvas. */
-export const domSurface: Surface = (width, height) => {
-  const c = document.createElement("canvas");
-  c.width = width;
-  c.height = height;
-  const ctx = c.getContext("2d");
-  return ctx === null ? null : { image: c, ctx };
-};
-
-/** Sheets by scale: a canvas moved to another screen gets its own, drawn once. */
-const sheets = new Map<number, SpriteSheet>();
-
-export function sheetAt(scale: number): SpriteSheet {
-  let sheet = sheets.get(scale);
-  if (sheet === undefined) {
-    sheet = buildSheet(SPRITES, scale, domSurface);
-    sheets.set(scale, sheet);
-  }
-  return sheet;
 }

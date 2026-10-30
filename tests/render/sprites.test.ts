@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { TILE, TILE_CHARS } from "../../src/level/format";
+import { SPRITES } from "../../src/render/sheet";
 import {
   buildSheet,
   drawSprite,
   frameAt,
   frameKey,
-  SPRITES,
+  MAX_ROW,
   type SpriteDef,
   type Surface,
   TILE_ART,
@@ -18,9 +19,13 @@ function fakeCtx(): { ctx: CanvasRenderingContext2D; calls: string[] } {
   const ctx = {
     save: () => calls.push("save"),
     restore: () => calls.push("restore"),
-    setTransform: (a: number, _b: number, _c: number, _d: number, e: number) =>
-      calls.push(`transform ${String(a)} ${String(e)}`),
+    setTransform: (a: number, _b: number, _c: number, _d: number, e: number, f: number) =>
+      calls.push(`transform ${String(a)} ${String(e)} ${String(f)}`),
     clearRect: (x: number) => calls.push(`clear ${String(x)}`),
+    beginPath: () => {},
+    rect: (_x: number, _y: number, w: number, h: number) =>
+      calls.push(`clip ${String(w)}x${String(h)}`),
+    clip: () => {},
     fillRect: () => calls.push("fill"),
     drawImage: (...args: unknown[]) => calls.push(`image ${args.slice(1).join(" ")}`),
   };
@@ -94,13 +99,37 @@ describe("buildSheet", () => {
     );
     expect(calls).toEqual([
       "save",
-      "transform 2 0",
+      "transform 2 0 0",
+      "clip 24x24",
       "fill",
       "restore",
       "save",
-      "transform 2 49",
+      "transform 2 49 0",
+      "clip 24x24",
       "restore",
     ]);
+  });
+
+  it("starts a new row before a sprite would cross MAX_ROW device pixels", () => {
+    const s = surface();
+    const wide = MAX_ROW / 3; // three fit with no gap, only two with gaps
+    const sheet = buildSheet(
+      [def("a", wide, 10), def("b", wide, 20), def("c", wide, 10)],
+      1,
+      s.make,
+    );
+    expect(sheet.frames.get("a")).toMatchObject({ sx: 0, sy: 0 });
+    expect(sheet.frames.get("b")).toMatchObject({ sx: Math.ceil(wide) + 1, sy: 0 });
+    expect(sheet.frames.get("c")).toMatchObject({ sx: 0, sy: 21 });
+    const [w = 0, h = 0] = s.sizes[0] ?? [];
+    expect(w).toBeLessThanOrEqual(MAX_ROW + 1);
+    expect(h).toBe(31);
+  });
+
+  it("clips each sprite to its box, so it cannot spill on a neighbour", () => {
+    const { ctx, calls } = fakeCtx();
+    buildSheet([def("a", 12, 18)], 1, () => ({ image, ctx }));
+    expect(calls).toContain("clip 12x18");
   });
 
   it("leaves out a sprite whose drawing throws, and keeps the others", () => {
