@@ -12,8 +12,8 @@ import { SUB } from "./rules";
  * catches anyone, and it is not a body, so players and monks pass it. Only death frees
  * it (a bomb, rubble, or a hole refilling on it); the snare goes with it. A monk caught
  * with gold drops it in the snare's cell, or the cell above, whichever is empty (if
- * neither is, it keeps it until it dies). Players walk over armed snares unharmed
- * (provisional).
+ * neither is, it keeps it until it dies). Players are never caught: they walk over
+ * armed snares unharmed (Guillaume, 2026-10-30, S-100).
  */
 
 /** Whether a snare can be laid in cell (cx, cy): an empty cell with no snare armed. */

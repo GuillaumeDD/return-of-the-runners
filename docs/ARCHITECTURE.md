@@ -193,7 +193,7 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
   refilling on it), and it then reappears free like any dead monk. A monk caught with
   gold drops it in the snare's cell, or the cell above, whichever is empty. A snared
   monk blocks neither a player's start nor a teleporter's exit. Players walk over
-  armed snares unharmed (provisional, see the observed-behavior table).
+  armed snares unharmed: players are never caught (S-100).
 - `gas.ts`: the gas gun `g` is an item, never used up. The use key fires a **cloud**
   (`GameState.clouds`: first cell, row, width, ticks left) over the `GAS_CELLS` (3)
   cells in front of the player, on its row, stopping at the first solid cell (none
@@ -673,7 +673,7 @@ as gameplay is implemented.
 | Big bomb                        | same counter; round blast ≈ 5 cells, permanent; chain reactions                           | S-025 @ 1:04–1:15          |
 | Snare                           | holds the first monk that walks in for good; others walk past                             | S-018 @ 0:23–0:48          |
 | Snare: laid and used up         | picked up as an item, laid in the player's cell, one monk per snare                       | S-018 @ 0:22–0:48          |
-| Snare and players               | players walk over armed snares unharmed                                                   | **Provisional**, to check  |
+| Snare and players               | never caught: players walk over armed snares unharmed                                     | S-100 (2026-10-30)         |
 | Alcove                          | hiding place: a player inside cannot be caught                                            | S-018 @ 0:02–0:19, S-100   |
 | Alcove: monks' sight            | monks do not see a hiding player (they chase another, or stand still)                     | Guillaume, 2026-10-29      |
 | Trapdoor turf                   | drawn like brick; actors fall through; cannot be dug                                      | S-002, S-008               |

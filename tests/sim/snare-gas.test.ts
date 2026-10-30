@@ -147,7 +147,7 @@ describe("snares", () => {
     expect([cell(s), s.status]).toEqual([{ x: 0, y: 0 }, "playing"]);
   });
 
-  it("the runner walks over an armed snare unharmed (provisional)", () => {
+  it("the runner walks over an armed snare unharmed (S-100)", () => {
     let s: GameState = { ...stateFrom(["P....", "@@@@@"]), snares: [{ cx: 2, cy: 0 }] };
     s = run(s, press.right, 2 * 8 * 4);
     expect([cell(s), p1(s).mode, s.snares.length]).toEqual([{ x: 4, y: 0 }, "alive", 1]);

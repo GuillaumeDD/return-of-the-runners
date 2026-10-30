@@ -380,8 +380,8 @@ bombs on one tick resolve in creation order.
 - Snare: an item, laid in the player's cell (an empty one) and used up; the first monk
   to walk into it hangs there, harmless, for the rest of the level (S-018 @ 0:22–0:48,
   S-100); other monks walk past it. Only its death frees it (a blast, rubble, a refilled
-  hole). Whether a player can be caught too (S-007) is put to Guillaume; until then,
-  players walk over snares.
+  hole). A player is never caught: players walk over snares (Guillaume, 2026-10-30,
+  S-100).
 - Gas: each use puts a cloud about 3 cells wide in front of the player for `GAS_TICKS`
   (6.5 s); every monk inside is stuck, then dazed for 2.5 s more (S-021 @ 0:53–1:05).
   The gun stays in the slot and can be used again once the player is free. Monks on
