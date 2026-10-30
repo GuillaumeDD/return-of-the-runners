@@ -1,0 +1,78 @@
+{
+  "about": "Goo bucket (B-028): a monk comes from the left. The runner picks up the goo bucket, stands on the ladder and throws the goo to its left, onto the floor under the three cells in front. The runner fetches the gold on the right and comes back to the ladder; the monk, slowed on the goo, has not reached it yet. The runner climbs and leaves by the exit. Without the goo (same inputs, no bucket) the monk catches the runner at the foot of the ladder.",
+  "replay": {
+    "format": "return-of-the-runners/replay",
+    "version": 2,
+    "seed": 1,
+    "level": {
+      "format": "return-of-the-runners/level",
+      "version": 2,
+      "name": "Goo bucket",
+      "width": 28,
+      "height": 8,
+      "grid": [
+        "............................",
+        "............................",
+        "............................",
+        "............................",
+        "..............H............E",
+        "@@@@@@@@@@@@@@H@@@@@@@@@@@@@",
+        ".M............H.u.P..$......",
+        "@@@@@@@@@@@@@@@@@@@@@@@@@@@@"
+      ]
+    },
+    "inputs": [
+      [
+        [
+          32,
+          "L"
+        ],
+        [
+          1,
+          "I"
+        ],
+        [
+          1,
+          ""
+        ],
+        [
+          32,
+          "L"
+        ],
+        [
+          1,
+          "X"
+        ],
+        [
+          1,
+          ""
+        ],
+        [
+          45,
+          ""
+        ],
+        [
+          112,
+          "R"
+        ],
+        [
+          112,
+          "L"
+        ],
+        [
+          40,
+          "U"
+        ],
+        [
+          207,
+          "R"
+        ]
+      ]
+    ]
+  },
+  "expected": {
+    "tick": 584,
+    "status": "won",
+    "hash": 3982472823
+  }
+}

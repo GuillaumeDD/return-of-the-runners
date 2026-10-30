@@ -3,7 +3,16 @@ import { craterAt, holeAt, isOpened, type Hole } from "./holes";
 import { isFalling, overlapsCell } from "./move";
 import { cellOf, isSolid, offsetOf, tileAt, type Terrain } from "./physics";
 import { fireGas, type Cloud } from "./gas";
-import { DRILL_TICKS, GAS_FIRE_TICKS, HOLE_TICKS, PICK_TICKS, RUBBLE_TICKS, SUB } from "./rules";
+import { throwGoo } from "./goo";
+import {
+  DRILL_TICKS,
+  GAS_FIRE_TICKS,
+  GOO_THROW_TICKS,
+  HOLE_TICKS,
+  PICK_TICKS,
+  RUBBLE_TICKS,
+  SUB,
+} from "./rules";
 import { canLaySnare, type Snare } from "./snares";
 import type { Actor, Player } from "./state";
 
@@ -23,8 +32,9 @@ import type { Actor, Player } from "./state";
  *   `RUBBLE_TICKS`, solid like bedrock. Rubble crushes any monk or player it touches
  *   while it falls, so a monk right in front is buried at once (S-021 @ 0:08;
  *   provisional for players).
- * - **Snare** and **gas gun**: see `snares.ts` and `gas.ts`. A snare is laid in the
- *   player's cell and used up; the gun is kept.
+ * - **Snare**, **gas gun** and **goo bucket**: see `snares.ts`, `gas.ts` and `goo.ts`.
+ *   A snare is laid in the player's cell and used up; the gun is kept; the bucket is
+ *   used up.
  */
 
 /** Rubble from a pickaxe: in column `cx`, at `y` (sub-units, top edge). */
@@ -62,6 +72,8 @@ export interface ToolResult {
   readonly snare?: Snare;
   /** A gas cloud fired this tick. */
   readonly cloud?: Cloud;
+  /** The level's tiles after goo was thrown this tick. */
+  readonly tiles?: readonly string[];
 }
 
 /**
@@ -122,6 +134,12 @@ export function useTool(
     if (cloud === null) return null;
     const player = { ...p, x: at.cx * SUB, y: at.cy * SUB, busy: GAS_FIRE_TICKS };
     return { player, hole: null, rubble: null, cloud };
+  }
+  if (p.item === TILE.gooBucket) {
+    const tiles = throwGoo(t, at.cx, at.cy, p.facing);
+    if (tiles === null) return null;
+    const player = { ...p, item: "", x: at.cx * SUB, y: at.cy * SUB, busy: GOO_THROW_TICKS };
+    return { player, hole: null, rubble: null, tiles };
   }
   if (p.item !== TILE.pickaxe) return null;
   const fx = at.cx + p.facing;

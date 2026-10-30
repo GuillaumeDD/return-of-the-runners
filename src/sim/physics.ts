@@ -29,6 +29,7 @@ const AS_EMPTY: ReadonlySet<string> = new Set([
   TILE.pickaxe,
   TILE.snare,
   TILE.gasSpray,
+  TILE.gooBucket,
   TILE.smallBomb,
   TILE.bigBomb,
   TILE.teleportEntrance,

@@ -23,8 +23,9 @@ import type { Actor, Facing, GameState, Monk, Player } from "./state";
  * on a teleporter entrance jumps (see `teleport.ts`). A player in play then picks up,
  * swaps or drops an item if it just pressed the pick-up key, opens a door next to it
  * that its key fits (`items.ts`), uses its tool if it just pressed the use key (laying a
- * snare or firing gas among them; the jackhammer while the key is held, `tools.ts`),
- * picks up the gold and the bombs it touches, and lays a bomb if it just pressed the bomb key (`bombs.ts`).
+ * snare, firing gas or throwing goo among them; the jackhammer while the key is held,
+ * `tools.ts`), picks up the gold and the bombs it touches, and lays a bomb if it just
+ * pressed the bomb key (`bombs.ts`).
  * Once the last gold is taken, hidden ladders appear. A player touching the open exit
  * wins the level (`playersAtExit`). Unless it was won, the monks then act in order: a
  * monk walking into a snare hangs in it, one in a gas cloud is dazed, and a monk
@@ -94,6 +95,7 @@ export function step(state: GameState, inputs: TickInput): GameState {
         if (used.rubble !== null) rubble = [...rubble, used.rubble];
         if (used.snare !== undefined) snares = [...snares, used.snare];
         if (used.cloud !== undefined) clouds = [...clouds, used.cloud];
+        if (used.tiles !== undefined) tiles = used.tiles;
       }
       const { cx, cy } = centerCell(p);
       const taken = takeGold(tiles, cx, cy);

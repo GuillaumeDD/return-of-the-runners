@@ -113,3 +113,12 @@ export const START_LIVES = 5;
  * start (1.5 s, like the level restart after a one-player death; provisional).
  */
 export const PLAYER_RESPAWN_TICKS = 90;
+
+/**
+ * The goo bucket (S-022 @ 3:16–3:17, read at 4 frames per second): one throw turns the
+ * floor under the `GOO_CELLS` cells in front of the player into gooey turf, and keeps the
+ * player busy `GOO_THROW_TICKS` (0.75 s: the arm goes up @ 3:16.25, the runner walks on
+ * @ 3:17.0).
+ */
+export const GOO_CELLS = 3;
+export const GOO_THROW_TICKS = 45;
