@@ -28,8 +28,8 @@ import type { Actor, Player } from "./state";
  *   it stays solid (`step.ts`). Each drilled cell is a hole, so the shaft refills
  *   behind like any hole.
  * - **Pickaxe** (S-021 @ 0:06–0:15): the player swings at the cell in front of it,
- *   which must be empty; rubble appears there, falls to the first support and stays
- *   `RUBBLE_TICKS`, solid like bedrock. Rubble crushes any monk or player it touches
+ *   which must be empty, under a ceiling (a solid cell above it); rubble appears
+ *   there, falls to the first support and stays `RUBBLE_TICKS`, solid like bedrock. Rubble crushes any monk or player it touches
  *   while it falls, so a monk right in front is buried at once (S-021 @ 0:08;
  *   provisional for players).
  * - **Snare**, **gas gun** and **goo bucket**: see `snares.ts`, `gas.ts` and `goo.ts`.
@@ -146,6 +146,9 @@ export function useTool(
   const fy = at.cy;
   if (fx < 0 || fx >= t.width) return null;
   if (!canRest(t, fx, fy) || rubbleIn(t.rubble, fx, fy)) return null;
+  // The rubble is knocked out of a ceiling: the cell above must be solid (the top of
+  // the level counts; a dug or blown-open cell does not).
+  if (!isSolid(tileAt(t, fx, fy - 1))) return null;
   return {
     player: { ...p, x: at.cx * SUB, y: at.cy * SUB, busy: PICK_TICKS },
     hole: null,

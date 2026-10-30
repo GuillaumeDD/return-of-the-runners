@@ -177,7 +177,9 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
   included, and kills whoever is still in a cell when it fills; monks can fall into it
   and are trapped as in a dug hole.
 - **Pickaxe** (S-021 @ 0:06–0:15): the cell in front of the player (`facing`) must be
-  empty (`.`) or an open hole, with no rubble. Rubble (`GameState.rubble`: column,
+  empty (`.`) or an open hole, with no rubble, and **under a ceiling**: the cell above
+  it solid (brick, bedrock, gooey turf, a door or landed rubble; the top of the level
+  counts, a dug or blown-open cell does not; Guillaume, 2026-10-30). Rubble (`GameState.rubble`: column,
   height in sub-units, ticks since landing or -1) appears there and the player is busy
   `PICK_TICKS`. Rubble falls one sub-unit a tick (as fast as a falling runner, faster
   than monks) until a solid tile, a ladder, landed rubble or the level floor holds it
@@ -699,6 +701,7 @@ as gameplay is implemented.
 | Two-player respawn delay        | 90 ticks (1.5 s) at the player's start                                                    | **Provisional**            |
 | Monk target with two players    | the nearest player; players do not block each other                                       | **Provisional**, to check  |
 | Pickaxe                         | rubble buries the monk on the next cell; ≥ 7 s; tool kept                                 | S-021 @ 0:08–0:15.5        |
+| Pickaxe needs a ceiling         | only under a solid cell (rubble comes out of the ceiling)                                 | Guillaume, 2026-10-30      |
 | Pickaxe rubble                  | falls 1 sub-unit a tick, lands solid as bedrock, crumbles after 420 ticks (7 s)           | **Provisional**, to check  |
 | Rubble on a player              | crushes it, like a monk                                                                   | Guillaume, 2026-10-29      |
 | Rubble on gold, items, exit     | never rests there: crumbles instead of sealing them                                       | Guillaume, 2026-10-29      |
