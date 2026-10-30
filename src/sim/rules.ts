@@ -90,6 +90,12 @@ export const MONK_TICKS = {
 } as const;
 
 /**
+ * Ticks a monk roams toward one spot when no player is in sight (a player hides in an
+ * alcove) before it picks another (4 s; provisional, TLR's own wandering is unknown).
+ */
+export const ROAM_TICKS = 240;
+
+/**
  * A monk that picks up gold carries it for `min + n` cells, n drawn from the PRNG in
  * [0, spread), then drops it on the next free floor cell (1982 rule: 12 to 37 cells).
  */

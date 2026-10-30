@@ -82,6 +82,20 @@ describe("terrain the game hides", () => {
   });
 });
 
+describe("alcove", () => {
+  it("a hiding player is drawn in shadow, a player just standing in the alcove is not", () => {
+    const rows = ["...", "P.n", "@@@"];
+    const standing = recorder();
+    render(standing.ctx, withPlayer(stateFrom(rows), { x: 2 * 8 }));
+    expect(fillsIn(standing.fills, 2, 1)).toContain("#f5f5f5");
+    expect(fillsIn(standing.fills, 2, 1)).not.toContain("#5a5470");
+    const hiding = recorder();
+    render(hiding.ctx, withPlayer(stateFrom(rows), { x: 2 * 8, hidden: true }));
+    expect(fillsIn(hiding.fills, 2, 1)).toContain("#5a5470");
+    expect([...hiding.fills.values()].flat()).not.toContain("#f5f5f5");
+  });
+});
+
 describe("teleporters", () => {
   const SPARKLE = "#fff6c8";
   const LINK = "#7fd8f0";

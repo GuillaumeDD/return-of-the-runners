@@ -1,0 +1,55 @@
+{
+  "about": "Alcove (B-041): the runner steps into the alcove as the monk comes and hides with up. The monk does not see it: it roams, walks over the alcove twice without catching it, and wanders on. Once the monk is far to the right, the runner comes out with down, runs left past the gold to the exit and wins.",
+  "replay": {
+    "format": "return-of-the-runners/replay",
+    "version": 2,
+    "seed": 3,
+    "level": {
+      "format": "return-of-the-runners/level",
+      "version": 2,
+      "name": "Alcove",
+      "width": 16,
+      "height": 8,
+      "grid": [
+        "@@@@@@@@@@@@@@@@",
+        "@@@@@@@@@@@@@@@@",
+        "@@@@@@@@@@@@@@@@",
+        "@@@@@@@@@@@@@@@@",
+        "................",
+        "E$......P.n....M",
+        "@@@@@@@@@@@@@@@@",
+        "@@@@@@@@@@@@@@@@"
+      ],
+      "teleports": []
+    },
+    "inputs": [
+      [
+        [
+          34,
+          "R"
+        ],
+        [
+          1,
+          "U"
+        ],
+        [
+          760,
+          ""
+        ],
+        [
+          1,
+          "D"
+        ],
+        [
+          154,
+          "L"
+        ]
+      ]
+    ]
+  },
+  "expected": {
+    "tick": 950,
+    "status": "won",
+    "hash": 1617558201
+  }
+}

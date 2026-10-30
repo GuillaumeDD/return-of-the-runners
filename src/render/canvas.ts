@@ -27,6 +27,8 @@ const COLOR = {
   runner2: "#7fd8f0",
   runner2Face: "#1b3f8f",
   runnerDead: "#d64545",
+  runnerHidden: "#5a5470",
+  runnerHiddenFace: "#8f88a8",
   monk: "#e07b39",
   monkFace: "#2b1a0e",
   goo: "#4f8f3a",
@@ -188,16 +190,16 @@ function drawBlast(ctx: CanvasRenderingContext2D, b: Blast, width: number, heigh
 }
 
 /**
- * A player: red while dead (waiting to reappear); a player who is out is not drawn,
- * unless the level is lost, when everyone shows where they fell. The item it holds is
- * drawn small, in its hand.
+ * A player: red while dead (waiting to reappear), a dim shadow while hiding in an
+ * alcove; a player who is out is not drawn, unless the level is lost, when everyone
+ * shows where they fell. The item it holds is drawn small, in its hand.
  */
 function drawPlayer(ctx: CanvasRenderingContext2D, p: Player, index: number, lost: boolean): void {
   if ((p.mode === "out" && !lost) || p.warp > 0) return;
   const dead = p.mode !== "alive";
   const x = p.x * PX_PER_SUB;
   const y = p.y * PX_PER_SUB;
-  drawRunner(ctx, x, y, p.facing, dead, index);
+  drawRunner(ctx, x, y, p.facing, dead, index, p.hidden);
   const hand = p.facing === 1 ? x + 17 : x + 1;
   const color = KEY_COLOR[p.item];
   if (color !== undefined) {
@@ -560,7 +562,7 @@ function drawLadder(ctx: CanvasRenderingContext2D, x: number, y: number, color: 
   for (let r = 3; r < s; r += 7) ctx.fillRect(x + 4, y + r, s - 8, 2);
 }
 
-/** A runner; player 2 (`index` 1) in its own colours. */
+/** A runner; player 2 (`index` 1) in its own colours; a hiding one in shadow. */
 function drawRunner(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -568,15 +570,18 @@ function drawRunner(
   facing: -1 | 1,
   dead: boolean,
   index: number,
+  hidden = false,
 ): void {
   const s = TILE_PX;
   const second = index === 1;
-  ctx.fillStyle = dead ? COLOR.runnerDead : second ? COLOR.runner2 : COLOR.runner;
+  const body = second ? COLOR.runner2 : COLOR.runner;
+  ctx.fillStyle = dead ? COLOR.runnerDead : hidden ? COLOR.runnerHidden : body;
   ctx.fillRect(x + 8, y + 2, 8, 7); // head
   ctx.fillRect(x + 6, y + 9, 12, 9); // body
   ctx.fillRect(x + 7, y + 18, 4, s - 18); // legs
   ctx.fillRect(x + 13, y + 18, 4, s - 18);
-  ctx.fillStyle = second ? COLOR.runner2Face : COLOR.runnerFace;
+  const face = second ? COLOR.runner2Face : COLOR.runnerFace;
+  ctx.fillStyle = hidden ? COLOR.runnerHiddenFace : face;
   ctx.fillRect(facing === 1 ? x + 13 : x + 9, y + 4, 2, 2); // eye shows facing
 }
 

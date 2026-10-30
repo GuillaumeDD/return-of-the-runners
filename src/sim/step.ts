@@ -20,7 +20,8 @@ import type { Actor, Facing, GameState, Monk, Player } from "./state";
  *
  * Order within a tick: each player in order acts (dig or move) on the current terrain;
  * a dead player counts down, then reappears at its start; a player that ends its move
- * on a teleporter entrance jumps (see `teleport.ts`). A player in play then picks up,
+ * on a teleporter entrance jumps (see `teleport.ts`). A player in an alcove hides with
+ * up and comes out with down (`tryHide`). A player in play and not hiding then picks up,
  * swaps or drops an item if it just pressed the pick-up key, opens a door next to it
  * that its key fits (`items.ts`), uses its tool if it just pressed the use key (laying a
  * snare or firing gas among them), or goes on drilling down (`tools.ts`), picks up the gold and the bombs it touches, and lays a
@@ -46,9 +47,9 @@ export function step(state: GameState, inputs: TickInput): GameState {
   let snares: readonly Snare[] = state.snares;
   let clouds: readonly Cloud[] = state.clouds;
   const players: Player[] = [];
-  // Monks only move while they can see someone: hiding players do not count (players
-  // in transit do: they are seen at their exit).
-  const anyAlive = state.players.some((p) => inSight(state.tiles, p));
+  // Someone monks can see (players in transit are seen at their exit; hiding players
+  // are not): a dead player waits for a monk to leave its start only then.
+  const anyAlive = state.players.some((p) => inSight(p));
   for (let i = 0; i < state.players.length; i++) {
     const before = state.players[i];
     if (before === undefined) continue;
@@ -64,7 +65,7 @@ export function step(state: GameState, inputs: TickInput): GameState {
     if (acted.hole !== null) holes = [...holes, acted.hole];
     if (p.mode === "alive") p = tryTeleport(state, p, state.monks);
     if (inTransit(p)) p = { ...p, drill: false };
-    if (p.mode === "alive" && !inTransit(p)) {
+    if (p.mode === "alive" && !inTransit(p) && !p.hidden) {
       // The pick-up and use keys act on the tick they are pressed, unless the player is
       // busy (digging, drilling or swinging).
       if (input.pickUp && !before.pickHeld && p.busy === 0) {
@@ -200,9 +201,10 @@ export function playersAtExit(s: Pick<GameState, "tiles" | "goldLeft" | "players
  */
 function die(p: Player, solo: boolean): Player {
   const lives = p.lives - 1;
-  if (lives <= 0) return { ...p, lives: 0, mode: "out", timer: 0, busy: 0, drill: false };
+  const reset = { busy: 0, drill: false, hidden: false };
+  if (lives <= 0) return { ...p, lives: 0, mode: "out", timer: 0, ...reset };
   const timer = solo ? 0 : PLAYER_RESPAWN_TICKS;
-  return { ...p, lives, mode: "dead", timer, busy: 0, drill: false };
+  return { ...p, lives, mode: "dead", timer, ...reset };
 }
 
 /**
@@ -239,11 +241,31 @@ function actPlayer(
       // In a teleporter: waits at the exit until it appears.
       if (inTransit(p)) return { player: { ...p, warp: p.warp - 1 }, hole: null };
       if (p.busy > 0) return { player: { ...p, busy: p.busy - 1 }, hole: null };
+      const hide = tryHide(t, p, input);
+      if (hide !== null) return { player: hide, hole: null };
       const dig = tryDig(t, p, input);
       if (dig !== null) return { player: { ...p, ...dig.runner }, hole: dig.hole };
       return { player: { ...p, ...stepActor(t, p, input, tick, RUNNER_PERIOD) }, hole: null };
     }
   }
+}
+
+/**
+ * Hiding in an alcove (Guillaume, 2026-10-30): a player standing with its centre in an
+ * alcove hides there by pressing up (it snaps onto the cell), and comes out by pressing
+ * down. While hidden it does nothing else (no moving, digging or items) and monks
+ * neither see nor catch it (`monks.ts`, `inSight`); it comes out by itself if the
+ * alcove is destroyed. Returns the player's new state when hiding decides this tick,
+ * else null (the player acts as usual).
+ */
+function tryHide(t: Terrain, p: Player, input: PlayerInput): Player | null {
+  const { cx, cy } = centerCell(p);
+  const inAlcove = t.tiles[cy]?.charAt(cx) === TILE.alcove;
+  if (p.hidden) return input.down || !inAlcove ? { ...p, hidden: false } : p;
+  if (!input.up || !inAlcove || isFalling(t, p)) return null;
+  const snapped: Player = { ...p, x: cx * SUB, y: cy * SUB };
+  if (isFalling(t, snapped)) return null;
+  return { ...snapped, hidden: true };
 }
 
 /**

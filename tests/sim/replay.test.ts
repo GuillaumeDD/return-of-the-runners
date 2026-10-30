@@ -23,6 +23,7 @@ const fixtures = replayFixtures();
 describe("committed replays (Node)", () => {
   it("there are replays to check", () => {
     expect(fixtures.map((f) => f.name)).toEqual([
+      "alcove",
       "bombs",
       "coop-monks",
       "default-level",
@@ -102,6 +103,26 @@ describe("committed replays (Node)", () => {
     const end = runReplay(f.replay).state;
     expect([end.status, end.snares, end.players[0]?.item]).toEqual(["won", [], "g"]);
     expect(end.monks.map((m) => m.mode)).toEqual(["snared", "dazed"]);
+  });
+
+  it("alcove: the monk roams over the hiding runner, which comes out and wins", () => {
+    const f = fixtures.find((x) => x.name === "alcove");
+    if (f === undefined) throw new Error("missing alcove");
+    const at = (ticks: number) =>
+      runReplay({
+        ...f.replay,
+        inputs: f.replay.inputs.map((log) => encodeInputs(decodeInputs(log).slice(0, ticks))),
+      }).state;
+    // Hiding in the alcove at (10, 5) while the monk, left of it, roams.
+    const hiding = at(200);
+    expect(hiding.players[0]).toMatchObject({ hidden: true, x: 80, y: 40 });
+    expect(hiding.monks[0]?.mode).toBe("free");
+    expect(hiding.monks[0]?.roamX).toBeGreaterThanOrEqual(0);
+    // Out again, seen and chased: the monk no longer roams.
+    const out = at(820);
+    expect(out.players[0]?.hidden).toBe(false);
+    expect(out.monks[0]).toMatchObject({ roamX: -1, roamY: -1 });
+    expect(runReplay(f.replay).state.status).toBe("won");
   });
 
   it("tools: the rubble walls the monk out while the runner drills down and wins", () => {
