@@ -11,3 +11,4 @@ here with its author, source and license. Files without an entry are not merged.
 | ----------------------------- | ---------------------------------- | ----------------------------------------------------------------- | ------------ |
 | `src/levels/first-steps.json` | Return of the Runners contributors | Original level, made for this project                             | CC BY-SA 4.0 |
 | `docs/screenshots/*.png`      | Return of the Runners contributors | Screenshots of this game (placeholder shapes, no third-party art) | CC BY-SA 4.0 |
+| `docs/screenshots/b-030*`     | Return of the Runners contributors | B-030 mockups, drawn in code by `tools/mockup/`                   | CC BY-SA 4.0 |

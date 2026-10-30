@@ -1,6 +1,7 @@
 # Step 4 plan, part A: the look (art direction, sprites, worlds)
 
-Status: **proposed** (awaiting Guillaume's review). Roadmap: `docs/PRD.md` §7, step 4.
+Status: **approved**; direction chosen by Guillaume on 2026-10-30: the illustrated
+diorama (B-030, style guide in ARCHITECTURE § Art direction). Roadmap: `docs/PRD.md` §7, step 4.
 Backlog items: B-030 to B-036. Source ids (`S-…`) refer to [`../SOURCES.md`](../SOURCES.md).
 
 ## Goal
@@ -42,6 +43,25 @@ Observed on frames of the PC version (640 × 480, 256 colours, S-003):
 What we keep: one identity per world, a calm backdrop behind loud terrain, gold as the
 brightest thing, monks that pop out in one glance, a framed playfield with a status bar.
 
+## Mood board (B-030)
+
+Frames watched on 2026-10-30 for B-030, kept out of the repo like the videos. What each
+shows, in words:
+
+| Frame        | World      | What it shows                                                                                                                              |
+| ------------ | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| S-014 @ 1:00 | Moss       | Bright green moss slabs, a lighter top edge, darker inside; a dark hand-inked jungle behind (ferns, vines, trunks) in olive and brown      |
+| S-014 @ 3:00 | Moss       | Tiny white runner, red monks: both read at once on the busy backdrop; gold as small yellow bars that glow in the dark pockets of the slabs |
+| S-014 @ 5:30 | Moss       | Grey stone slabs with rounded ends next to the moss, and an orange turf dripping like wax                                                  |
+| S-016 @ 2:00 | Lava       | Orange porous rock with brick insets and yellow drips under each ledge; a painted red and orange lava flow behind; grey ladders and bars   |
+| S-018 @ 0:10 | Ice        | Pale blue ice blocks hung with icicles over a blue ice cavern painted in broad strokes                                                     |
+| S-021 @ 0:55 | Phosphorus | Magenta crystal slabs, teal liquid pools, a dark purple veined backdrop                                                                    |
+| S-024 @ 1:00 | Industrial | Grey riveted machine blocks with hazard stripes on a sepia backdrop of machinery                                                           |
+| S-014 @ 1:00 | (all)      | A dark riveted metal frame; the status bar: carved spirals between panels for lives, score, level and the item slot                        |
+
+The lesson: terrain is the loudest layer and the backdrop the calmest, actors are tiny
+but never lost (white runner, red monks), gold glows, and each world owns one colour.
+
 ## Three directions to mock up (B-030)
 
 Each direction is mocked on the same level (`first-steps`) in two worlds (Moss and Lava),
@@ -59,9 +79,9 @@ so they compare like for like.
    neon accents. The most readable and the quickest to produce, but the furthest from
    TLR.
 
-Leaning (to confirm on the mockups): **2**, with direction 1's light and particles. It
-keeps the painted feel of TLR, scales to any screen, and can be drawn and maintained in
-code review. Guillaume chooses; the mockups decide, not this paragraph.
+Leaning before the mockups: **2**, with direction 1's light and particles. It keeps the
+painted feel of TLR, scales to any screen, and can be drawn and maintained in code
+review. Guillaume chose it on the mockups on 2026-10-30.
 
 Common to all three, because it is what "modern" means in 2026–27 beyond the style:
 
@@ -71,6 +91,42 @@ Common to all three, because it is what "modern" means in 2026–27 beyond the s
   keys and doors differ by **shape and colour**, never colour alone;
 - juice with restraint: small particles, light flashes, a light screen shake on big
   bombs, all off when the system asks for reduced motion (`prefers-reduced-motion`).
+
+## The mockups (B-030)
+
+Drawn on 2026-10-30, entirely in code (`tools/mockup/`, nothing traced or extracted):
+the same scene of `first-steps` in each direction and world, with both runners, a monk
+trapped in a hole, one carrying gold and one climbing. Each picture is 928 × 608 at
+device pixel ratio 1; the close-ups are the middle of the Moss level at ratio 2.
+`node tools/mockup/render.ts` redraws them all.
+
+| Direction    | Moss                                                    | Lava                                                    | Close-up                                                      |
+| ------------ | ------------------------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------- |
+| 1. Neo-pixel | ![Neo-pixel, Moss](../screenshots/b-030-pixel-moss.png) | ![Neo-pixel, Lava](../screenshots/b-030-pixel-lava.png) | ![Neo-pixel, close-up](../screenshots/b-030-pixel-detail.png) |
+| 2. Diorama   | ![Diorama, Moss](../screenshots/b-030-diorama-moss.png) | ![Diorama, Lava](../screenshots/b-030-diorama-lava.png) | ![Diorama, close-up](../screenshots/b-030-diorama-detail.png) |
+| 3. Flat glow | ![Flat glow, Moss](../screenshots/b-030-glow-moss.png)  | ![Flat glow, Lava](../screenshots/b-030-glow-lava.png)  | ![Flat glow, close-up](../screenshots/b-030-glow-detail.png)  |
+
+How each was made, and what that says about producing it:
+
+- **Neo-pixel** is the diorama drawn at 16 px a tile, snapped to a palette of about 50
+  colours (ordered dithering on the backdrop, a dark outline around sprites), scaled ×2
+  without smoothing, then lit with smooth light and pixel sparks. Terrain and items hold
+  up; the actors are muddy, because 16 px sprites need drawing pixel by pixel by hand.
+  Choosing this direction means hand-made sprite sheets for every animation.
+- **Diorama** draws vectors with gradients and procedural textures (seeded noise), a
+  layered backdrop with light shafts or a lava river, a drop shadow under the terrain,
+  additive light on gold, the exit and portals, and a vignette. Crisp at any ratio, and
+  every shape is code a PR can review.
+- **Flat glow** uses flat fills with a neon rim, a dot grid and faint outlines as the
+  backdrop. The most readable, the cheapest, but the painted mood of TLR is gone.
+
+Choices common to the three, to confirm with the direction: runner 1 is white with a
+cyan helmet and a lamp, runner 2 lavender with a pink scarf (silhouette and colour);
+monks are red hooded robes with glowing eyes; goo is magenta in every world (TLR's
+looks orange, S-014 @ 5:30: ours must not be mistaken for lava); keys and doors
+differ by shape (circle red, square green, triangle blue); the entrance teleporter is
+cyan with an arrow in, the exit violet with an arrow out; the status bar stays at the
+bottom, as in TLR (open question 1).
 
 ## Key design decisions
 
