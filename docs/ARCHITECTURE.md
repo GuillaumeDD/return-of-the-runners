@@ -73,7 +73,8 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
   with an intentional rules change, and say so in the PR (the failing test prints the
   new values). A new state field also changes every hash while tick and status stay
   the same (B-023 added `teleports` and `warp`, B-025 `rubble`, `useHeld` and
-  `drill`, B-026 `craters`, `fuses`, `blasts`, `bombs` and `bombHeld`); say so in the PR
+  `drill`, B-026 `craters`, `fuses`, `blasts`, `bombs` and `bombHeld`, B-041 `hidden`,
+  `roamX`, `roamY` and `roamLeft`); say so in the PR
   as well.
 
 ### Movement model
@@ -107,8 +108,13 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
 - **Hidden ladders** stay `h` in `tiles` (not drawn) until `goldLeft` reaches 0; on that
   tick, after the players collect gold, `revealLadders` turns every `h` into a ladder
   (`H`). A level without gold starts with them revealed.
-- **Alcove**: a player whose centre is in one is hidden: monks neither catch it nor see
-  it (`monks.ts`, `isHidden`), so with no other player in sight they stand still.
+- **Alcove** (Guillaume, 2026-10-30): walking through one does nothing. A player
+  standing with its centre in one hides by pressing **up** (it snaps onto the cell,
+  `step.ts`, `tryHide`, `Player.hidden`) and comes out by pressing **down**. While
+  hidden it does nothing else (no moving, digging or items), and monks neither see nor
+  catch it (`monks.ts`, `inSight`), even walking over or landing on it. Monks with no
+  other player in sight **roam** meanwhile (see Monks). A player whose alcove is blown
+  away comes out; one that dies is no longer hidden. Drawn in shadow while hiding.
 - **Monk respawn points** (`R`): not drawn in the game. See Monks.
 
 ### Teleporters
@@ -347,7 +353,13 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
   is cancelled.
 - **Target** (`monks.ts`, `targetOf`): each tick, a monk chases the nearest player in
   play and in sight, not hiding in an alcove (`|dx| + |dy|` in sub-units; a tie goes to
-  player 1). With none (waiting to reappear, or hiding) it stands still. Below, "the runner" is that player.
+  player 1). Below, "the runner" is that player. With none in sight but one in play
+  (hiding), it **roams** (`roam`): it heads for a cell it can stand in (not solid, held
+  up), drawn from the PRNG, as if a player stood there, and draws another once there,
+  when the AI finds no move toward it, or after `ROAM_TICKS` (240); `Monk.roamX`,
+  `roamY`, `roamLeft` keep the spot, reset once it chases again (provisional: TLR's
+  wandering is not documented). With nobody in play (all waiting to reappear) it stands
+  still.
 - **Chase AI** (`ai.ts`): the classic 1982 algorithm, reimplemented. Same row and a
   walkable floor between them: go straight at the runner. Otherwise scan the monk's
   floor up to the walls and edges; from each column, see where falling or a ladder
@@ -704,7 +716,10 @@ as gameplay is implemented.
 | Snare: laid and used up         | picked up as an item, laid in the player's cell, one monk per snare                       | S-018 @ 0:22–0:48          |
 | Snare and players               | never caught: players walk over armed snares unharmed                                     | S-100 (2026-10-30)         |
 | Alcove                          | hiding place: a player inside cannot be caught                                            | S-018 @ 0:02–0:19, S-100   |
-| Alcove: monks' sight            | monks do not see a hiding player (they chase another, or stand still)                     | Guillaume, 2026-10-29      |
+| Alcove: monks' sight            | monks do not see a hiding player (they chase another, or roam)                            | Guillaume, 2026-10-29/30   |
+| Alcove: hiding                  | up to hide, down to come out; walking through does not hide                               | Guillaume, 2026-10-30      |
+| Monks while a player hides      | keep wandering, walk over the alcove without catching                                     | Guillaume, 2026-10-30      |
+| How monks wander                | toward random standable cells, new one every 4 s or on arrival                            | **Provisional**            |
 | Trapdoor turf                   | drawn like brick; actors fall through; cannot be dug                                      | S-002, S-008               |
 | Gooey turf speed                | 1 sub-unit per 6 ticks for runners and monks (3× slower runner, 2× slower monk)           | S-002; Guillaume, 10-29    |
 | Hidden ladder                   | appears when the last gold is taken                                                       | S-001, S-025 @ 0:00–0:04   |

@@ -4,13 +4,22 @@ import { centerCell, setTile, takeGold } from "./gold";
 import { craterAt, holeAt, isDugOut, type Hole } from "./holes";
 import { NO_INPUT, type PlayerInput } from "./input";
 import { every, isFalling, overlapsCell, stepActor, tryHorizontal } from "./move";
-import { cellOf, isBar, isLadder, isPassable, isSolid, offsetOf, type Terrain } from "./physics";
+import {
+  cellOf,
+  isBar,
+  isLadder,
+  isPassable,
+  isSolid,
+  isSupported,
+  offsetOf,
+  type Terrain,
+} from "./physics";
 import { prngInt } from "./prng";
 import { gasMonk } from "./gas";
 import { catchInSnare, type Snare } from "./snares";
 import { inTransit, tryTeleport } from "./teleport";
 import { rubbleAt, rubbleIn } from "./tools";
-import { MONK_CARRY, MONK_PERIOD, MONK_TICKS, SUB } from "./rules";
+import { MONK_CARRY, MONK_PERIOD, MONK_TICKS, ROAM_TICKS, SUB } from "./rules";
 import type { Actor, Facing, GameState, Monk, Player } from "./state";
 
 /** What the monks change in one tick. */
@@ -44,21 +53,13 @@ function sameCell(a: Actor, b: Actor): boolean {
 }
 
 /**
- * A player hiding in an alcove (its centre in the cell): monks neither see it nor catch
- * it (S-018 @ 0:02–0:19, S-100). Seeing: provisional (see ARCHITECTURE).
+ * Whether monks can see a player: in play and not hiding in an alcove (`Player.hidden`;
+ * S-018 @ 0:02–0:19, S-100, Guillaume 2026-10-30). A player in transit through a
+ * teleporter is seen where it will appear (at the exit), but cannot be caught until it
+ * does.
  */
-export function isHidden(tiles: readonly string[], p: Actor): boolean {
-  const { cx, cy } = centerCell(p);
-  return tiles[cy]?.charAt(cx) === TILE.alcove;
-}
-
-/**
- * Whether monks can see a player: in play and not hiding in an alcove. A player in
- * transit through a teleporter is seen where it will appear (at the exit), but cannot
- * be caught until it does.
- */
-export function inSight(tiles: readonly string[], p: Player): boolean {
-  return p.mode === "alive" && !isHidden(tiles, p);
+export function inSight(p: Player): boolean {
+  return p.mode === "alive" && !p.hidden;
 }
 
 function aligned(a: Actor): boolean {
@@ -109,6 +110,7 @@ export function stepMonks(state: GameState, tick: number): MonksResult {
   let rng = state.rng;
   let snares = state.snares;
   const caught = state.players.map(() => false);
+  let roamCells: readonly { cx: number; cy: number }[] | null = null;
 
   for (let i = 0; i < monks.length; i++) {
     const before = monks[i];
@@ -154,11 +156,22 @@ export function stepMonks(state: GameState, tick: number): MonksResult {
         break;
       }
       case "free": {
-        // No player in play and in sight: the monk waits (it still falls if unsupported).
-        const v = view(state, m);
+        // No player in sight: the monk roams while one hides, and waits when nobody is
+        // in play (it still falls if unsupported).
+        let v = view(state, m);
+        let roaming = false;
+        if (v === null && state.players.some((p) => p.mode === "alive")) {
+          roamCells ??= standCells(state);
+          ({ monk: m, view: v, rng } = roam(m, roamCells, rng));
+          roaming = true;
+        } else if (m.roamX >= 0 || m.roamLeft !== 0) {
+          m = { ...m, roamX: -1, roamY: -1, roamLeft: 0 };
+        }
         const move = v === null ? "none" : chooseMove(t, v);
         const moved = stepActor(t, m, INPUT[toColumn(t, m, move)], tick, MONK_PERIOD);
         m = { ...m, ...moved };
+        // Stuck on its way: it picks another spot next tick.
+        if (roaming && move === "none") m = { ...m, roamLeft: 0 };
         break;
       }
     }
@@ -195,7 +208,7 @@ export function stepMonks(state: GameState, tick: number): MonksResult {
     // Snared and dazed monks catch nobody.
     if ((m.mode === "free" || m.mode === "trapped" || m.mode === "escaping") && !inTransit(m)) {
       state.players.forEach((p, j) => {
-        if (inSight(tiles, p) && !inTransit(p) && sameCell(m, p)) caught[j] = true;
+        if (inSight(p) && !inTransit(p) && sameCell(m, p)) caught[j] = true;
       });
     }
     monks[i] = m;
@@ -218,6 +231,61 @@ function toColumn(t: Terrain, m: Monk, move: MonkMove): MonkMove {
 }
 
 /**
+ * The cells a monk can stand in, in reading order: not solid, and held up there (a
+ * ladder or bar, or a solid tile or ladder below). Roaming monks head for one of them.
+ */
+function standCells(state: GameState): { cx: number; cy: number }[] {
+  const t: Terrain = { ...state, monks: [] };
+  const out: { cx: number; cy: number }[] = [];
+  for (let cy = 0; cy < t.height; cy++) {
+    for (let cx = 0; cx < t.width; cx++) {
+      if (isPassable(t, cx, cy) && isSupported(t, cx, cy)) out.push({ cx, cy });
+    }
+  }
+  return out;
+}
+
+/**
+ * A free monk with no player in sight while one is in play (hiding) roams: it heads for
+ * a cell it can stand in, drawn from the PRNG, as if a player stood there, and draws
+ * another once it is there (aligned on it), once it cannot get closer (the AI picks no
+ * move), or after `ROAM_TICKS`. Provisional: TLR's own wandering is not documented.
+ */
+function roam(
+  m: Monk,
+  cells: readonly { cx: number; cy: number }[],
+  rng: number,
+): { monk: Monk; view: ChaseView | null; rng: number } {
+  if (cells.length === 0) return { monk: m, view: null, rng };
+  const { cx, cy } = centerCell(m);
+  const there = m.x === m.roamX * SUB && cy === m.roamY && offsetOf(m.y) === 0;
+  let monk = m;
+  let state = rng;
+  if (m.roamX < 0 || m.roamLeft <= 0 || there) {
+    const pick = prngInt(rng, cells.length);
+    state = pick.state;
+    let target = cells[pick.value];
+    // Not the cell it stands in: the next one in reading order instead.
+    if (target !== undefined && target.cx === cx && target.cy === cy && cells.length > 1) {
+      target = cells[(pick.value + 1) % cells.length];
+    }
+    if (target === undefined) return { monk: m, view: null, rng: state };
+    monk = { ...m, roamX: target.cx, roamY: target.cy, roamLeft: ROAM_TICKS };
+  }
+  monk = { ...monk, roamLeft: monk.roamLeft - 1 };
+  const view: ChaseView = {
+    cx,
+    cy,
+    x: m.x,
+    rx: monk.roamX,
+    ry: monk.roamY,
+    runnerX: monk.roamX * SUB,
+    runnerFalling: false,
+  };
+  return { monk, view, rng: state };
+}
+
+/**
  * What the chase AI sees of a monk and the player it chases; null without a player in
  * sight (players hiding in an alcove are not).
  * Whether that player falls is judged on the state at the start of the tick, so it
@@ -226,7 +294,7 @@ function toColumn(t: Terrain, m: Monk, move: MonkMove): MonkMove {
 function view(state: GameState, m: Monk): ChaseView | null {
   const target = targetOf(
     m,
-    state.players.filter((p) => inSight(state.tiles, p)),
+    state.players.filter((p) => inSight(p)),
   );
   if (target === null) return null;
   const { cx, cy } = centerCell(m);
