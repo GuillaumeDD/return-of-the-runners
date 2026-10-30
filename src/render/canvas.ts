@@ -87,6 +87,9 @@ const COLOR = {
   gridLine: "#222",
 } as const;
 
+/** The colour behind the scene. */
+export const BACKGROUND: string = COLOR.background;
+
 /** The 2D context of a canvas; throws when the browser has none. */
 export function context2d(c: HTMLCanvasElement): CanvasRenderingContext2D {
   const context = c.getContext("2d");
@@ -169,8 +172,66 @@ export function render(
       sheet,
     );
   });
-  for (const c of state.clouds) drawCloud(ctx, c);
-  for (const b of state.blasts) drawBlast(ctx, b, state.width, state.height);
+  // With art, clouds and blasts are soft light; without, the placeholder shapes.
+  const lit = sheet.image !== null;
+  for (const c of state.clouds) {
+    if (lit) drawGasCloud(ctx, c, time);
+    else drawCloud(ctx, c);
+  }
+  for (const b of state.blasts) {
+    if (lit) drawFireball(ctx, b, state.width, state.height);
+    else drawBlast(ctx, b, state.width, state.height);
+  }
+}
+
+/**
+ * A gas cloud as soft green puffs drifting over its cells, thinning out over its last
+ * ticks (the drift comes from the render time only).
+ */
+function drawGasCloud(ctx: CanvasRenderingContext2D, c: Cloud, time: number): void {
+  ctx.save();
+  ctx.globalAlpha = Math.min(1, c.left / TICKS_FADING);
+  for (let i = 0; i < c.width; i++) {
+    for (let k = 0; k < 3; k++) {
+      const phase = time / 700 + i * 1.7 + k * 2.1;
+      const x = (c.cx + i + 0.2 + 0.3 * k) * TILE_PX + Math.sin(phase) * 2.5;
+      const y = (c.cy + 0.55) * TILE_PX + Math.cos(phase * 1.3) * 2 - (k % 2) * 4;
+      const r = TILE_PX * (0.5 + 0.06 * Math.sin(phase * 0.8));
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, "rgba(225, 255, 200, 0.9)");
+      g.addColorStop(0.5, "rgba(150, 230, 130, 0.6)");
+      g.addColorStop(1, "rgba(60, 140, 70, 0)");
+      ctx.fillStyle = g;
+      ctx.fillRect(x - r, y - r, 2 * r, 2 * r);
+    }
+  }
+  ctx.restore();
+}
+
+/** A blast as a fireball over every cell it covers, burning out as it ages. */
+function drawFireball(
+  ctx: CanvasRenderingContext2D,
+  b: Blast,
+  width: number,
+  height: number,
+): void {
+  const t = b.age / BLAST_TICKS;
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+  ctx.globalAlpha = 1 - t * t;
+  for (const c of blastCells(b.cx, b.cy, b.big, width, height)) {
+    const x = (c.cx + 0.5) * TILE_PX;
+    const y = (c.cy + 0.5) * TILE_PX;
+    const r = TILE_PX * (0.8 + 0.3 * t);
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, b.big ? "#ffffff" : "#fff3c4");
+    g.addColorStop(0.3, "rgba(255, 216, 74, 0.8)");
+    g.addColorStop(0.65, "rgba(255, 122, 47, 0.45)");
+    g.addColorStop(1, "rgba(120, 30, 10, 0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(x - r, y - r, 2 * r, 2 * r);
+  }
+  ctx.restore();
 }
 
 /** Ticks over which landed rubble fades out before it crumbles (drawing only). */

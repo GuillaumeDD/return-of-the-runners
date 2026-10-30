@@ -21,7 +21,8 @@ import type { Level, LevelErrorCode } from "./level/format";
 import { parseLevel } from "./level/parse";
 import { decodeLevel } from "./share/link";
 import firstSteps from "./levels/first-steps.json?raw";
-import { canvasSize, context2d, render } from "./render/canvas";
+import { BACKGROUND, canvasSize, context2d, render } from "./render/canvas";
+import { detectEvents, drawEffects, type Effect, shakeAt, updateEffects } from "./render/effects";
 import { fitCanvas } from "./render/scale";
 import { type Motion, trackMotion } from "./render/actors";
 import { sheetAt } from "./render/sheet";
@@ -52,6 +53,8 @@ const sharedBar = byId("shared-bar", HTMLDivElement);
 const sharedText = byId("shared-text", HTMLParagraphElement);
 const sharedErrors = byId("shared-errors", HTMLUListElement);
 const sharedEdit = byId("shared-edit", HTMLButtonElement);
+/** The player asked the system for less motion: no shake, no flashes, fewer particles. */
+const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
 /**
  * The play mode picked last; games started afterwards use it (a game already running
@@ -140,6 +143,7 @@ function createGame(
   const context = context2d(target);
   let scale = 1;
   let motion: Motion | null = null;
+  let effects: Effect[] = [];
   const fit = (): void => {
     scale = fitCanvas(target, context, canvasSize(session.state));
   };
@@ -182,6 +186,7 @@ function createGame(
     count = playerCount(mode);
     session = newSession();
     acc = { carry: 0 };
+    effects = [];
     showPlayers();
   };
   const onChoose: Readonly<Record<PlayMode, () => void>> = {
@@ -208,7 +213,11 @@ function createGame(
     last = now;
     acc = result.acc;
     const inputs = inputsFrom(held, count);
+    const before = session.state;
     for (let i = 0; i < result.ticks; i++) session = tickSession(session, inputs);
+    // A restarted level starts with a clean slate.
+    if (session.state.tick < before.tick) effects = [];
+    effects = updateEffects(effects, detectEvents(before, session.state), now);
     const key = statusMessage(session.state, mode);
     if (key !== shown) {
       shown = key;
@@ -221,7 +230,16 @@ function createGame(
       els.hud.hidden = text === "";
     }
     motion = trackMotion(motion, session.state);
+    const reduced = reducedMotion.matches;
+    const shake = shakeAt(effects, now, reduced);
+    const size = canvasSize(session.state);
+    context.fillStyle = BACKGROUND; // what a shaken scene uncovers at the edges
+    context.fillRect(0, 0, size.width, size.height);
+    context.save();
+    context.translate(shake.x, shake.y);
     render(context, session.state, sheetAt(scale), now, motion);
+    drawEffects(context, effects, now, reduced);
+    context.restore();
     frameId = requestAnimationFrame(frame);
   };
 

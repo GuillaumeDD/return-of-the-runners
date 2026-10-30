@@ -506,11 +506,24 @@ wait for Guillaume's playtest.
   that fades over its last 30 ticks, a laid snare an open noose pegged to the floor,
   and a lit bomb its item sprite with a glowing spark that flickers as the fuse burns.
   Item and tile shapes are _provisional_.
+- **Effects** (B-034, `render/effects.ts`). Each frame, `detectEvents` compares the
+  state before and after the frame's ticks and starts an effect for what changed: dust
+  where a hole opens, a puff where one fills (holes and craters), a sparkle where gold
+  is taken, light on the exit when the last gold goes, small and big blasts (with a
+  light shake), a puff where gas is fired, a flash where an actor enters and leaves a
+  teleporter, a death and a respawn. An effect's particles are a pure function of its
+  start and the render time (seeded, never `Math.random`), so drawing mutates nothing
+  and the simulation never sees an effect. At most `MAX_EFFECTS` (48) run at once, the
+  oldest making room; the shake never exceeds 4 logical pixels. A restarted level
+  clears them. With art, gas clouds and blasts are drawn as soft light (puffs that
+  drift with the render time, fireballs) instead of the placeholder squares. Looks
+  and timings are _provisional_.
 - **Frame and HUD** (B-036). A riveted dark metal frame; a status bar at the bottom, as
   in TLR (_provisional_, open question 1 of the plan): per player lives, score, item
   slot and bombs, the level number in the middle, between carved spirals.
 - **Reduced motion.** Under `prefers-reduced-motion`: no screen shake, no flashes, a
-  quarter of the particles; idle loops and glows stay still.
+  quarter of the particles (B-034, read on every frame); idle loops and glows stay
+  still (not done yet: actors still animate).
 
 ## Level format
 
