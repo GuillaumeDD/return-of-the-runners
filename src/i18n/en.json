@@ -107,6 +107,7 @@
   "tileBigBomb": "Big bomb",
   "tileSnare": "Snare",
   "tileGasSpray": "Gas gun",
+  "tileGooBucket": "Goo bucket",
   "editorLinkTool": "Link teleporters",
   "editorLinkHint": "Click a teleporter entrance, then the exit it should lead to. A new entrance leads to the nearest exit.",
   "controls2": "Player 1: arrow keys, . and / to dig, comma to pick up, M to use a tool, N to lay a bomb. Player 2: W A S D, Q and E to dig, R to pick up, F to use a tool, G to lay a bomb. Collect all the gold: as soon as one player reaches the exit, the level is won.",
