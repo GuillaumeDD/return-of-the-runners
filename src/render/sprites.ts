@@ -143,42 +143,64 @@ export function frameKey(anim: Animation, frame: number): string {
 }
 
 /**
- * The sprite of each tile, or null while it is drawn as a placeholder. Typed over every
- * tile of the format, so a new tile without an entry does not compile (and a test checks
- * the list against `format.ts`). The art lands with B-033 and B-035.
+ * The sprite of each tile, or null while it is drawn as a placeholder (or drawn as an
+ * actor: the start markers). Typed over every tile of the format, so a new tile without
+ * an entry does not compile (and a test checks the list against `format.ts`). Slabs are
+ * autotiled (`AUTOTILED`): the renderer adds the neighbour mask and texture variant.
  */
 export const TILE_ART: Readonly<Record<TileChar, string | null>> = {
   ".": null,
-  "#": null,
-  "@": null,
-  H: null,
-  "-": null,
-  $: null,
-  E: null,
+  "#": "slab:soft",
+  "@": "slab:hard",
+  H: "ladder",
+  "-": "bar",
+  $: "gold",
+  E: "exit",
   P: null,
   M: null,
   Q: null,
-  "%": null,
-  "~": null,
-  h: null,
+  "%": "slab:soft",
+  "~": "slab:soft",
+  h: "ladder",
   R: null,
-  n: null,
-  T: null,
-  t: null,
-  a: null,
-  b: null,
-  c: null,
-  A: null,
-  B: null,
-  C: null,
-  j: null,
-  k: null,
-  o: null,
-  O: null,
-  s: null,
-  g: null,
-  u: null,
+  n: "alcove",
+  T: "teleport:in",
+  t: "teleport:out",
+  a: "key:a",
+  b: "key:b",
+  c: "key:c",
+  A: "door:a",
+  B: "door:b",
+  C: "door:c",
+  j: "jackhammer",
+  k: "pickaxe",
+  o: "bomb:small",
+  O: "bomb:big",
+  s: "snare",
+  g: "gas-spray",
+  u: "goo-bucket",
 };
+
+/** Sprite families drawn per neighbour mask (16) and texture variant (2). */
+export const AUTOTILED: ReadonlySet<string> = new Set(["slab:soft", "slab:hard"]);
+export const SLAB_VARIANTS = 2;
+
+/** The sprite key of one autotiled cell. */
+export function slabKey(family: string, mask: number, variant: number): string {
+  return `${family}:${String(mask)}:${String(variant)}`;
+}
+
+/** Stages a dug or refilling brick shows between whole (4) and gone (0). */
+export const DUG_STAGES = 4;
+
+/**
+ * The stage of a brick of which `left` (0 to 1) is still there: 0 (gone) to `DUG_STAGES`
+ * (whole). Any brick left at all shows at least stage 1, so a hole closes visibly.
+ */
+export function dugStage(left: number): number {
+  if (!(left > 0)) return 0;
+  return Math.min(DUG_STAGES, Math.ceil(left * DUG_STAGES - 1e-9));
+}
 
 /** The sprite key of a tile character, if it has art. */
 export function tileArt(tile: string): string | null {

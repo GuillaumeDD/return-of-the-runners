@@ -490,8 +490,18 @@ wait for Guillaume's playtest.
   `STILL_AFTER` ticks after its last step (the slowest gait, on goo), so a walker never
   flickers to idle between steps; standing still holds frame 0. Facing mirrors the
   sprite, not the frame list. A hiding runner is drawn at 45 % opacity. Poses are
-  _provisional_; the respawn flash belongs to the effects (B-034), and the carried gold
-  and the item in hand stay placeholders until the items are drawn (B-033).
+  _provisional_; the respawn flash belongs to the effects (B-034). A monk's carried
+  gold is drawn small over its head, a runner's item in hand at half size in front.
+- **Terrain and items** (B-033, `render/terrain.ts`, drawn by `render/art/tiles.ts`,
+  Moss world). Slabs are autotiled: brick, trapdoor turf and gooey turf form one
+  diggable slab, bedrock another; each cell's sprite depends on which of its four
+  neighbours continue its slab (16 masks), and the grid's edge counts as continuing
+  it. Two textures alternate cell by cell. Trapdoor turf draws exactly as brick in
+  play; the editor marks it. Gooey turf is the brick slab under the goo coat. A dug or
+  refilling hole shows one of three stages of crumbled brick between whole and gone
+  (`dugStage`), so a closing hole is always visible; drilled bedrock the same. In
+  play, a hidden ladder and a closed exit are not drawn; the editor shows both faded.
+  Item and tile shapes are _provisional_.
 - **Frame and HUD** (B-036). A riveted dark metal frame; a status bar at the bottom, as
   in TLR (_provisional_, open question 1 of the plan): per player lives, score, item
   slot and bombs, the level number in the middle, between carved spirals.
