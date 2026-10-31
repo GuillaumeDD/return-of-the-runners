@@ -42,6 +42,8 @@ describe("versus: gold", () => {
   // Randomized: random two-player levels with monks (which pick up and drop gold) and
   // random inputs. The gold left (carried by monks included) plus every player's own
   // count is the level's gold, on every tick; a player's count never goes down.
+  // About 2.5 s locally, and over Vitest's 5 s default on CI runners (#57, #64): the
+  // 30 s timeout at the end gives it room without cutting trials (B-047).
   it("the total never changes: goldLeft + each player's gold = the level's gold", () => {
     const rng = makeRng(2101);
     const tiles = "....####H-$$M";
@@ -90,7 +92,7 @@ describe("versus: gold", () => {
         s = next;
       }
     }
-  });
+  }, 30_000);
 });
 
 describe("versus: the race to the exit", () => {

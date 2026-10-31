@@ -751,6 +751,8 @@ Code: `src/editor/` (pure modules, and `view.ts` / `library-view.ts` for the DOM
 - **Untrusted text**: shown with `textContent` or set as an input `value`. A message
   placeholder is filled with a function, `replace("{name}", () => name)`, since a
   replacement string would expand patterns such as `$&` from a level name.
+- **Text cut to fit** (a level name in the status bar): cut between graphemes with
+  `Intl.Segmenter`, never by UTF-16 unit, so an accent or an emoji is never split.
 
 ### Browser quirks
 
@@ -805,6 +807,11 @@ data and the supply chain.
   policy does not allow `guillaumedd.github.io`), a fresh clone of `main` with
   `npm ci && npm run build` and `vite preview`, driven by Playwright. The PR or reply
   says which one was checked.
+- **PR screenshots**: a throwaway Playwright script (Chromium) against `vite preview`,
+  or one that imports the renderers directly. Such a script must sit inside the repo
+  while it runs (a script outside it cannot resolve the project's modules), and is
+  deleted before committing; the images are committed under `docs/screenshots/` and
+  linked by commit SHA.
 
 ## Observed behavior of the original game
 

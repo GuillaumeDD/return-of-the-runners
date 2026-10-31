@@ -1,8 +1,9 @@
 # Step 4 plan, part A: the look (art direction, sprites, worlds)
 
-Status: **approved**; direction chosen by Guillaume on 2026-10-30: the illustrated
-diorama (B-030, style guide in ARCHITECTURE § Art direction). Roadmap: `docs/PRD.md` §7, step 4.
-Backlog items: B-030 to B-036. Source ids (`S-…`) refer to [`../SOURCES.md`](../SOURCES.md).
+Status: **done** (2026-10-31); direction chosen by Guillaume on 2026-10-30: the
+illustrated diorama (B-030, style guide in ARCHITECTURE § Art direction). Roadmap:
+`docs/PRD.md` §7, step 4. Backlog items: B-030 to B-036, then B-043 to B-046 (playtest
+and review fixes). Source ids (`S-…`) refer to [`../SOURCES.md`](../SOURCES.md).
 
 ## Goal
 
