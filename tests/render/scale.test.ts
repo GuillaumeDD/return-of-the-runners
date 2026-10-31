@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { TILE_PX } from "../../src/render/canvas";
-import { backingStore, MAX_SCALE } from "../../src/render/scale";
+import {
+  backingStore,
+  GAME_SIZES,
+  gameWidth,
+  MAX_SCALE,
+  parseGameSize,
+} from "../../src/render/scale";
 
 const LEVEL = { width: 28 * TILE_PX, height: 16 * TILE_PX };
 
@@ -67,5 +73,59 @@ describe("backingStore", () => {
       height: 0,
       scale: 1,
     });
+  });
+});
+
+describe("game size (B-048)", () => {
+  const frame = { width: 696, height: 436 };
+  const wide = { width: 2000, height: 5000 };
+
+  it("a percentage is that share of the logical size", () => {
+    expect(gameWidth(50, frame, wide)).toBe(348);
+    expect(gameWidth(100, frame, wide)).toBe(696);
+    expect(gameWidth(200, frame, wide)).toBe(1392);
+  });
+
+  it("is never wider than the room, whatever the size", () => {
+    for (const size of GAME_SIZES) {
+      expect(gameWidth(size, frame, { width: 500, height: 5000 })).toBeLessThanOrEqual(500);
+    }
+  });
+
+  it('"fit" fills the room\'s height, keeping the aspect', () => {
+    const w = gameWidth("fit", frame, { width: 3000, height: 655 });
+    expect(w).toBeCloseTo(1044);
+    expect((w * frame.height) / frame.width).toBeCloseTo(654); // 1 px spare
+  });
+
+  it('"fit" takes the width when the room is narrow', () => {
+    expect(gameWidth("fit", frame, { width: 400, height: 2000 })).toBe(400);
+  });
+
+  it('"fit" stops shrinking at a quarter of the logical size', () => {
+    expect(gameWidth("fit", frame, { width: 2000, height: -50 })).toBe(174);
+    expect(gameWidth("fit", frame, { width: 2000, height: 10 })).toBe(174);
+  });
+
+  it("a fitted canvas, once rounded to whole device pixels, still fits the room", () => {
+    for (const dpr of [1, 1.25, 1.5, 2, 3]) {
+      for (const height of [300, 487.5, 654, 811, 1000]) {
+        const css = gameWidth("fit", frame, { width: 3000, height });
+        const store = backingStore(frame, css, dpr);
+        expect(store.height / dpr).toBeLessThanOrEqual(height);
+      }
+    }
+  });
+
+  it("an empty logical size gives no width", () => {
+    expect(gameWidth("fit", { width: 0, height: 10 }, wide)).toBe(0);
+  });
+
+  it("reads a stored size back, and anything unknown as fit", () => {
+    expect(parseGameSize("75")).toBe(75);
+    expect(parseGameSize("fit")).toBe("fit");
+    for (const bad of [null, "", "80", "1e2", " 75", "Fit", "__proto__"]) {
+      expect(parseGameSize(bad)).toBe("fit");
+    }
   });
 });

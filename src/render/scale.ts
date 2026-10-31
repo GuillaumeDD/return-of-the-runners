@@ -43,7 +43,8 @@ export function backingStore(
 
 /**
  * Sizes `canvas` for `logical` content on this screen and sets the transform, so the
- * caller draws in logical pixels. The CSS width is then nudged to the backing store
+ * caller draws in logical pixels. It is shown `cssWidth` CSS pixels wide, or, without
+ * one, at the width the style sheet gives it. The CSS width is then nudged to the backing store
  * (by a few pixels at most), so each canvas pixel is exactly one device pixel. Returns
  * the scale, for sprite sheets drawn at it.
  */
@@ -51,10 +52,14 @@ export function fitCanvas(
   canvas: HTMLCanvasElement,
   ctx: CanvasRenderingContext2D,
   logical: { readonly width: number; readonly height: number },
+  cssWidth?: number,
 ): number {
   const dpr = window.devicePixelRatio;
-  canvas.style.width = ""; // measure the width the style sheet gives
-  const shown = canvas.getBoundingClientRect().width;
+  let shown = cssWidth ?? 0;
+  if (cssWidth === undefined) {
+    canvas.style.width = ""; // measure the width the style sheet gives
+    shown = canvas.getBoundingClientRect().width;
+  }
   const store = backingStore(logical, shown, dpr);
   // Setting a size clears the canvas and its state, so only when it changes.
   if (canvas.width !== store.width) canvas.width = store.width;
@@ -62,4 +67,42 @@ export function fitCanvas(
   if (shown > 0 && dpr > 0) canvas.style.width = `${String(store.width / dpr)}px`;
   ctx.setTransform(store.scale, 0, 0, store.scale, 0, 0);
   return store.scale;
+}
+
+/**
+ * The game's size, picked by the player (B-048): "fit" shows the whole page in the
+ * window, a percentage is that share of the logical size (100 % = a tile of `TILE_PX`
+ * CSS pixels). Never wider than the space the page gives the canvas.
+ */
+export const GAME_SIZES = ["fit", 50, 75, 100, 150, 200] as const;
+export type GameSize = (typeof GAME_SIZES)[number];
+
+/** A stored size, read back: anything else (missing, edited, old) is "fit". */
+export function parseGameSize(text: string | null): GameSize {
+  return GAME_SIZES.find((s) => String(s) === text) ?? "fit";
+}
+
+/** Below this share of its logical size, "fit" stops shrinking and the page scrolls. */
+const FIT_FLOOR = 0.25;
+
+/**
+ * The CSS width to show a canvas of `logical` size at, for `size`, when the page gives
+ * it `room.width` CSS pixels across and `room.height` down (the window's height less
+ * everything else on the page).
+ */
+export function gameWidth(
+  size: GameSize,
+  logical: { readonly width: number; readonly height: number },
+  room: { readonly width: number; readonly height: number },
+): number {
+  if (logical.width <= 0 || logical.height <= 0) return 0;
+  const wanted =
+    size === "fit"
+      ? Math.max(
+          logical.width * FIT_FLOOR,
+          // 1 CSS pixel spare: rounding to whole device pixels can add up to half of one.
+          ((room.height - 1) * logical.width) / logical.height,
+        )
+      : (logical.width * size) / 100;
+  return Math.max(1, Math.min(room.width, wanted));
 }

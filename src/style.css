@@ -43,6 +43,23 @@ canvas {
   background: #111;
 }
 
+.settings {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+}
+
+select {
+  font: inherit;
+  background: #222;
+  color: #ddd;
+  border: 1px solid #444;
+  padding: 3px 6px;
+}
+
 button {
   font: inherit;
   background: #222;
