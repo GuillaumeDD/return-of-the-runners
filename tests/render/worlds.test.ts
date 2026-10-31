@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { WORLDS } from "../../src/level/format";
 import { drawSlab } from "../../src/render/art/tiles";
-import { WORLD_ART } from "../../src/render/art/worlds";
+import { artAt, NIGHT_TERRAIN, WORLD_ART } from "../../src/render/art/worlds";
 import { DEFAULT_SCENE, fillBackdrop } from "../../src/render/canvas";
 import { SPRITES, spritesFor } from "../../src/render/sheet";
 import type { SpriteSheet } from "../../src/render/sprites";
@@ -112,5 +112,42 @@ describe("backdrop", () => {
     const { ctx, colors } = recorder();
     fillBackdrop(ctx, 100, 100, NONE, DEFAULT_SCENE);
     expect(colors).toEqual(["#111"]);
+  });
+});
+
+describe("terrain by night", () => {
+  const channels = (hex: string): number[] =>
+    [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+
+  it("is the day terrain itself by day", () => {
+    for (const w of WORLDS) expect(artAt(w, false)).toBe(WORLD_ART[w]);
+  });
+
+  it("darkens every terrain shade to NIGHT_TERRAIN of its light, glows kept", () => {
+    expect(NIGHT_TERRAIN).toBe(0.85);
+    for (const w of WORLDS) {
+      const day = WORLD_ART[w];
+      const night = artAt(w, true);
+      for (const key of ["soft", "hard", "top", "hardTop"] as const) {
+        day[key].forEach((c, i) => {
+          const n = night[key][i] ?? "";
+          expect(n, `${w} ${key}`).toMatch(HEX);
+          expect(channels(n)).toEqual(channels(c).map((v) => Math.round(v * NIGHT_TERRAIN)));
+        });
+      }
+      expect(night.glow).toBe(day.glow);
+      expect(night.detail).toBe(day.detail);
+    }
+  });
+
+  it("builds the same sprites by night, a slab drawn in the night shades", () => {
+    const keys = SPRITES.map((s) => s.key);
+    for (const w of WORLDS) {
+      expect(spritesFor(w, true).map((s) => s.key)).toEqual(keys);
+      const { ctx, colors } = recorder();
+      drawSlab(ctx, "soft", 0, 0, artAt(w, true));
+      expect(colors, w).toContain(artAt(w, true).soft[1]);
+      expect(colors, w).not.toContain(WORLD_ART[w].soft[1]);
+    }
   });
 });

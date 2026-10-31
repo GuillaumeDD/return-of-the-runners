@@ -6,7 +6,7 @@ import { type ActorKind, MONK_ANIMS, RUNNER_ANIMS } from "./actors";
 import { BOX, drawActorFrame } from "./art/actors";
 import { ACTOR_TOP, TILE_PX } from "./canvas";
 import * as tiles from "./art/tiles";
-import { WORLD_ART } from "./art/worlds";
+import { artAt } from "./art/worlds";
 import { backdrops } from "./backdrop";
 import { DEFAULT_WORLD, type World } from "../level/format";
 import {
@@ -68,8 +68,8 @@ function tile(key: string, draw: (ctx: CanvasRenderingContext2D) => void): Sprit
   };
 }
 
-function tileSprites(world: World): SpriteDef[] {
-  const art = WORLD_ART[world];
+function tileSprites(world: World, night: boolean): SpriteDef[] {
+  const art = artAt(world, night);
   const defs: SpriteDef[] = [];
   for (const slab of ["soft", "hard"] as const) {
     for (let mask = 0; mask < tiles.MASKS; mask++) {
@@ -136,9 +136,9 @@ function tileSprites(world: World): SpriteDef[] {
   return defs;
 }
 
-/** Every sprite of the game in `world`: the same keys in every world, terrain in its colours. */
-export function spritesFor(world: World): readonly SpriteDef[] {
-  return [...tileSprites(world), ...actorSprites()];
+/** Every sprite of the game in `world`, by day or night: the same keys everywhere, terrain in its colours. */
+export function spritesFor(world: World, night = false): readonly SpriteDef[] {
+  return [...tileSprites(world, night), ...actorSprites()];
 }
 
 /** Every sprite of the game, in the default world. */
@@ -154,18 +154,18 @@ export const domSurface: Surface = (width, height) => {
 };
 
 /**
- * Sheets by scale and world: a canvas moved to another screen, or a level in another
- * world, gets its own, drawn once and kept for the page's life (at most a few: one per
- * world seen at each canvas scale).
+ * Sheets by scale, world and night: a canvas moved to another screen, or a level in
+ * another world or by night, gets its own, drawn once and kept for the page's life (at
+ * most a few: one per world and night seen at each canvas scale).
  */
 const sheets = new Map<string, SpriteSheet>();
 
-export function sheetAt(scale: number, world: World = DEFAULT_WORLD): SpriteSheet {
-  const key = `${String(scale)}:${world}`;
+export function sheetAt(scale: number, world: World = DEFAULT_WORLD, night = false): SpriteSheet {
+  const key = `${String(scale)}:${world}:${String(night)}`;
   let sheet = sheets.get(key);
   if (sheet === undefined) {
     sheet = {
-      ...buildSheet(spritesFor(world), scale, domSurface),
+      ...buildSheet(spritesFor(world, night), scale, domSurface),
       backdrops: backdrops(scale, domSurface),
     };
     sheets.set(key, sheet);

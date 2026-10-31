@@ -147,3 +147,31 @@ export const WORLD_ART: Readonly<Record<World, WorldArt>> = {
     night: ["#12141a", "#050608"],
   },
 };
+
+/** How much darker the terrain is by night: its colours keep 85 % of their light. */
+export const NIGHT_TERRAIN = 0.85;
+
+function darken(hex: string, k: number): string {
+  const c = [1, 3, 5].map((i) => Math.round(parseInt(hex.slice(i, i + 2), 16) * k));
+  return `#${c.map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+}
+
+function darkenAll<T extends readonly string[]>(shades: T, k: number): T {
+  return shades.map((s) => darken(s, k)) as unknown as T;
+}
+
+/**
+ * A world's terrain colours by day, or by night: the same shades, darker by
+ * `NIGHT_TERRAIN` (Guillaume, 2026-10-31). Glows stay as bright: they are lights.
+ */
+export function artAt(world: World, night: boolean): WorldArt {
+  const art = WORLD_ART[world];
+  if (!night) return art;
+  return {
+    ...art,
+    soft: darkenAll(art.soft, NIGHT_TERRAIN),
+    hard: darkenAll(art.hard, NIGHT_TERRAIN),
+    top: darkenAll(art.top, NIGHT_TERRAIN),
+    hardTop: darkenAll(art.hardTop, NIGHT_TERRAIN),
+  };
+}

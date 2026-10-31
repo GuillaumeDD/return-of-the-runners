@@ -261,6 +261,7 @@ the state; every label is translated (EN + FR).
 
 ## Open questions
 
-1. **Resolution**: keep TLR's 4:3 frame around the 28 × 16 grid, or a 16:9 layout with
-   the HUD on the side? To settle with the mockups.
-2. **Hero names and looks** (PRD § Open questions): the runners' design needs them.
+1. ~~**Resolution**~~: settled by Guillaume on 2026-10-31: TLR's frame, with the
+   status bar under the 28 × 16 grid (B-036).
+2. ~~**Hero names and looks**~~: settled by Guillaume on 2026-10-31: Han and Nova,
+   with the B-032 looks.

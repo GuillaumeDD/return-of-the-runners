@@ -247,11 +247,12 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
   actor cannot stand in (a wall, the level's edge), or whose floor is not intact brick,
   bedrock or goo: a gap, a ladder, a door, a hole (even one still being dug), a crater
   or rubble. When not even the first cell can take goo, nothing happens and the bucket
-  is kept. These limits are provisional: S-022 only shows goo thrown on a plain floor.
+  is kept. S-022 only shows goo thrown on a plain floor; Guillaume kept these limits
+  on 2026-10-31.
 - The goo is ordinary gooey turf (see Terrain): runners and monks walk on it at
   `GOO_PERIOD`, which is how a monk "gets stuck" in it (S-022 @ 3:19–3:36). The brick
   or bedrock under it is gone: the goo cannot be dug, cratered by a small bomb or
-  drilled with the jackhammer (provisional), and a big blast destroys it.
+  drilled with the jackhammer (Guillaume, 2026-10-31), and a big blast destroys it.
 
 ### Bombs
 
@@ -463,8 +464,8 @@ wait for Guillaume's playtest.
 - **Terrain.** One slab per connected region of the same material: outer corners
   rounded (radius 8), a lit top edge (5 units), a lighter left and darker right edge,
   a shaded bottom edge. Diggable blocks show a faint seam per cell; bedrock is heavier
-  and darker, with a bevel. Gooey turf is a glossy magenta coat with drips, in every
-  world (_provisional_).
+  and darker, with a bevel. Gooey turf is a glossy magenta coat with drips, the same
+  in every world so it reads at a glance (Guillaume, 2026-10-31).
 - **Outlines.** Actors and items get a dark outline (1.5 units, `rgba(20,10,5,0.85)`) so
   they read on any backdrop; terrain gets none.
 - **Light.** Gold is the brightest thing on screen (warm glow, radius about 30); the
@@ -476,9 +477,11 @@ wait for Guillaume's playtest.
   `#ffd9a0`, dark basalt bedrock, a cave and lava river `#3a0f08` → `#1a0503`. The
   ten worlds (B-035, `render/art/worlds.ts`, `WORLD_ART`) follow the same pattern: five
   shades of soft and hard terrain, a top edge, a day and a night backdrop gradient, a
-  glow colour for small lights. Sheets are built per scale and world. The eight new
-  palettes, and Phosphorus's magenta beside the goo coat, are _provisional_.
-- **World backdrops and details** (B-045, _provisional_). Each world paints its own
+  glow colour for small lights. Sheets are built per scale, world and night. Guillaume
+  kept the ten palettes on 2026-10-31, Phosphorus's magenta beside the goo coat
+  included. By night the terrain keeps `NIGHT_TERRAIN` (85 %) of its light (`artAt`;
+  glows stay as bright), so night shows on the terrain too (Guillaume, 2026-10-31).
+- **World backdrops and details** (B-045, kept by Guillaume on 2026-10-31). Each world paints its own
   scene (`render/art/backdrops.ts`) from seeded noise: Moss a jungle with light shafts
   and vines, Fungus giant mushrooms, Ancient ruined columns, Crystal spires, Ice
   snowy peaks under icicles, Fossil a giant ribcage, Lava a cave over a lava river,
@@ -493,8 +496,8 @@ wait for Guillaume's playtest.
   edge, carved glyphs (Ancient), an ammonite (Fossil) or glowing cracks (Lava) in the
   face, icicles (Ice) or glowing drips (Phosphorus) under an open bottom edge, rivets
   on every plate, bedrock too (Industrial); Dark has none.
-- **Actors** (_provisional_, with the hero names, PRD § Open questions). Runner 1:
-  white suit, cyan helmet with a lamp. Runner 2: lavender suit, pink scarf. They differ
+- **Actors** (kept by Guillaume on 2026-10-31). Runner 1, **Han**: white suit, cyan
+  helmet with a lamp. Runner 2, **Nova**: lavender suit, pink scarf. They differ
   by silhouette as well as colour. Monks: red hooded robes with glowing yellow eyes,
   the loudest colour in every world.
 - **Keys and doors** differ by shape and colour: red circle, green square, blue
@@ -508,7 +511,7 @@ wait for Guillaume's playtest.
   `STILL_AFTER` ticks after its last step (the slowest gait, on goo), so a walker never
   flickers to idle between steps; standing still holds frame 0. Facing mirrors the
   sprite, not the frame list. A hiding runner is drawn at 45 % opacity, and so is the
-  item in its hand. Poses are _provisional_; the respawn flash belongs to the effects
+  item in its hand. Guillaume kept the poses on 2026-10-31; the respawn flash belongs to the effects
   (B-034). A monk's carried gold is drawn small over its head, a runner's item in hand
   at half size in front.
 - **Terrain and items** (B-033, `render/terrain.ts`, drawn by `render/art/tiles.ts`,
@@ -534,8 +537,8 @@ wait for Guillaume's playtest.
   and the simulation never sees an effect. At most `MAX_EFFECTS` (48) run at once, the
   oldest making room; the shake never exceeds 4 logical pixels. A restarted level
   clears them. With art, gas clouds and blasts are drawn as soft light (puffs that
-  drift with the render time, fireballs) instead of the placeholder squares. Looks
-  and timings are _provisional_.
+  drift with the render time, fireballs) instead of the placeholder squares. Guillaume
+  kept looks and timings on 2026-10-31.
 - **Frame and HUD** (B-036, `render/hud.ts`). The game canvas holds the playfield in a
   riveted dark metal frame (`FRAME`, half a tile, on the left, right and top, so the
   playfield starts on a whole device pixel) over a status bar (`BAR`, 40 logical
@@ -547,8 +550,8 @@ wait for Guillaume's playtest.
   icons. The frame and bar never shake; the playfield is clipped to its place. The
   editor grid has no frame. The editor palette draws its swatches with the level's
   world and night at the grid's scale, over the world's gradient (a 24-pixel painted
-  scene is noise). Layout and looks are _provisional_ (open question 1 of the plan:
-  kept TLR's bar under the grid).
+  scene is noise). Guillaume kept the layout and looks on 2026-10-31 (open question 1
+  of the plan: TLR's bar under the grid).
 - **Reduced motion.** Under `prefers-reduced-motion`: no screen shake, no flashes, a
   quarter of the particles (B-034, read on every frame); idle loops and glows stay
   still (not done yet: actors still animate).
@@ -812,11 +815,11 @@ as gameplay is implemented.
 | Behavior                        | Value                                                                                     | Provenance                 |
 | ------------------------------- | ----------------------------------------------------------------------------------------- | -------------------------- |
 | Level grid                      | 28 × 16 tiles                                                                             | S-001, S-015 @ 0:30        |
-| Runner walk / climb / bar speed | 1 tile per 16 ticks (3.75 tiles/s)                                                        | **Provisional**, 1982 feel |
-| Fall speed                      | 1 tile per 8 ticks (7.5 tiles/s)                                                          | **Provisional**, 1982 feel |
-| Hole digging time               | 15 ticks (0.25 s)                                                                         | **Provisional**, 1982 feel |
-| Hole stays open                 | 240 ticks (4 s)                                                                           | **Provisional**, 1982 feel |
-| Hole refill time                | 30 ticks (0.5 s)                                                                          | **Provisional**, 1982 feel |
+| Runner walk / climb / bar speed | 1 tile per 16 ticks (3.75 tiles/s)                                                        | 1982 feel, kept 2026-10-31 |
+| Fall speed                      | 1 tile per 8 ticks (7.5 tiles/s)                                                          | 1982 feel, kept 2026-10-31 |
+| Hole digging time               | 15 ticks (0.25 s)                                                                         | 1982 feel, kept 2026-10-31 |
+| Hole stays open                 | 240 ticks (4 s)                                                                           | 1982 feel, kept 2026-10-31 |
+| Hole refill time                | 30 ticks (0.5 s)                                                                          | 1982 feel, kept 2026-10-31 |
 | Digging from a ladder or bar    | allowed                                                                                   | 1982 rule [^lrtr]          |
 | Digging under gold              | allowed, the gold stays in place                                                          | S-100 (Guillaume's memory) |
 | Gold is collected               | when the runner's centre enters it                                                        | **Provisional**            |
@@ -835,7 +838,7 @@ as gameplay is implemented.
 | Jackhammer                      | rides straight down through brick, ≈ 5 tiles in 9 s; tool kept                            | S-019 @ 2:33–2:43          |
 | Jackhammer through bedrock      | drills bedrock too, as brick                                                              | Guillaume, 2026-10-29      |
 | Jackhammer control              | drills only while the use key is held; let go, it stops                                   | Guillaume, 2026-10-30      |
-| Jackhammer timing               | 100 ticks a cell, then falls in; the shaft refills like a dug hole                        | **Provisional**, to check  |
+| Jackhammer timing               | 100 ticks a cell, then falls in; the shaft refills like a dug hole                        | Guillaume, 2026-10-31      |
 | Gas gun                         | cloud ≈ 3 cells in front for ≈ 6.5 s; monks inside stuck; gun kept; clouds can stack      | S-021 @ 0:53–1:05          |
 | Gas: daze after the cloud       | ≈ 2.5 s, stars over the monk's head                                                       | S-021 @ 1:01–1:03.5        |
 | Gas and players                 | the runner walks through the cloud and the stuck monks unharmed                           | S-021 @ 0:58–1:00          |
@@ -843,21 +846,21 @@ as gameplay is implemented.
 | Two-player race                 | mirrored halves, exits appear with the gold, first out wins                               | S-025                      |
 | Versus end                      | first player out wins                                                                     | S-025 @ 0:04–1:24          |
 | Versus gold and exits           | shared, as in co-op (any gold, any exit); both out on the same tick: draw                 | Guillaume, 2026-10-29      |
-| Versus deaths                   | as in co-op: own lives, respawn at the start; a player can bury the other                 | **Provisional**, to check  |
+| Versus deaths                   | as in co-op: own lives, respawn at the start; a player can bury the other                 | Guillaume, 2026-10-31      |
 | Co-op end                       | won when one player exits; a dead player alone restarts, on their own lives               | S-100 (2026-10-27)         |
 | Lives at start (two players)    | 5 each (status bar shows 05 for both)                                                     | S-026 @ 0:01               |
-| Two-player respawn delay        | 90 ticks (1.5 s) at the player's start                                                    | **Provisional**            |
-| Monk target with two players    | the nearest player; players do not block each other                                       | **Provisional**, to check  |
+| Two-player respawn delay        | 90 ticks (1.5 s) at the player's start                                                    | Guillaume, 2026-10-31      |
+| Monk target with two players    | the nearest player; players do not block each other                                       | Guillaume, 2026-10-31      |
 | Pickaxe                         | rubble buries the monk on the next cell; ≥ 7 s; tool kept                                 | S-021 @ 0:08–0:15.5        |
 | Pickaxe needs a ceiling         | only under a solid cell (rubble comes out of the ceiling)                                 | Guillaume, 2026-10-30      |
-| Pickaxe rubble                  | falls 1 sub-unit a tick, lands solid as bedrock, crumbles after 420 ticks (7 s)           | **Provisional**, to check  |
+| Pickaxe rubble                  | falls 1 sub-unit a tick, lands solid as bedrock, crumbles after 420 ticks (7 s)           | Guillaume, 2026-10-31      |
 | Rubble on a player              | crushes it, like a monk                                                                   | Guillaume, 2026-10-29      |
 | Rubble on gold, items, exit     | never rests there: crumbles instead of sealing them                                       | Guillaume, 2026-10-29      |
 | Goo bucket                      | the floor under the 3 cells in front turns to goo for good; one use; slows monks          | S-022 @ 3:16–3:17, @ 3:36  |
-| Goo bucket: where               | stops at a wall, gap, ladder, hole, rubble or door; covers bedrock; not from a bar        | **Provisional**            |
-| Goo bucket: digging             | bucket goo is gooey turf: no digging, no small-bomb crater, no drilling                   | **Provisional**, to check  |
+| Goo bucket: where               | stops at a wall, gap, ladder, hole, rubble or door; covers bedrock; not from a bar        | Guillaume, 2026-10-31      |
+| Goo bucket: digging             | bucket goo is gooey turf: no digging, no small-bomb crater, no drilling                   | Guillaume, 2026-10-31      |
 | Teleporter                      | step in, reappear at the linked spot ≈ 0.5–1 s later (45 ticks, 0.75 s)                   | S-025; Guillaume, 10-29    |
-| Teleporter: monks, blocked exit | monks use them; a monk on the exit delays the jump                                        | **Provisional**, to check  |
+| Teleporter: monks, blocked exit | monks use them; a monk on the exit delays the jump                                        | Guillaume, 2026-10-31      |
 | Teleporter: player in transit   | monks keep chasing it, toward its exit                                                    | Guillaume, 2026-10-29      |
 | Big bomb                        | same counter; round blast ≈ 5 cells, permanent; chain reactions                           | S-025 @ 1:04–1:15          |
 | Snare                           | holds the first monk that walks in for good; others walk past                             | S-018 @ 0:23–0:48          |
@@ -872,9 +875,9 @@ as gameplay is implemented.
 | Gooey turf speed                | 1 sub-unit per 6 ticks for runners and monks (3× slower runner, 2× slower monk)           | S-002; Guillaume, 10-29    |
 | Hidden ladder                   | appears when the last gold is taken                                                       | S-001, S-025 @ 0:00–0:04   |
 | Monk respawn points             | a dead monk reappears at a free `R`, picked at random                                     | S-001, pick to check       |
-| Monk speed                      | 2/3 of the runner's                                                                       | **Provisional**, 1982 feel |
+| Monk speed                      | 2/3 of the runner's                                                                       | 1982 feel, kept 2026-10-31 |
 | Monk chase AI                   | classic floor scan (see Monks)                                                            | 1982 rule [^lrtr]          |
-| Monk stuck in a hole            | 120 ticks (2 s), then climbs out                                                          | **Provisional**            |
+| Monk stuck in a hole            | 120 ticks (2 s), then climbs out                                                          | Guillaume, 2026-10-31      |
 | Runner standing on a hole       | the monk inside cannot climb out while a player in play stands there                      | S-100 (2026-10-28)         |
 | Monk respawn                    | after 60 ticks, second row, random                                                        | 1982 rule [^lrtr]          |
 | Monk carries gold               | 12 to 37 cells, then drops it                                                             | 1982 rule [^lrtr]          |

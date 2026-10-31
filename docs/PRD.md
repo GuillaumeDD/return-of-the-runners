@@ -131,7 +131,8 @@ rejects the feature.
 
 ## 9. Open questions
 
-- Names of the two heroes (and of the monks?).
+- ~~Names of the two heroes~~: **Han** (player 1) and **Nova** (player 2), chosen by
+  Guillaume on 2026-10-31. The monks stay unnamed for now.
 - Full list of TLR tools and items, and their exact behavior (to be confirmed by playtests/videos).
 - ~~Grid size of TLR levels~~: 28 × 16 (SOURCES S-001, Saturn guide; confirmed on the
   PC version, S-015). The editor's default already matches.

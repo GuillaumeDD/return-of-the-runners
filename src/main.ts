@@ -235,7 +235,7 @@ function createGame(
     const shake = shakeAt(effects, now, reduced);
     const layout = frameLayout(canvasSize(session.state));
     const { field } = layout;
-    const sheet = sheetAt(scale, level.world);
+    const sheet = sheetAt(scale, level.world, level.night);
     const scene = { world: level.world, night: level.night };
     drawFrame(context, layout);
     drawHud(context, layout, sheet, locale, playerPanels(session.state), level.name);
