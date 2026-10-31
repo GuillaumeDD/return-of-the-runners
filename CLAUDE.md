@@ -101,6 +101,9 @@ Format:
 - ESLint + Prettier, enforced in CI; formatting is never mixed into a feature diff.
   When a Markdown table cell outgrows its column, Prettier realigns the whole table:
   reword the cell to fit, or realign the table in a commit of its own.
+- Every exception in a config file (a Dependabot `ignore`, a pinned version, a lint
+  rule turned off) carries a comment next to it: why it is there, and when to remove
+  it.
 - Commits follow **Conventional Commits** (`feat:`, `fix:`, `test:`, `docs:`, …).
 - Small PRs: one feature or fix per PR.
 
@@ -144,7 +147,9 @@ Format:
   3. documented (PRD/ARCHITECTURE/BACKLOG statuses updated);
   4. strings translated (EN + FR);
   5. the PR shows a screenshot or GIF for any visible change, linked by commit SHA
-     (a permalink), so it survives the branch's deletion.
+     (a permalink), so it survives the branch's deletion. Shoot every screen that
+     draws with the changed code (game, Test, editor palette): in step 4 a painted
+     backdrop meant for the game made the editor palette noisy.
 
 ### Security
 
@@ -220,6 +225,12 @@ specific. Focus on it:
   where it works. When no source shows it, mark the choice **provisional** like any
   rule and list it in the PR, so Guillaume's playtest checks it (B-040 to B-042
   fixed three such guesses).
+- Before saying where a value comes from, read its provenance in ARCHITECTURE: a
+  1982 value or a guess is not a TLR measurement (in step 4 a 1982 hole timing was
+  presented as measured from TLR videos).
+- At the end of a step, put every provisional choice still open to Guillaume in one
+  questionnaire: each with a recommendation and room for a free answer. Record the
+  answers with their provenance ("Guillaume, date") in one PR.
 
 ### Planning & backlog
 
