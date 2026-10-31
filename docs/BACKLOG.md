@@ -4,7 +4,7 @@ Scoped work items. Ideas start in the Growth section of `docs/PRD.md`.
 Each item lands in its own commit, which also flips its status here.
 Step 1 (B-004 to B-010) is planned in [`plans/step-1.md`](plans/step-1.md), step 2 (B-011 to
 B-017) in [`plans/step-2.md`](plans/step-2.md), step 3 (B-019 to B-029, then B-038 to B-042) in
-[`plans/step-3.md`](plans/step-3.md), step 4 part A, the look (B-030 to B-036, then B-043 to B-045), in
+[`plans/step-3.md`](plans/step-3.md), step 4 part A, the look (B-030 to B-036, then B-043 to B-046), in
 [`plans/step-4.md`](plans/step-4.md), each with its delivery order.
 
 Statuses: `todo` / `in-progress` / `done`.
@@ -56,3 +56,4 @@ Statuses: `todo` / `in-progress` / `done`.
 | B-043 | Fix: a hiding runner's item is in shadow too            | Hidden in an alcove, the item in hand (key, tool, spray…) is drawn at the runner's opacity, with art or placeholders; regression test                       | done   |
 | B-044 | Rubble, laid snare and lit bomb drawn                   | Pickaxe rubble (fading before it crumbles), a laid snare and a lit bomb with a glowing spark use the Moss art; placeholders without art                     | done   |
 | B-045 | World backdrops and details                             | Painted backdrop per world, by day and by night; world details on the terrain (icicles, crystals, rivets…); dimmed and low contrast as in the style guide   | done   |
+| B-046 | Terrain darker by night                                 | By night every terrain shade keeps 85 % of its light, glows kept; same sprite keys; decided by Guillaume after the step 4 playtest                          | done   |

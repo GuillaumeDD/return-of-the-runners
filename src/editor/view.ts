@@ -145,7 +145,7 @@ export function createEditorView(els: EditorElements, options: EditorOptions): E
 
   function draw(): void {
     const scale = fitCanvas(els.canvas, ctx, gridCanvasSize(editor.grid));
-    const sheet = sheetAt(scale, editor.world);
+    const sheet = sheetAt(scale, editor.world, editor.night);
     const scene = { world: editor.world, night: editor.night };
     renderGrid(ctx, editor.grid, editor.teleports, editor.linkFrom, sheet, scene);
     drawSwatches(scale, sheet, scene);
