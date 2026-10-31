@@ -427,6 +427,13 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
   it covers (its CSS width × `devicePixelRatio`, rounded down to whole device pixels a
   tile, at most ×4), nudges the CSS width to match so a canvas pixel is one device
   pixel, and refits on resize; drawing goes through a scale transform.
+- The game's size (B-048) is the player's pick under the game, kept in `localStorage`
+  (`rotr.size`; unreadable or unknown values mean the default). "Fit the window", the
+  default, makes the play and test canvases as big as the window allows with the
+  whole page in view (mode buttons, message and settings included), down to a
+  quarter of the logical size; 50 % to 200 % are shares of the logical size (100 % =
+  a 24 CSS pixel tile). No size is wider than the page. The editor's grid keeps its
+  own width.
 - `render/sprites.ts` draws the art in code once per scale into a sprite sheet (one
   offscreen canvas, no image request) and copies frames from it. `TILE_ART` names each
   tile's sprite; a tile or actor without art, or a sprite whose drawing fails, falls

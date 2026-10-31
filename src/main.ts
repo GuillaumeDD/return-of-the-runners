@@ -24,7 +24,7 @@ import { decodeLevel } from "./share/link";
 import firstSteps from "./levels/first-steps.json?raw";
 import { canvasSize, context2d, fillBackdrop, render } from "./render/canvas";
 import { detectEvents, drawEffects, type Effect, shakeAt, updateEffects } from "./render/effects";
-import { fitCanvas } from "./render/scale";
+import { fitCanvas, GAME_SIZES, gameWidth, parseGameSize, type GameSize } from "./render/scale";
 import { type Motion, trackMotion } from "./render/actors";
 import { sheetAt } from "./render/sheet";
 import type { ValidTest } from "./editor/view";
@@ -41,6 +41,8 @@ const title = byId("title", HTMLHeadingElement);
 const subtitle = byId("subtitle", HTMLParagraphElement);
 const message = byId("message", HTMLParagraphElement);
 const langButton = byId("lang", HTMLButtonElement);
+const sizeSelect = byId("size", HTMLSelectElement);
+const sizeLabel = byId("size-label", HTMLLabelElement);
 const navPlay = byId("nav-play", HTMLAnchorElement);
 const navEdit = byId("nav-edit", HTMLAnchorElement);
 const playScreen = byId("play-screen", HTMLElement);
@@ -99,6 +101,8 @@ function renderText(): void {
   subtitle.textContent = translate(locale, "subtitle");
   message.textContent = translate(locale, messageKey);
   langButton.textContent = translate(locale, "switchLanguage");
+  sizeLabel.textContent = translate(locale, "sizeLabel");
+  renderSizes();
   navPlay.textContent = translate(locale, "navPlay");
   navEdit.textContent = translate(locale, "navEdit");
   testMessage.textContent = translate(locale, testMessageKey);
@@ -122,12 +126,67 @@ langButton.addEventListener("click", () => {
   renderText();
 });
 
+/** Where the game's size is remembered, for this browser only. */
+const SIZE_KEY = "rotr.size";
+
+function readSize(): GameSize {
+  try {
+    return parseGameSize(browserStorage().getItem(SIZE_KEY));
+  } catch {
+    return "fit"; // site data blocked: the default, every time
+  }
+}
+
+/** The game's size, picked under the game (B-048); every game canvas follows it. */
+let gameSize: GameSize = readSize();
+
+function renderSizes(): void {
+  sizeSelect.replaceChildren(
+    ...GAME_SIZES.map((size) => {
+      const option = document.createElement("option");
+      option.value = String(size);
+      option.textContent =
+        size === "fit"
+          ? translate(locale, "sizeFit")
+          : translate(locale, "sizePercent").replace("{n}", () => String(size));
+      option.selected = size === gameSize;
+      return option;
+    }),
+  );
+}
+
+sizeSelect.addEventListener("change", () => {
+  gameSize = parseGameSize(sizeSelect.value);
+  try {
+    browserStorage().setItem(SIZE_KEY, String(gameSize));
+  } catch {
+    // Not remembered when site data is blocked; the size still applies now.
+  }
+  playing?.refit();
+  testGame?.refit();
+});
+
+/**
+ * The room a game canvas has: the width of its screen, and the window's height less
+ * everything else on the page, so that "fit" shows the whole page (B-048).
+ */
+function roomFor(target: HTMLCanvasElement): { width: number; height: number } {
+  const screen = target.parentElement;
+  const page = target.closest("main");
+  const width = screen === null ? window.innerWidth : screen.clientWidth;
+  const others =
+    page === null ? 0 : page.getBoundingClientRect().height - target.getBoundingClientRect().height;
+  return { width, height: window.innerHeight - others };
+}
+
 /** A game: runs only while its screen is shown. */
 interface Game {
   readonly resume: () => void;
   readonly pause: () => void;
   /** Redraws its texts in the current locale. */
   readonly relabel: () => void;
+  /** Sizes its canvas again, after the player picked another size. */
+  readonly refit: () => void;
 }
 
 /**
@@ -146,7 +205,9 @@ function createGame(
   let motion: Motion | null = null;
   let effects: Effect[] = [];
   const fit = (): void => {
-    scale = fitCanvas(target, context, frameLayout(canvasSize(session.state)));
+    const logical = frameLayout(canvasSize(session.state));
+    const width = gameWidth(gameSize, logical, roomFor(target));
+    scale = fitCanvas(target, context, logical, width);
   };
   let mode = modeFor(level, picked);
   let count = playerCount(mode);
@@ -258,9 +319,10 @@ function createGame(
     resume() {
       if (frameId !== null) return;
       // Sized on every resume: a shared level and the bundled one share the play canvas.
+      // After the mode buttons show, as "fit" makes room for them.
+      showPlayers();
       fit();
       window.addEventListener("resize", fit);
-      showPlayers();
       window.addEventListener("keydown", onKeyDown);
       window.addEventListener("keyup", onKeyUp);
       window.addEventListener("blur", onBlur);
@@ -281,6 +343,9 @@ function createGame(
     },
     relabel() {
       hudText = null;
+    },
+    refit() {
+      if (frameId !== null) fit();
     },
   };
 }
