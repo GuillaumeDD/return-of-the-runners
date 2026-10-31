@@ -2,9 +2,26 @@
  * The look of each world (ARCHITECTURE § Art direction): one terrain colour, a heavier
  * bedrock, a lit top edge, and a dim backdrop of the same hue, darker by night. Moss is
  * the B-033 set; the other nine follow its pattern. All _provisional_; the painted
- * backdrops and each world's own details (icicles, rivets…) come with part 2 of B-035.
+ * backdrops are `backdrops.ts`, the details are drawn by `tiles.ts` (B-045).
  */
 import type { World } from "../../level/format";
+
+/**
+ * What a world adds to its slabs, drawn inside the cell: grass blades or mushroom caps
+ * on the top edge, crystals jutting from it, icicles or glowing drips under the bottom
+ * edge, carved glyphs, fossil shells or glowing cracks in the face, rivets on the plates.
+ */
+export type Detail =
+  | "blades"
+  | "caps"
+  | "glyphs"
+  | "crystals"
+  | "icicles"
+  | "shells"
+  | "cracks"
+  | "drips"
+  | "none"
+  | "rivets";
 
 export interface WorldArt {
   /** Diggable slab shades, darkest to lightest (five). */
@@ -15,8 +32,10 @@ export interface WorldArt {
   readonly top: readonly [string, string];
   /** The lit top edge of bedrock. */
   readonly hardTop: readonly [string, string];
-  /** Grass blades hang from the top edge (moss, fungus). */
-  readonly blades: boolean;
+  /** The world's own touch on its diggable slabs (`Detail`). */
+  readonly detail: Detail;
+  /** The colour of the backdrop's small lights (fireflies, spores, embers…). */
+  readonly glow: string;
   /** The backdrop, top to bottom, by day and by night. */
   readonly day: readonly [string, string];
   readonly night: readonly [string, string];
@@ -32,7 +51,8 @@ export const WORLD_ART: Readonly<Record<World, WorldArt>> = {
     soft: ["#2f6b25", "#4c8f2f", "#5ea83a", "#7fbf4a", "#a6d867"],
     ...GREY_STONE,
     top: ["#c8f27a", "#5fb339"],
-    blades: true,
+    detail: "blades",
+    glow: "#e6ff8c",
     day: ["#1c3a24", "#0b1c12"],
     night: ["#0b1820", "#03080a"],
   },
@@ -41,7 +61,8 @@ export const WORLD_ART: Readonly<Record<World, WorldArt>> = {
     hard: ["#3a2e2a", "#4a3c36", "#5c4c44", "#715f55", "#857164"],
     top: ["#f3c3db", "#b35a87"],
     hardTop: ["#a89283", "#5c4c44"],
-    blades: true,
+    detail: "caps",
+    glow: "#ffb3e6",
     day: ["#2e1c2c", "#140b14"],
     night: ["#130f22", "#06040c"],
   },
@@ -50,7 +71,8 @@ export const WORLD_ART: Readonly<Record<World, WorldArt>> = {
     hard: ["#3e4250", "#4c5160", "#5d6374", "#737a8c", "#888fa0"],
     top: ["#f2dfae", "#c49a55"],
     hardTop: ["#b4bccc", "#5d6374"],
-    blades: false,
+    detail: "glyphs",
+    glow: "#ffe6b0",
     day: ["#3a2c1a", "#18110a"],
     night: ["#141626", "#06070e"],
   },
@@ -59,7 +81,8 @@ export const WORLD_ART: Readonly<Record<World, WorldArt>> = {
     hard: ["#2a2638", "#363148", "#443e5a", "#57506e", "#6a6284"],
     top: ["#e6dcff", "#8f78e0"],
     hardTop: ["#a49cc4", "#443e5a"],
-    blades: false,
+    detail: "crystals",
+    glow: "#d9ccff",
     day: ["#20183e", "#0c0a1c"],
     night: ["#0d0c24", "#04040e"],
   },
@@ -68,7 +91,8 @@ export const WORLD_ART: Readonly<Record<World, WorldArt>> = {
     hard: ["#24324a", "#2f405c", "#3d5070", "#506586", "#647a9c"],
     top: ["#ffffff", "#a9dcfa"],
     hardTop: ["#a8bcd8", "#3d5070"],
-    blades: false,
+    detail: "icicles",
+    glow: "#f0faff",
     day: ["#1b3550", "#0a1828"],
     night: ["#0a1426", "#03060e"],
   },
@@ -77,7 +101,8 @@ export const WORLD_ART: Readonly<Record<World, WorldArt>> = {
     hard: ["#3a3530", "#48423c", "#59524a", "#6e665c", "#837a6e"],
     top: ["#f0e6cc", "#b39f78"],
     hardTop: ["#b0a698", "#59524a"],
-    blades: false,
+    detail: "shells",
+    glow: "#f2e2c0",
     day: ["#2e2a20", "#14120c"],
     night: ["#14141c", "#07070a"],
   },
@@ -86,7 +111,8 @@ export const WORLD_ART: Readonly<Record<World, WorldArt>> = {
     hard: ["#1e1a1a", "#2b2524", "#3a3230", "#4a403c", "#5a4e48"],
     top: ["#ffd9a0", "#e07a35"],
     hardTop: ["#7a6a62", "#3a302c"],
-    blades: false,
+    detail: "cracks",
+    glow: "#ffa040",
     day: ["#3a0f08", "#1a0503"],
     night: ["#1e0806", "#080202"],
   },
@@ -95,7 +121,8 @@ export const WORLD_ART: Readonly<Record<World, WorldArt>> = {
     hard: ["#1d2a2e", "#26363b", "#31454b", "#3f565d", "#4f6a72"],
     top: ["#ffc6f2", "#c24eae"],
     hardTop: ["#7fb3b8", "#31454b"],
-    blades: false,
+    detail: "drips",
+    glow: "#8cffd9",
     day: ["#26102c", "#0e0612"],
     night: ["#0c0a1e", "#04030a"],
   },
@@ -104,7 +131,8 @@ export const WORLD_ART: Readonly<Record<World, WorldArt>> = {
     hard: ["#141418", "#1c1c22", "#25252d", "#30303a", "#3c3c48"],
     top: ["#8a9cc4", "#3e4762"],
     hardTop: ["#5c5c6c", "#25252d"],
-    blades: false,
+    detail: "none",
+    glow: "#9fb4ff",
     day: ["#10121c", "#05060a"],
     night: ["#06070c", "#010103"],
   },
@@ -113,7 +141,8 @@ export const WORLD_ART: Readonly<Record<World, WorldArt>> = {
     hard: ["#26282c", "#303338", "#3c4046", "#4a4f56", "#5a6068"],
     top: ["#d6dce2", "#7d848c"],
     hardTop: ["#8a9098", "#3c4046"],
-    blades: false,
+    detail: "rivets",
+    glow: "#ffcc66",
     day: ["#2e2a22", "#12100c"],
     night: ["#12141a", "#050608"],
   },

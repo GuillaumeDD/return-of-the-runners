@@ -97,8 +97,9 @@ export interface Scene {
 export const DEFAULT_SCENE: Scene = { world: DEFAULT_WORLD, night: false };
 
 /**
- * Fills the area behind the level: with art, the world's backdrop (a dim gradient of its
- * hue, darker by night); without, the placeholder background.
+ * Fills the area behind the level: with art, the world's painted backdrop by day or by
+ * night (`sheet.backdrops`), or its gradient alone when none can be painted; without
+ * art, the placeholder background.
  */
 export function fillBackdrop(
   ctx: CanvasRenderingContext2D,
@@ -110,6 +111,11 @@ export function fillBackdrop(
   if (sheet.image === null) {
     ctx.fillStyle = COLOR.background;
   } else {
+    const painted = sheet.backdrops?.(scene.world, scene.night, width, height) ?? null;
+    if (painted !== null) {
+      ctx.drawImage(painted, 0, 0, width, height);
+      return;
+    }
     const [top, bottom] = WORLD_ART[scene.world][scene.night ? "night" : "day"];
     const g = ctx.createLinearGradient(0, 0, 0, height);
     g.addColorStop(0, top);

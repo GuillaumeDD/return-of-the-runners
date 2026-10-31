@@ -237,7 +237,6 @@ function createGame(
     const scene = { world: level.world, night: level.night };
     // What a shaken scene uncovers at the edges.
     fillBackdrop(context, size.width, size.height, sheet, scene);
-    context.fillRect(0, 0, size.width, size.height);
     context.save();
     context.translate(shake.x, shake.y);
     render(context, session.state, sheet, now, motion, scene);

@@ -9,6 +9,7 @@ const TAU = Math.PI * 2;
 const OUTLINE = "rgba(20,10,5,0.85)";
 
 import { SIDE } from "../terrain";
+import { prng } from "./noise";
 import { WORLD_ART, type WorldArt } from "./worlds";
 
 /** Neighbour masks of an autotiled cell (`terrain.ts`, `SIDE`): four bits. */
@@ -24,18 +25,6 @@ const MOSS = {
 } as const;
 
 export const GOO = ["#f0a3ff", "#c35bd6", "#6e1f86"] as const;
-
-/** A small seeded generator, so every sprite is drawn the same at every load. */
-function prng(seed: number): () => number {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
 
 function roundRect(
   ctx: CanvasRenderingContext2D,
@@ -136,6 +125,7 @@ export function drawSlab(
     ctx.fillStyle = sh;
     ctx.fillRect(0, 22, 32, 10);
   }
+  drawFaceDetail(ctx, art, slab, variant, down);
   ctx.restore();
   if (up) {
     // The lit top edge: the world's crust (grass on moss), pale stone on bedrock.
@@ -147,18 +137,202 @@ export function drawSlab(
     ctx.beginPath();
     roundRect(ctx, 0, 0, 32, 5, [left ? R / 2 : 0, right ? R / 2 : 0, 0, 0]);
     ctx.fill();
-    if (slab === "soft" && art.blades) {
-      const blades = prng(5 + variant);
+    if (slab === "soft") drawTopDetail(ctx, art, variant);
+  }
+}
+
+/**
+ * A world's detail in a slab's face (inside the slab's clip): carved glyphs, a fossil
+ * shell, glowing cracks, rivets, and what hangs from an open bottom edge (icicles,
+ * glowing drips). Bedrock gets only rivets.
+ */
+function drawFaceDetail(
+  ctx: CanvasRenderingContext2D,
+  art: WorldArt,
+  slab: Slab,
+  variant: number,
+  down: boolean,
+): void {
+  const rnd = prng(101 + variant * 13 + (slab === "soft" ? 0 : 7));
+  if (art.detail === "rivets") {
+    // Riveted plates: a rivet in each corner, lit from the top left.
+    for (const [x, y] of [
+      [5, 8],
+      [27, 8],
+      [5, 27],
+      [27, 27],
+    ] as const) {
+      ctx.fillStyle = "rgba(0,0,0,0.4)";
+      ctx.beginPath();
+      ctx.arc(x + 0.6, y + 0.8, 2, 0, TAU);
+      ctx.fill();
+      ctx.fillStyle = art.top[0];
+      ctx.globalAlpha = 0.75;
+      ctx.beginPath();
+      ctx.arc(x, y, 1.6, 0, TAU);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+    return;
+  }
+  if (slab === "hard") return;
+  switch (art.detail) {
+    case "glyphs": {
+      // A carved glyph: a lit groove under a dark one, one shape per variant.
+      for (const [color, dx, dy] of [
+        ["rgba(255,240,200,0.28)", 0.8, 0.8],
+        ["rgba(40,20,0,0.45)", 0, 0],
+      ] as const) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        if (variant === 0) {
+          ctx.moveTo(10 + dx, 22 + dy);
+          ctx.lineTo(10 + dx, 13 + dy);
+          ctx.lineTo(22 + dx, 13 + dy);
+          ctx.lineTo(22 + dx, 22 + dy);
+          ctx.moveTo(16 + dx, 13 + dy);
+          ctx.lineTo(16 + dx, 19 + dy);
+        } else {
+          ctx.arc(16 + dx, 17 + dy, 5, 0, TAU);
+          ctx.moveTo(16 + dx, 12 + dy);
+          ctx.lineTo(16 + dx, 22 + dy);
+        }
+        ctx.stroke();
+      }
+      break;
+    }
+    case "shells": {
+      if (variant !== 1) break;
+      // A fossil ammonite: a spiral of ribs.
+      ctx.strokeStyle = "rgba(255,245,220,0.45)";
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      for (let t = 0; t <= 14; t += 0.25) {
+        const r = 0.45 * t;
+        const x = 17 + r * Math.cos(t);
+        const y = 18 + r * Math.sin(t);
+        if (t === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      break;
+    }
+    case "cracks": {
+      // Glowing cracks: molten light through the rock.
+      ctx.strokeStyle = art.glow;
+      ctx.lineCap = "round";
+      for (const [width, alpha] of [
+        [3, 0.25],
+        [1.2, 0.9],
+      ] as const) {
+        const r = prng(301 + variant);
+        ctx.lineWidth = width;
+        ctx.globalAlpha = alpha;
+        ctx.beginPath();
+        let x = 6 + r() * 8;
+        let y = 9;
+        ctx.moveTo(x, y);
+        for (let i = 0; i < 4; i++) {
+          x += 2 + r() * 5;
+          y += 2 + r() * 4;
+          ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+      ctx.lineCap = "butt";
+      break;
+    }
+    case "icicles": {
+      if (!down) break;
+      // Icicles under the open bottom edge.
+      ctx.fillStyle = art.top[0];
+      ctx.globalAlpha = 0.85;
+      for (let i = 0; i < 4; i++) {
+        const x = 3 + i * 7 + rnd() * 3;
+        ctx.beginPath();
+        ctx.moveTo(x - 2, 25);
+        ctx.lineTo(x, 28 + rnd() * 4);
+        ctx.lineTo(x + 2, 25);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      break;
+    }
+    case "drips": {
+      // Phosphorescent drips: glowing beads on the face, bigger under an open edge.
+      ctx.fillStyle = art.glow;
+      for (let i = 0; i < 3; i++) {
+        const x = 5 + rnd() * 22;
+        const y = down ? 27 + rnd() * 2 : 10 + rnd() * 16;
+        ctx.globalAlpha = 0.25;
+        ctx.beginPath();
+        ctx.arc(x, y, 3, 0, TAU);
+        ctx.fill();
+        ctx.globalAlpha = 0.9;
+        ctx.beginPath();
+        ctx.arc(x, y, 1.2, 0, TAU);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      break;
+    }
+    default:
+      break;
+  }
+}
+
+/** A world's detail on a diggable slab's open top edge: blades, caps or crystals. */
+function drawTopDetail(ctx: CanvasRenderingContext2D, art: WorldArt, variant: number): void {
+  const rnd = prng(5 + variant);
+  switch (art.detail) {
+    case "blades": {
       ctx.fillStyle = art.top[1];
       for (let i = 0; i < 6; i++) {
-        const bx = 2 + blades() * 28;
+        const bx = 2 + rnd() * 28;
         ctx.beginPath();
         ctx.moveTo(bx - 2, 4);
-        ctx.lineTo(bx, 7 + blades() * 6);
+        ctx.lineTo(bx, 7 + rnd() * 6);
         ctx.lineTo(bx + 2, 4);
         ctx.fill();
       }
+      break;
     }
+    case "caps": {
+      // Small mushroom caps along the edge, stems hidden in the turf.
+      for (let i = 0; i < 2; i++) {
+        const x = 6 + i * 16 + rnd() * 6;
+        const r = 2.5 + rnd() * 1.5;
+        ctx.fillStyle = art.top[1];
+        ctx.fillRect(x - 0.8, 2.5, 1.6, 3);
+        ctx.fillStyle = art.top[0];
+        ctx.beginPath();
+        ctx.ellipse(x, 3, r, r * 0.7, 0, Math.PI, TAU);
+        ctx.fill();
+      }
+      break;
+    }
+    case "crystals": {
+      // A crystal juts from the edge, its lit facet facing left.
+      const x = 6 + rnd() * 18;
+      const h = 3 + rnd() * 1.5;
+      ctx.fillStyle = art.top[1];
+      ctx.beginPath();
+      ctx.moveTo(x - 3, 5);
+      ctx.lineTo(x, 5 - h);
+      ctx.lineTo(x + 3, 5);
+      ctx.fill();
+      ctx.fillStyle = art.top[0];
+      ctx.beginPath();
+      ctx.moveTo(x - 3, 5);
+      ctx.lineTo(x, 5 - h);
+      ctx.lineTo(x, 5);
+      ctx.fill();
+      break;
+    }
+    default:
+      break;
   }
 }
 

@@ -7,6 +7,7 @@ import { BOX, drawActorFrame } from "./art/actors";
 import { ACTOR_TOP, TILE_PX } from "./canvas";
 import * as tiles from "./art/tiles";
 import { WORLD_ART } from "./art/worlds";
+import { backdrops } from "./backdrop";
 import { DEFAULT_WORLD, type World } from "../level/format";
 import {
   buildSheet,
@@ -163,7 +164,10 @@ export function sheetAt(scale: number, world: World = DEFAULT_WORLD): SpriteShee
   const key = `${String(scale)}:${world}`;
   let sheet = sheets.get(key);
   if (sheet === undefined) {
-    sheet = buildSheet(spritesFor(world), scale, domSurface);
+    sheet = {
+      ...buildSheet(spritesFor(world), scale, domSurface),
+      backdrops: backdrops(scale, domSurface),
+    };
     sheets.set(key, sheet);
   }
   return sheet;

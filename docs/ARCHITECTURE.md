@@ -475,10 +475,24 @@ wait for Guillaume's playtest.
   jungle backdrop `#1c3a24` → `#0b1c12`. Lava: rock `#8a3a14` → `#f2a35e`, pale crust
   `#ffd9a0`, dark basalt bedrock, a cave and lava river `#3a0f08` → `#1a0503`. The
   ten worlds (B-035, `render/art/worlds.ts`, `WORLD_ART`) follow the same pattern: five
-  shades of soft and hard terrain, a top edge, a day and a night backdrop gradient;
-  only Moss has grass blades. Sheets are built per scale and world. The eight new
-  palettes, and Phosphorus's magenta beside the goo coat, are _provisional_; painted
-  backdrops and world details (icicles, crystals, rivets) come in B-035 part 2.
+  shades of soft and hard terrain, a top edge, a day and a night backdrop gradient, a
+  glow colour for small lights. Sheets are built per scale and world. The eight new
+  palettes, and Phosphorus's magenta beside the goo coat, are _provisional_.
+- **World backdrops and details** (B-045, _provisional_). Each world paints its own
+  scene (`render/art/backdrops.ts`) from seeded noise: Moss a jungle with light shafts
+  and vines, Fungus giant mushrooms, Ancient ruined columns, Crystal spires, Ice
+  snowy peaks under icicles, Fossil a giant ribcage, Lava a cave over a lava river,
+  Phosphorus glowing threads, Dark bare rock, Industrial girders, pipes and a gear.
+  The scene is dimmed (25 % by day, 50 % by night), then its small lights are drawn
+  over it in the world's glow colour, brighter by night; under an open sky (Moss,
+  Ancient, Ice, Fossil) night adds stars. A painted backdrop is kept as an image per
+  world, night and size at the sheet's scale (`render/backdrop.ts`, at most
+  `MAX_BACKDROPS`, 4, the least recently used dropped); where none can be painted the
+  gradient stays. Each world also marks its diggable slabs (`Detail`, drawn inside the
+  cell): grass blades (Moss), mushroom caps (Fungus) or crystals (Crystal) on the top
+  edge, carved glyphs (Ancient), an ammonite (Fossil) or glowing cracks (Lava) in the
+  face, icicles (Ice) or glowing drips (Phosphorus) under an open bottom edge, rivets
+  on every plate, bedrock too (Industrial); Dark has none.
 - **Actors** (_provisional_, with the hero names, PRD § Open questions). Runner 1:
   white suit, cyan helmet with a lamp. Runner 2: lavender suit, pink scarf. They differ
   by silhouette as well as colour. Monks: red hooded robes with glowing yellow eyes,
