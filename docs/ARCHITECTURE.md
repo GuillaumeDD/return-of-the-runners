@@ -794,7 +794,9 @@ data and the supply chain.
 - `.github/workflows/deploy.yml` (push to `main`): builds and publishes `dist/` to
   GitHub Pages. Only the deploy job gets `pages: write` and `id-token: write`.
 - All actions are pinned to a full commit SHA. Dependabot updates npm weekly and
-  actions monthly.
+  actions monthly. It holds back TypeScript 6.1+ (see Stack) and major versions of
+  `@types/node`, whose types must match the Node we run (`.nvmrc`); each rule's reason
+  is written next to it in `.github/dependabot.yml`.
 - **Clean-room check** of a release (CLAUDE.md § Privacy, secrets & publishing): open
   the deployed site, or, when it cannot be reached (a cloud session whose network
   policy does not allow `guillaumedd.github.io`), a fresh clone of `main` with
