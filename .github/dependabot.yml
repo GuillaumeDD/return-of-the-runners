@@ -12,6 +12,15 @@ updates:
       # Remove once typescript-eslint supports TypeScript 7.
       - dependency-name: typescript
         versions: [">=6.1.0"]
+      # @types/node describes the Node API, so its major version must match the Node we
+      # run: Node 22 (.nvmrc, package.json "engines"). @types/node 23+ would let code use
+      # APIs that Node 22 lacks, and typecheck would not catch it. It is type definitions
+      # only (no runtime code, dev dependency), so holding it back has no security cost;
+      # 22.x updates still arrive. When moving to a newer Node, update .nvmrc (CI reads
+      # it) and "engines", and bump @types/node to the same major by hand: this rule
+      # then keeps it there.
+      - dependency-name: "@types/node"
+        update-types: [version-update:semver-major]
   - package-ecosystem: github-actions
     directory: /
     schedule:
