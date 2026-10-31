@@ -4,9 +4,30 @@ An unofficial browser fan remake of _Lode Runner: The Legend Returns_ (Presage/S
 1994): dig, grab the gold, dodge the monks, and build your own levels with the built-in
 editor. 1–2 players on one keyboard.
 
-**Play:** https://guillaumedd.github.io/return-of-the-runners/
+**▶ Play in your browser:** https://guillaumedd.github.io/return-of-the-runners/
+(no install, no account; keyboard needed)
 
-> Status: early development: the runner can move around a first level. See the [roadmap](docs/PRD.md#7-roadmap).
+![A level of the Moss world: ladders, bars, gold, a monk in red, a jackhammer, a goo bucket and a key](docs/screenshots/readme-play.png)
+
+## What's in it
+
+- **The Legend Returns rules:** dig holes to trap the monks, grab all the gold and
+  reach the exit. Trapdoors, gooey turf, alcoves to hide in, teleporters, keys and
+  doors.
+- **Tools:** jackhammer, pickaxe, small and big bombs, snares, gas gun, goo bucket.
+- **Two players on one keyboard,** in co-op or versus.
+- **Ten worlds,** each by day and by night, with art drawn entirely in code.
+- **A level editor:** paint a level, test it at once, save it in the browser, export
+  it as a file, or share it as a link.
+- English and French.
+
+![Four of the ten worlds: Moss, Lava, Ice and Phosphorus](docs/screenshots/readme-worlds.png)
+
+![The level editor: the palette of tiles and items above the level, here in the Crystal world by night](docs/screenshots/readme-editor.png)
+
+> Status: in development. Rules, tools, two players, worlds and the editor are
+> playable; music, level packs and menus come next. See the
+> [roadmap](docs/PRD.md#7-roadmap).
 
 ## Development
 
