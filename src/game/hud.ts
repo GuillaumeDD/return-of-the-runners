@@ -40,9 +40,9 @@ export function statusMessage(
 const PLAYER_NAME: readonly MessageKey[] = ["playerName1", "playerName2"];
 
 /**
- * The status line under a game. With two players: each player's lives, gold and bombs,
- * or that the player is out. Alone: the bombs it carries, if any, else nothing (lives
- * and scores for one player come with level packs, in step 4).
+ * The status line under a game, for screen readers (the status bar in the canvas shows
+ * it, `render/hud.ts`). With two players: each player's lives, gold and bombs, or that
+ * the player is out. Alone: the bombs it carries, if any, else nothing.
  */
 export function playerStatusText(locale: Locale, state: Pick<GameState, "players">): string {
   if (state.players.length < 2) {
@@ -62,4 +62,27 @@ export function playerStatusText(locale: Locale, state: Pick<GameState, "players
       return line.replace("{player}", player);
     })
     .join(" · ");
+}
+
+/** What a player's panels in the status bar show (`render/hud.ts`). */
+export interface PlayerPanel {
+  readonly lives: number;
+  /** Gold this player took. */
+  readonly gold: number;
+  /** The item in the player's slot; `""` when empty. */
+  readonly item: string;
+  /** The bombs carried, one bomb tile each, the next one first. */
+  readonly bombs: string;
+  readonly out: boolean;
+}
+
+/** One panel per player, in player order, read from the state. */
+export function playerPanels(state: Pick<GameState, "players">): PlayerPanel[] {
+  return state.players.map((p) => ({
+    lives: p.lives,
+    gold: p.gold,
+    item: p.item,
+    bombs: p.bombs,
+    out: p.mode === "out",
+  }));
 }

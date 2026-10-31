@@ -139,5 +139,6 @@
   "playerName2": "Player 2",
   "hudPlayer": "{player}: lives {lives}, gold {gold}, bombs {bombs}",
   "hudBombs": "Bombs: {bombs}",
-  "hudOut": "{player}: out"
+  "hudOut": "{player}: out",
+  "hudOutTag": "OUT"
 }
