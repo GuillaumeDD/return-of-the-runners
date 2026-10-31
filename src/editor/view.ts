@@ -1,11 +1,12 @@
 import { translate, type Locale } from "../i18n";
 import { levelErrorMessage } from "../i18n/level-errors";
-import type { LevelErrorCode } from "../level/format";
+import type { LevelErrorCode, Teleport } from "../level/format";
 import { isWorld, LIMITS, TILE, WORLDS } from "../level/format";
 import { WORLD_NAME } from "../i18n/worlds";
-import { context2d, gridCanvasSize, renderGrid } from "../render/canvas";
+import { context2d, gridCanvasSize, renderGrid, type Scene } from "../render/canvas";
 import { fitCanvas } from "../render/scale";
 import { sheetAt } from "../render/sheet";
+import type { SpriteSheet } from "../render/sprites";
 import { parseSize, relabelName } from "./fields";
 import { PALETTE, shortcutFor, tileForKey } from "./keys";
 import {
@@ -89,14 +90,16 @@ export function createEditorView(els: EditorElements, options: EditorOptions): E
   /** The errors of the last refused test, refreshed on every change; null when hidden. */
   let errors: readonly LevelErrorCode[] | null = null;
 
+  /** Palette swatches: each is redrawn with the level's art when its look changes. */
+  const swatchList: { canvas: HTMLCanvasElement; grid: string[]; links: Teleport[] }[] = [];
+  /** What the swatches were last drawn with: scale, world and night. */
+  let swatchLook = "";
+
   const swatches = PALETTE.map(({ tile }, i) => {
     const button = document.createElement("button");
     button.type = "button";
     const swatch = document.createElement("canvas");
-    const size = gridCanvasSize([tile]);
-    swatch.width = size.width;
-    swatch.height = size.height;
-    renderGrid(context2d(swatch), [tile]);
+    swatchList.push({ canvas: swatch, grid: [tile], links: [] });
     const label = document.createElement("span");
     button.append(swatch, label);
     if (i < 10) {
@@ -116,11 +119,11 @@ export function createEditorView(els: EditorElements, options: EditorOptions): E
   const linkButton = document.createElement("button");
   linkButton.type = "button";
   const linkSwatch = document.createElement("canvas");
-  const linkTiles = [`${TILE.teleportEntrance}${TILE.teleportExit}`];
-  const linkSize = gridCanvasSize(linkTiles);
-  linkSwatch.width = linkSize.width;
-  linkSwatch.height = linkSize.height;
-  renderGrid(context2d(linkSwatch), linkTiles, [[0, 0, 1, 0]]);
+  swatchList.push({
+    canvas: linkSwatch,
+    grid: [`${TILE.teleportEntrance}${TILE.teleportExit}`],
+    links: [[0, 0, 1, 0]],
+  });
   const linkLabel = document.createElement("span");
   linkButton.append(linkSwatch, linkLabel);
   linkButton.addEventListener("click", () => {
@@ -145,6 +148,28 @@ export function createEditorView(els: EditorElements, options: EditorOptions): E
     const sheet = sheetAt(scale, editor.world);
     const scene = { world: editor.world, night: editor.night };
     renderGrid(ctx, editor.grid, editor.teleports, editor.linkFrom, sheet, scene);
+    drawSwatches(scale, sheet, scene);
+  }
+
+  /**
+   * Draws the palette with the art of the level's world, at the grid's scale (so they
+   * share its sprite sheet), when the scale, world or night changed.
+   */
+  function drawSwatches(scale: number, sheet: SpriteSheet, scene: Scene): void {
+    const look = `${String(scale)}:${scene.world}:${String(scene.night)}`;
+    if (look === swatchLook) return;
+    swatchLook = look;
+    // The world's gradient behind each swatch, not its painted scene: a 24-pixel scene
+    // is only noise around the tile.
+    const plain: SpriteSheet = { scale: sheet.scale, image: sheet.image, frames: sheet.frames };
+    for (const { canvas, grid, links } of swatchList) {
+      const size = gridCanvasSize(grid);
+      canvas.width = Math.round(size.width * scale);
+      canvas.height = Math.round(size.height * scale);
+      const swatchCtx = context2d(canvas);
+      swatchCtx.setTransform(scale, 0, 0, scale, 0, 0);
+      renderGrid(swatchCtx, grid, links, null, plain, scene);
+    }
   }
 
   function syncFields(): void {

@@ -15,7 +15,8 @@ import {
 } from "./game/session";
 import { detectLocale, translate, type Locale, type MessageKey } from "./i18n";
 import { inputsFrom, isBound, keyDown, keyUp, type HeldKeys } from "./input/keyboard";
-import { modeFor, playerStatusText, statusMessage } from "./game/hud";
+import { modeFor, playerPanels, playerStatusText, statusMessage } from "./game/hud";
+import { drawFrame, drawHud, frameLayout } from "./render/hud";
 import { levelErrorMessage, uniqueCodes } from "./i18n/level-errors";
 import type { Level, LevelErrorCode } from "./level/format";
 import { parseLevel } from "./level/parse";
@@ -62,7 +63,7 @@ const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
  */
 let picked: PlayMode = "solo";
 
-/** Where a game shows its mode choice (for a level with a player 2 start) and its status line. */
+/** Where a game shows its mode choice (for a level with a player 2 start) and its screen-reader status line. */
 interface PlayerEls {
   readonly group: HTMLElement;
   readonly buttons: Readonly<Record<PlayMode, HTMLButtonElement>>;
@@ -145,7 +146,7 @@ function createGame(
   let motion: Motion | null = null;
   let effects: Effect[] = [];
   const fit = (): void => {
-    scale = fitCanvas(target, context, canvasSize(session.state));
+    scale = fitCanvas(target, context, frameLayout(canvasSize(session.state)));
   };
   let mode = modeFor(level, picked);
   let count = playerCount(mode);
@@ -232,12 +233,20 @@ function createGame(
     motion = trackMotion(motion, session.state);
     const reduced = reducedMotion.matches;
     const shake = shakeAt(effects, now, reduced);
-    const size = canvasSize(session.state);
+    const layout = frameLayout(canvasSize(session.state));
+    const { field } = layout;
     const sheet = sheetAt(scale, level.world);
     const scene = { world: level.world, night: level.night };
-    // What a shaken scene uncovers at the edges.
-    fillBackdrop(context, size.width, size.height, sheet, scene);
+    drawFrame(context, layout);
+    drawHud(context, layout, sheet, locale, playerPanels(session.state), level.name);
     context.save();
+    context.beginPath();
+    context.rect(field.x, field.y, field.width, field.height);
+    context.clip();
+    // The playfield starts on a whole device pixel, so tile edges stay sharp.
+    context.translate(Math.round(field.x * scale) / scale, Math.round(field.y * scale) / scale);
+    // What a shaken scene uncovers at the edges.
+    fillBackdrop(context, field.width, field.height, sheet, scene);
     context.translate(shake.x, shake.y);
     render(context, session.state, sheet, now, motion, scene);
     drawEffects(context, effects, now, reduced);
