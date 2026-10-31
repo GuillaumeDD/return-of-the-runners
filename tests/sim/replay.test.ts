@@ -254,12 +254,14 @@ describe("runReplay", () => {
 
   it("feeds each log to its own player", () => {
     const level = {
-      version: 2 as const,
+      version: 3 as const,
       name: "t",
       width: 8,
       height: 2,
       grid: ["P..$..Q.", "########"],
       teleports: [],
+      world: "moss" as const,
+      night: false,
     };
     const { state } = runReplay({ level, seed: 1, inputs: [[[16, "R"]], [[16, "L"]]] });
     expect(state.players.map((p) => p.x)).toEqual([8, 5 * 8]);

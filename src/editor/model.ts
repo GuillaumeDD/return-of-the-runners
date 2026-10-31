@@ -1,7 +1,9 @@
 import {
+  DEFAULT_WORLD,
   LIMITS,
   TILE,
   codePoints,
+  type World,
   type LevelDraft,
   type ParseResult,
   type Teleport,
@@ -17,11 +19,15 @@ import { blankGrid, clampSize } from "./blank";
  * keyboard events into these operations.
  *
  * Undo covers the grid and the teleporter links (painting, resizing, linking); the
- * name is a text field with its own undo in the browser.
+ * name is a text field with its own undo in the browser, and the world and night are
+ * picked from controls (a pick is undone by picking again).
  */
 export interface EditorState {
   readonly grid: readonly string[];
   readonly name: string;
+  /** The world the level is drawn in, and whether by night. */
+  readonly world: World;
+  readonly night: boolean;
   /**
    * The level's teleporter links. They follow the grid: a link whose entrance or exit
    * is erased goes, and an entrance without a link gets one to the nearest exit
@@ -56,6 +62,8 @@ export function newEditor(name: string): EditorState {
   return {
     grid: blankGrid(),
     name: cleanName(name),
+    world: DEFAULT_WORLD,
+    night: false,
     teleports: [],
     tile: TILE.brick,
     tool: "paint",
@@ -67,12 +75,15 @@ export function newEditor(name: string): EditorState {
 }
 
 /**
- * Whether two states hold the same level (grid, teleporter links, and name as saved, so trailing spaces in
- * the name field do not count): what "unsaved changes" compares.
+ * Whether two states hold the same level (grid, teleporter links, world, night, and
+ * name as saved, so trailing spaces in the name field do not count): what "unsaved
+ * changes" compares.
  */
 export function sameContent(a: EditorState, b: EditorState): boolean {
   return (
     a.name.trim() === b.name.trim() &&
+    a.world === b.world &&
+    a.night === b.night &&
     JSON.stringify(a.teleports) === JSON.stringify(b.teleports) &&
     a.grid.length === b.grid.length &&
     a.grid.every((row, y) => row === b.grid[y])
@@ -83,9 +94,21 @@ export function sameContent(a: EditorState, b: EditorState): boolean {
 export function editorFrom(level: LevelDraft): EditorState {
   return {
     ...newEditor(level.name),
+    world: level.world,
+    night: level.night,
     grid: [...level.grid],
     teleports: relink(level.grid, level.teleports),
   };
+}
+
+/** The world the level is drawn in. */
+export function setWorld(s: EditorState, world: World): EditorState {
+  return { ...s, world };
+}
+
+/** Whether the level is drawn by night. */
+export function setNight(s: EditorState, night: boolean): EditorState {
+  return { ...s, night };
 }
 
 export function selectTile(s: EditorState, tile: TileChar): EditorState {
@@ -302,7 +325,7 @@ export function toDraft(s: EditorState): ParseResult {
   return parseLevel(JSON.stringify(toDocument(s)), { gameRules: false });
 }
 
-/** The edited level as a v2 document, through the same validator as any imported level. */
+/** The edited level as a current-version document, through the same validator as any imported level. */
 export function toLevel(s: EditorState): ParseResult {
   return parseLevel(JSON.stringify(toDocument(s)));
 }
@@ -310,6 +333,8 @@ export function toLevel(s: EditorState): ParseResult {
 export function toDocument(s: EditorState): Record<string, unknown> {
   return levelDocument({
     name: s.name.trim(),
+    world: s.world,
+    night: s.night,
     width: s.grid[0]?.length ?? 0,
     height: s.grid.length,
     grid: s.grid,

@@ -45,7 +45,17 @@ function level(name: string, gold = 1): Level {
     "@".repeat(8),
   ];
   const r = parseLevel(
-    JSON.stringify(levelDocument({ name, width: 8, height: 8, grid, teleports: [] })),
+    JSON.stringify(
+      levelDocument({
+        name,
+        world: "moss",
+        night: false,
+        width: 8,
+        height: 8,
+        grid,
+        teleports: [],
+      }),
+    ),
   );
   if (!r.ok) throw new Error(r.errors.map((e) => e.code).join());
   return r.level;
@@ -96,7 +106,7 @@ describe("level format", () => {
     expect(s.data.get(STORAGE_KEY)).toContain('"name":"Old"');
   });
 
-  it("a v2 level round trips byte-identical, teleporter links included", () => {
+  it("a v3 level round trips byte-identical, teleporter links included", () => {
     const withLinks = parseLevel(
       JSON.stringify({
         ...levelDocument(level("Links")),
@@ -224,6 +234,8 @@ describe("drafts", () => {
     const s = memory();
     const draft = {
       name: "WIP",
+      world: "moss" as const,
+      night: false,
       width: 8,
       height: 8,
       grid: Array<string>(8).fill(".".repeat(8)),

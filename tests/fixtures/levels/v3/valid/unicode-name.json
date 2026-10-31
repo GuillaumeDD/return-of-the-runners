@@ -1,0 +1,19 @@
+{
+  "format": "return-of-the-runners/level",
+  "version": 3,
+  "name": "Les mines d'Ür ⛏",
+  "world": "lava",
+  "night": false,
+  "width": 8,
+  "height": 8,
+  "grid": [
+    "........",
+    "........",
+    "........",
+    "........",
+    "........",
+    "........",
+    ".P...E$.",
+    "########"
+  ]
+}

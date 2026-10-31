@@ -22,6 +22,8 @@ import {
   linkAt,
   relink,
   selectLinkTool,
+  setNight,
+  setWorld,
   type EditorState,
 } from "../../src/editor/model";
 import { makeRng, randInt } from "../helpers/rng";
@@ -248,11 +250,12 @@ describe("toLevel", () => {
     return s;
   };
 
-  it("returns a v2 level for a valid grid", () => {
+  it("returns a v3 level for a valid grid, in Moss by day unless picked otherwise", () => {
     const r = toLevel(valid());
     expect(r.ok).toBe(true);
     if (r.ok) {
-      expect(r.level.version).toBe(2);
+      expect(r.level.version).toBe(3);
+      expect([r.level.world, r.level.night]).toEqual(["moss", false]);
       expect(r.level.name).toBe("Test");
       expect(r.level.grid).toEqual(valid().grid);
       expect(r.level.teleports).toEqual([]);
@@ -264,6 +267,8 @@ describe("toLevel", () => {
     grid = grid.map((row, y) => (y === 2 ? `.T....t${row.slice(7)}` : row));
     const opened = editorFrom({
       name: "Links",
+      world: "moss",
+      night: false,
       width: 28,
       height: 16,
       grid,
@@ -355,6 +360,8 @@ describe("drafts", () => {
     const s = paint(paint(newEditor("Saved"), 3, 3, TILE.brick), 4, 4, TILE.gold);
     const opened = editorFrom({
       name: "Saved",
+      world: "moss",
+      night: false,
       width: 28,
       height: 16,
       grid: s.grid,
@@ -465,6 +472,8 @@ describe("teleporter links", () => {
   it("editorFrom repairs the links of an opened draft", () => {
     const opened = editorFrom({
       name: "Draft",
+      world: "moss",
+      night: false,
       width: 8,
       height: 8,
       grid: ["T.t.....", "t.......", ...Array.from({ length: 6 }, () => "........")],
@@ -512,5 +521,45 @@ describe("teleporter links", () => {
         if (hasExit) expect(codes).not.toContain("teleport-unlinked");
       }
     }
+  });
+});
+
+describe("world and night", () => {
+  it("a new level is in Moss, by day", () => {
+    const s = newEditor("New");
+    expect([s.world, s.night]).toEqual(["moss", false]);
+  });
+
+  it("picking a world or night changes the level: unsaved, and in what is saved and played", () => {
+    const s = newEditor("Pick");
+    const lava = setNight(setWorld(s, "lava"), true);
+    expect(sameContent(s, setWorld(s, "lava"))).toBe(false);
+    expect(sameContent(s, setNight(s, true))).toBe(false);
+    expect(sameContent(s, setNight(setWorld(lava, "moss"), false))).toBe(true);
+    const doc = toDocument(lava);
+    expect([doc.world, doc.night]).toEqual(["lava", true]);
+    const draft = toDraft(lava);
+    expect(draft.ok && [draft.level.world, draft.level.night]).toEqual(["lava", true]);
+  });
+
+  it("is not an undo step: undo goes back over the grid only", () => {
+    const painted = paint(newEditor("U"), 2, 2, TILE.brick);
+    const picked = setWorld(painted, "ice");
+    const back = undo(picked);
+    expect(back.world).toBe("ice");
+    expect(back.grid).toEqual(newEditor("U").grid);
+  });
+
+  it("editorFrom opens a level in its world, by its day or night", () => {
+    const opened = editorFrom({
+      name: "Ice",
+      world: "ice",
+      night: true,
+      width: 8,
+      height: 8,
+      grid: Array<string>(8).fill(".".repeat(8)),
+      teleports: [],
+    });
+    expect([opened.world, opened.night]).toEqual(["ice", true]);
   });
 });

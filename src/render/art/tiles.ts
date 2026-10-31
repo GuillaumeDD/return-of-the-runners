@@ -1,13 +1,15 @@
 /**
- * Terrain and items of the Moss world, drawn as vectors in a 32-unit cell (style guide:
- * ARCHITECTURE § Art direction). Terrain is autotiled: each slab variant knows which of
- * its four neighbours belong to the same slab, and rounds or lights its open edges.
+ * Terrain and items, drawn as vectors in a 32-unit cell (style guide: ARCHITECTURE § Art
+ * direction). Terrain is autotiled: each slab variant knows which of its four neighbours
+ * belong to the same slab, and rounds or lights its open edges. Terrain takes its
+ * colours from the level's world (`worlds.ts`); items look the same in every world.
  */
 
 const TAU = Math.PI * 2;
 const OUTLINE = "rgba(20,10,5,0.85)";
 
 import { SIDE } from "../terrain";
+import { WORLD_ART, type WorldArt } from "./worlds";
 
 /** Neighbour masks of an autotiled cell (`terrain.ts`, `SIDE`): four bits. */
 export const MASKS = 16;
@@ -16,10 +18,6 @@ export const MASKS = 16;
 export type Slab = "soft" | "hard";
 
 const MOSS = {
-  soft: ["#2f6b25", "#4c8f2f", "#5ea83a", "#7fbf4a", "#a6d867"],
-  hard: ["#3c4644", "#4a5552", "#5f6b67", "#7a8681", "#8a9690"],
-  top: ["#c8f27a", "#5fb339"],
-  hardTop: ["#b9c2c4", "#6f7a7c"],
   ladder: ["#c08b4f", "#6b4220"],
   rope: "#c9a66b",
   ropeDark: "rgba(90,60,25,0.8)",
@@ -68,13 +66,14 @@ export function drawSlab(
   slab: Slab,
   mask: number,
   variant: number,
+  art: WorldArt = WORLD_ART.moss,
 ): void {
   const up = (mask & SIDE.up) === 0;
   const right = (mask & SIDE.right) === 0;
   const down = (mask & SIDE.down) === 0;
   const left = (mask & SIDE.left) === 0;
   const R = 8;
-  const shades = slab === "soft" ? MOSS.soft : MOSS.hard;
+  const shades = slab === "soft" ? art.soft : art.hard;
   ctx.save();
   ctx.beginPath();
   roundRect(ctx, 0, 0, 32, 32, [
@@ -139,8 +138,8 @@ export function drawSlab(
   }
   ctx.restore();
   if (up) {
-    // The lit top edge: grass on moss, pale stone on bedrock.
-    const colors = slab === "soft" ? MOSS.top : MOSS.hardTop;
+    // The lit top edge: the world's crust (grass on moss), pale stone on bedrock.
+    const colors = slab === "soft" ? art.top : art.hardTop;
     const top = ctx.createLinearGradient(0, 0, 0, 6);
     top.addColorStop(0, colors[0]);
     top.addColorStop(1, colors[1]);
@@ -148,9 +147,9 @@ export function drawSlab(
     ctx.beginPath();
     roundRect(ctx, 0, 0, 32, 5, [left ? R / 2 : 0, right ? R / 2 : 0, 0, 0]);
     ctx.fill();
-    if (slab === "soft") {
+    if (slab === "soft" && art.blades) {
       const blades = prng(5 + variant);
-      ctx.fillStyle = MOSS.top[1];
+      ctx.fillStyle = art.top[1];
       for (let i = 0; i < 6; i++) {
         const bx = 2 + blades() * 28;
         ctx.beginPath();
@@ -189,7 +188,12 @@ export function drawGooCoat(ctx: CanvasRenderingContext2D): void {
  * A brick (or bedrock) being dug or filling back in: only the bottom `left` of it (from 0
  * to 1) is there, with a crumbled top edge.
  */
-export function drawDugSlab(ctx: CanvasRenderingContext2D, slab: Slab, left: number): void {
+export function drawDugSlab(
+  ctx: CanvasRenderingContext2D,
+  slab: Slab,
+  left: number,
+  art: WorldArt = WORLD_ART.moss,
+): void {
   const h = 32 * left;
   ctx.save();
   ctx.beginPath();
@@ -199,10 +203,10 @@ export function drawDugSlab(ctx: CanvasRenderingContext2D, slab: Slab, left: num
   ctx.lineTo(32, 32);
   ctx.closePath();
   ctx.clip();
-  drawSlab(ctx, slab, SIDE.up | SIDE.right | SIDE.left, 0);
+  drawSlab(ctx, slab, SIDE.up | SIDE.right | SIDE.left, 0, art);
   ctx.restore();
   // Crumbs at the rim.
-  ctx.fillStyle = slab === "soft" ? MOSS.soft[0] : MOSS.hard[0];
+  ctx.fillStyle = slab === "soft" ? art.soft[0] : art.hard[0];
   for (const x of [6, 15, 24]) ctx.fillRect(x, 31 - h - 2, 3, 2);
 }
 

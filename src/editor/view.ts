@@ -1,13 +1,24 @@
 import { translate, type Locale } from "../i18n";
 import { levelErrorMessage } from "../i18n/level-errors";
 import type { LevelErrorCode } from "../level/format";
-import { LIMITS, TILE } from "../level/format";
+import { isWorld, LIMITS, TILE, WORLDS } from "../level/format";
+import { WORLD_NAME } from "../i18n/worlds";
 import { context2d, gridCanvasSize, renderGrid } from "../render/canvas";
 import { fitCanvas } from "../render/scale";
 import { sheetAt } from "../render/sheet";
 import { parseSize, relabelName } from "./fields";
 import { PALETTE, shortcutFor, tileForKey } from "./keys";
-import { redo, rename, resize, selectLinkTool, selectTile, undo, type EditorState } from "./model";
+import {
+  redo,
+  rename,
+  resize,
+  selectLinkTool,
+  selectTile,
+  setNight,
+  setWorld,
+  undo,
+  type EditorState,
+} from "./model";
 import { startTest, testErrors, type TestStart } from "./test-play";
 import { cellAt, onPointer, startsDrag, type Drag, type PointerInput } from "./pointer";
 
@@ -16,6 +27,9 @@ export interface EditorElements {
   readonly canvas: HTMLCanvasElement;
   readonly palette: HTMLElement;
   readonly name: HTMLInputElement;
+  /** The world the level is drawn in, and whether by night. */
+  readonly world: HTMLSelectElement;
+  readonly night: HTMLInputElement;
   readonly width: HTMLInputElement;
   readonly height: HTMLInputElement;
   readonly undo: HTMLButtonElement;
@@ -27,6 +41,8 @@ export interface EditorElements {
   /** Translated labels: each element's text is set from its message key. */
   readonly labels: {
     readonly name: HTMLElement;
+    readonly world: HTMLElement;
+    readonly night: HTMLElement;
     readonly width: HTMLElement;
     readonly height: HTMLElement;
     readonly hint: HTMLElement;
@@ -42,7 +58,7 @@ export interface EditorOptions {
   readonly locale: Locale;
   /** "Test" was pressed on a valid level. */
   readonly onTest: (test: ValidTest) => void;
-  /** The level (grid or name) changed. */
+  /** The level (grid, links, name, world or night) changed. */
   readonly onChange: () => void;
 }
 
@@ -112,6 +128,13 @@ export function createEditorView(els: EditorElements, options: EditorOptions): E
   });
   els.palette.append(linkButton);
 
+  const worldOptions = WORLDS.map((world) => {
+    const option = document.createElement("option");
+    option.value = world;
+    els.world.append(option);
+    return { option, world };
+  });
+
   els.width.min = String(LIMITS.minWidth);
   els.width.max = String(LIMITS.maxWidth);
   els.height.min = String(LIMITS.minHeight);
@@ -119,10 +142,14 @@ export function createEditorView(els: EditorElements, options: EditorOptions): E
 
   function draw(): void {
     const scale = fitCanvas(els.canvas, ctx, gridCanvasSize(editor.grid));
-    renderGrid(ctx, editor.grid, editor.teleports, editor.linkFrom, sheetAt(scale));
+    const sheet = sheetAt(scale, editor.world);
+    const scene = { world: editor.world, night: editor.night };
+    renderGrid(ctx, editor.grid, editor.teleports, editor.linkFrom, sheet, scene);
   }
 
   function syncFields(): void {
+    els.world.value = editor.world;
+    els.night.checked = editor.night;
     els.width.value = String(editor.grid[0]?.length ?? 0);
     els.height.value = String(editor.grid.length);
     els.undo.disabled = editor.undo.length === 0;
@@ -135,12 +162,17 @@ export function createEditorView(els: EditorElements, options: EditorOptions): E
   }
 
   function update(next: EditorState): void {
+    const looks = next.world !== editor.world || next.night !== editor.night;
     const redraw =
+      looks ||
       next.grid !== editor.grid ||
       next.teleports !== editor.teleports ||
       next.linkFrom !== editor.linkFrom;
     const revalidate =
-      next.grid !== editor.grid || next.teleports !== editor.teleports || next.name !== editor.name;
+      looks ||
+      next.grid !== editor.grid ||
+      next.teleports !== editor.teleports ||
+      next.name !== editor.name;
     editor = next;
     if (redraw) draw();
     if (revalidate && errors !== null) showErrors(testErrors(editor));
@@ -165,6 +197,11 @@ export function createEditorView(els: EditorElements, options: EditorOptions): E
     els.name.value = editor.name;
     locale = next;
     els.labels.name.textContent = translate(locale, "editorName");
+    els.labels.world.textContent = translate(locale, "editorWorld");
+    els.labels.night.textContent = translate(locale, "editorNight");
+    for (const { option, world } of worldOptions) {
+      option.textContent = translate(locale, WORLD_NAME[world]);
+    }
     els.labels.width.textContent = translate(locale, "editorWidth");
     els.labels.height.textContent = translate(locale, "editorHeight");
     els.labels.hint.textContent = translate(locale, "editorHint");
@@ -235,6 +272,13 @@ export function createEditorView(els: EditorElements, options: EditorOptions): E
     update(resize(editor, parseSize(els.width.value), parseSize(els.height.value)));
     syncFields(); // shows the clamped size, even when nothing changed
   };
+  els.world.addEventListener("change", () => {
+    const world = els.world.value;
+    if (isWorld(world)) update(setWorld(editor, world));
+  });
+  els.night.addEventListener("change", () => {
+    update(setNight(editor, els.night.checked));
+  });
   els.width.addEventListener("change", onSize);
   els.height.addEventListener("change", onSize);
   els.undo.addEventListener("click", () => {
@@ -252,7 +296,7 @@ export function createEditorView(els: EditorElements, options: EditorOptions): E
   // Keyboard: number keys pick a tile, Ctrl+Z / Ctrl+Y undo and redo. Not while typing
   // in a field, where the keys belong to the field.
   const onKeyDown = (e: KeyboardEvent): void => {
-    if (e.target instanceof HTMLInputElement) return;
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;
     const shortcut = shortcutFor(e);
     if (shortcut !== null) {
       e.preventDefault();

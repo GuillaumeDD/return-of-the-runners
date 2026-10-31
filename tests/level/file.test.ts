@@ -39,8 +39,8 @@ describe("export then import", () => {
   });
 
   it("writes teleporter links one per line, after the grid", () => {
-    const fixture = loadFixtures("valid", "v2").find((f) => f.file === "v2/all-tiles.json");
-    if (!fixture) throw new Error("missing v2/all-tiles.json");
+    const fixture = loadFixtures("valid", "v3").find((f) => f.file === "v3/all-tiles.json");
+    if (!fixture) throw new Error("missing v3/all-tiles.json");
     const { text } = exportLevel(parsed(fixture.text));
     expect(text).toContain('  ],\n  "teleports": [\n    [2,3,8,3],\n    [18,3,8,3]\n  ]\n}\n');
     // The fixture is written in the export layout.
@@ -48,22 +48,32 @@ describe("export then import", () => {
   });
 
   it("leaves a name that looks like a link as it is", () => {
-    const fixture = loadFixtures("valid", "v2").find((f) => f.file === "v2/all-tiles.json");
-    if (!fixture) throw new Error("missing v2/all-tiles.json");
+    const fixture = loadFixtures("valid", "v3").find((f) => f.file === "v3/all-tiles.json");
+    if (!fixture) throw new Error("missing v3/all-tiles.json");
     const level = { ...parsed(fixture.text), name: "[1, 2, 3, 4]" };
     const back = parsed(exportLevel(level).text);
     expect(back).toEqual(level);
   });
 
-  it("is the v2 document, one grid row per line, with a final newline", () => {
+  it("is the v3 document, one grid row per line, with a final newline, even from a v2 file", () => {
     const fixture = loadFixtures("valid", "v2").find((f) => f.file === "v2/minimal-8x8.json");
     if (!fixture) throw new Error("missing v2/minimal-8x8.json");
     const { text } = exportLevel(parsed(fixture.text));
     expect(text.endsWith("}\n")).toBe(true);
     const doc = JSON.parse(text) as Record<string, unknown>;
     // No teleporters: no `teleports` field.
-    expect(Object.keys(doc)).toEqual(["format", "version", "name", "width", "height", "grid"]);
-    expect(doc.version).toBe(2);
+    expect(Object.keys(doc)).toEqual([
+      "format",
+      "version",
+      "name",
+      "world",
+      "night",
+      "width",
+      "height",
+      "grid",
+    ]);
+    expect(doc.version).toBe(3);
+    expect([doc.world, doc.night]).toEqual(["moss", false]);
     for (const row of doc.grid as string[]) expect(text).toContain(`    ${JSON.stringify(row)}`);
   });
 });

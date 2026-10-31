@@ -1,4 +1,5 @@
-import { DOOR_KEY, TILE, type Teleport } from "../level/format";
+import { DEFAULT_WORLD, DOOR_KEY, TILE, type Teleport, type World } from "../level/format";
+import { WORLD_ART } from "./art/worlds";
 import { blastCells, type Blast, type Fuse } from "../sim/bombs";
 import { craterAt, holeAt, holePhase } from "../sim/holes";
 import { BLAST_TICKS, HOLE_TICKS, RUBBLE_TICKS, SUB } from "../sim/rules";
@@ -87,8 +88,36 @@ const COLOR = {
   gridLine: "#222",
 } as const;
 
-/** The colour behind the scene. */
-export const BACKGROUND: string = COLOR.background;
+/** The world a level is drawn in, and whether by night: what its backdrop looks like. */
+export interface Scene {
+  readonly world: World;
+  readonly night: boolean;
+}
+
+export const DEFAULT_SCENE: Scene = { world: DEFAULT_WORLD, night: false };
+
+/**
+ * Fills the area behind the level: with art, the world's backdrop (a dim gradient of its
+ * hue, darker by night); without, the placeholder background.
+ */
+export function fillBackdrop(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  sheet: SpriteSheet,
+  scene: Scene,
+): void {
+  if (sheet.image === null) {
+    ctx.fillStyle = COLOR.background;
+  } else {
+    const [top, bottom] = WORLD_ART[scene.world][scene.night ? "night" : "day"];
+    const g = ctx.createLinearGradient(0, 0, 0, height);
+    g.addColorStop(0, top);
+    g.addColorStop(1, bottom);
+    ctx.fillStyle = g;
+  }
+  ctx.fillRect(0, 0, width, height);
+}
 
 /** The 2D context of a canvas; throws when the browser has none. */
 export function context2d(c: HTMLCanvasElement): CanvasRenderingContext2D {
@@ -115,10 +144,10 @@ export function render(
   sheet: SpriteSheet = NO_ART,
   time = 0,
   motion: Motion | null = null,
+  scene: Scene = DEFAULT_SCENE,
 ): void {
   const { width, height } = canvasSize(state);
-  ctx.fillStyle = COLOR.background;
-  ctx.fillRect(0, 0, width, height);
+  fillBackdrop(ctx, width, height, sheet, scene);
 
   const exitOpen = state.goldLeft === 0;
   drawTiles(state.tiles, (tile, cx, cy, x, y) => {
@@ -460,10 +489,10 @@ export function renderGrid(
   links: readonly Teleport[] = [],
   picked: { readonly cx: number; readonly cy: number } | null = null,
   sheet: SpriteSheet = NO_ART,
+  scene: Scene = DEFAULT_SCENE,
 ): void {
   const size = gridCanvasSize(grid);
-  ctx.fillStyle = COLOR.background;
-  ctx.fillRect(0, 0, size.width, size.height);
+  fillBackdrop(ctx, size.width, size.height, sheet, scene);
   drawTiles(grid, (tile, cx, cy, x, y) => {
     if (tile === TILE.runnerStart) {
       if (!drawStill(ctx, sheet, "runner1", x, y, 1)) drawRunner(ctx, x, y, 1, false, 0);

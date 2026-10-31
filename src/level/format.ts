@@ -1,10 +1,37 @@
 /**
- * Level format v2: a human-readable JSON document with a text grid, plus the links of
- * its teleporters. See docs/ARCHITECTURE.md § Level format.
+ * Level format v3: a human-readable JSON document with a text grid, the links of its
+ * teleporters, and the world it is drawn in (by day or night). Version 2 documents are
+ * still read, and migrated (`parse.ts`). See docs/ARCHITECTURE.md § Level format.
  */
 
 export const LEVEL_FORMAT_ID = "return-of-the-runners/level";
-export const LEVEL_FORMAT_VERSION = 2;
+export const LEVEL_FORMAT_VERSION = 3;
+
+/** The format versions `parseLevel` reads; older ones are migrated to the current one. */
+export const READ_VERSIONS: readonly number[] = [2, 3];
+
+/** The ten worlds of TLR, in its order (S-010 titles). A world is art only. */
+export const WORLDS = [
+  "moss",
+  "fungus",
+  "ancient",
+  "crystal",
+  "ice",
+  "fossil",
+  "lava",
+  "phosphorus",
+  "dark",
+  "industrial",
+] as const;
+
+export type World = (typeof WORLDS)[number];
+
+/** The world of a level that names none: every v2 level, migrated. */
+export const DEFAULT_WORLD: World = "moss";
+
+export function isWorld(value: unknown): value is World {
+  return typeof value === "string" && (WORLDS as readonly string[]).includes(value);
+}
 
 /** The tiles of the original 1982 game. */
 export const TILE_BASE = {
@@ -20,7 +47,7 @@ export const TILE_BASE = {
 } as const;
 
 /**
- * Every tile of version 2. The tiles added in v2 were reserved by the format first
+ * Every tile of versions 2 and 3. The tiles added in v2 were reserved by the format first
  * (B-019); each got its behavior, its drawing and its place in the editor palette in
  * its own step 3 item (B-020 to B-028).
  */
@@ -86,6 +113,10 @@ export interface Level {
   readonly grid: readonly string[];
   /** Teleporter links, in document order; empty when the level has none. */
   readonly teleports: readonly Teleport[];
+  /** The world the level is drawn in. */
+  readonly world: World;
+  /** Drawn by night (a darker backdrop) rather than by day. */
+  readonly night: boolean;
 }
 
 /**
@@ -100,6 +131,8 @@ export interface LevelDraft {
   readonly height: number;
   readonly grid: readonly string[];
   readonly teleports: readonly Teleport[];
+  readonly world: World;
+  readonly night: boolean;
 }
 
 export type LevelErrorCode =
@@ -130,6 +163,10 @@ export type LevelErrorCode =
   | "teleport-duplicate"
   /** An entrance with no link. */
   | "teleport-unlinked"
+  /** `world` is not one of `WORLDS`. */
+  | "invalid-world"
+  /** `night` is not `true` or `false`. */
+  | "invalid-night"
   /** Import only: the file could not be read (moved, deleted, no permission). */
   | "unreadable-file"
   /** Share links only: the payload is over its cap, not base64url, or not DEFLATE data. */

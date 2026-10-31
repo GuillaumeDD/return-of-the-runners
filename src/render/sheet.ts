@@ -6,6 +6,8 @@ import { type ActorKind, MONK_ANIMS, RUNNER_ANIMS } from "./actors";
 import { BOX, drawActorFrame } from "./art/actors";
 import { ACTOR_TOP, TILE_PX } from "./canvas";
 import * as tiles from "./art/tiles";
+import { WORLD_ART } from "./art/worlds";
+import { DEFAULT_WORLD, type World } from "../level/format";
 import {
   buildSheet,
   DUG_STAGES,
@@ -65,14 +67,15 @@ function tile(key: string, draw: (ctx: CanvasRenderingContext2D) => void): Sprit
   };
 }
 
-function tileSprites(): SpriteDef[] {
+function tileSprites(world: World): SpriteDef[] {
+  const art = WORLD_ART[world];
   const defs: SpriteDef[] = [];
   for (const slab of ["soft", "hard"] as const) {
     for (let mask = 0; mask < tiles.MASKS; mask++) {
       for (let v = 0; v < SLAB_VARIANTS; v++) {
         defs.push(
           tile(slabKey(`slab:${slab}`, mask, v), (c) => {
-            tiles.drawSlab(c, slab, mask, v);
+            tiles.drawSlab(c, slab, mask, v, art);
           }),
         );
       }
@@ -80,7 +83,7 @@ function tileSprites(): SpriteDef[] {
     for (let k = 1; k < DUG_STAGES; k++) {
       defs.push(
         tile(`dug:${slab}:${String(k)}`, (c) => {
-          tiles.drawDugSlab(c, slab, k / DUG_STAGES);
+          tiles.drawDugSlab(c, slab, k / DUG_STAGES, art);
         }),
       );
     }
@@ -132,8 +135,13 @@ function tileSprites(): SpriteDef[] {
   return defs;
 }
 
-/** Every sprite of the game. */
-export const SPRITES: readonly SpriteDef[] = [...tileSprites(), ...actorSprites()];
+/** Every sprite of the game in `world`: the same keys in every world, terrain in its colours. */
+export function spritesFor(world: World): readonly SpriteDef[] {
+  return [...tileSprites(world), ...actorSprites()];
+}
+
+/** Every sprite of the game, in the default world. */
+export const SPRITES: readonly SpriteDef[] = spritesFor(DEFAULT_WORLD);
 
 /** A surface backed by a DOM canvas; null where the browser has no 2D canvas. */
 export const domSurface: Surface = (width, height) => {
@@ -144,14 +152,19 @@ export const domSurface: Surface = (width, height) => {
   return ctx === null ? null : { image: c, ctx };
 };
 
-/** Sheets by scale: a canvas moved to another screen gets its own, drawn once. */
-const sheets = new Map<number, SpriteSheet>();
+/**
+ * Sheets by scale and world: a canvas moved to another screen, or a level in another
+ * world, gets its own, drawn once and kept for the page's life (at most a few: one per
+ * world seen at each canvas scale).
+ */
+const sheets = new Map<string, SpriteSheet>();
 
-export function sheetAt(scale: number): SpriteSheet {
-  let sheet = sheets.get(scale);
+export function sheetAt(scale: number, world: World = DEFAULT_WORLD): SpriteSheet {
+  const key = `${String(scale)}:${world}`;
+  let sheet = sheets.get(key);
   if (sheet === undefined) {
-    sheet = buildSheet(SPRITES, scale, domSurface);
-    sheets.set(scale, sheet);
+    sheet = buildSheet(spritesFor(world), scale, domSurface);
+    sheets.set(key, sheet);
   }
   return sheet;
 }

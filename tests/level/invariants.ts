@@ -1,9 +1,11 @@
 import { expect } from "vitest";
-import { LIMITS, TILE, TILE_CHARS, codePoints, type Level } from "../../src/level/format";
+import { LIMITS, TILE, TILE_CHARS, WORLDS, codePoints, type Level } from "../../src/level/format";
 
 /** Every accepted level must satisfy all of these. */
 export function expectLevelInvariants(level: Level): void {
-  expect(level.version).toBe(2);
+  expect(level.version).toBe(3);
+  expect(WORLDS).toContain(level.world);
+  expect(typeof level.night).toBe("boolean");
   expect(level.name.trim().length).toBeGreaterThan(0);
   expect(codePoints(level.name).length).toBeLessThanOrEqual(LIMITS.maxNameLength);
   expect(Number.isInteger(level.width)).toBe(true);

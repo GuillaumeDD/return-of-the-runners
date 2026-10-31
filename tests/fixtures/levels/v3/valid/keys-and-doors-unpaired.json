@@ -1,0 +1,19 @@
+{
+  "format": "return-of-the-runners/level",
+  "version": 3,
+  "name": "Test",
+  "world": "fungus",
+  "night": true,
+  "width": 8,
+  "height": 8,
+  "grid": [
+    "........",
+    "........",
+    "........",
+    "........",
+    "........",
+    ".a..B...",
+    ".P...E$.",
+    "########"
+  ]
+}

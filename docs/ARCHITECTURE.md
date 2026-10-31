@@ -474,7 +474,11 @@ wait for Guillaume's playtest.
   Moss: moss greens `#2f6b25` → `#a6d867`, top edge `#c8f27a`, grey stone bedrock, a
   jungle backdrop `#1c3a24` → `#0b1c12`. Lava: rock `#8a3a14` → `#f2a35e`, pale crust
   `#ffd9a0`, dark basalt bedrock, a cave and lava river `#3a0f08` → `#1a0503`. The
-  other eight worlds land with B-035, in the same pattern.
+  ten worlds (B-035, `render/art/worlds.ts`, `WORLD_ART`) follow the same pattern: five
+  shades of soft and hard terrain, a top edge, a day and a night backdrop gradient;
+  only Moss has grass blades. Sheets are built per scale and world. The eight new
+  palettes, and Phosphorus's magenta beside the goo coat, are _provisional_; painted
+  backdrops and world details (icicles, crystals, rivets) come in B-035 part 2.
 - **Actors** (_provisional_, with the hero names, PRD § Open questions). Runner 1:
   white suit, cyan helmet with a lamp. Runner 2: lavender suit, pink scarf. They differ
   by silhouette as well as colour. Monks: red hooded robes with glowing yellow eyes,
@@ -531,20 +535,27 @@ Code: `src/level/format.ts` (types, tile alphabet, limits) and `src/level/parse.
 (`parseLevel(text)`: validates untrusted input and never throws; errors are values with
 a stable `code`, translated in the UI).
 
-### Version 2
+### Version 3
 
-The current and only version, since B-019. Version 1 (the same document without
-`teleports`, and only the nine tiles of the left column below) is **no longer read**:
-it is refused as `unsupported-version`. This is a one-time exception to the migration
-rule, decided by Guillaume on 2026-10-28 because no player had used v1 yet; it avoids
-carrying a migration for nobody. A v1 level stored in the browser is skipped as a
-damaged entry, and kept as it is.
+The current version, since B-035. It adds the level's **world** and whether it plays
+**by night**. Version 2 (the same document without `world` and `night`, since B-019)
+is still read and migrated on load: it becomes a Moss level by day, and it is written
+back as v3 the next time it is saved, exported or shared. A v2 document that carries
+`world` or `night` is refused as `unknown-field`, like any field its version lacks.
+
+Version 1 (without `teleports`, and only the nine tiles of the left column below) is
+**no longer read**: it is refused as `unsupported-version`. This is a one-time
+exception to the migration rule, decided by Guillaume on 2026-10-28 because no player
+had used v1 yet; it avoids carrying a migration for nobody. A v1 level stored in the
+browser is skipped as a damaged entry, and kept as it is.
 
 ```json
 {
   "format": "return-of-the-runners/level",
-  "version": 2,
+  "version": 3,
   "name": "First steps",
+  "world": "moss",
+  "night": false,
   "width": 28,
   "height": 16,
   "grid": ["............................", "..."],
@@ -552,11 +563,14 @@ damaged entry, and kept as it is.
 }
 ```
 
-The first six fields are required; `teleports` is optional (written only when the
+The first eight fields are required; `teleports` is optional (written only when the
 level has a teleporter); any other field is rejected. `grid` has `height` rows of
 exactly `width` tiles, top row first. Each `teleports` entry is a one-way link
 `[fromX, fromY, toX, toY]`, in cells, from an entrance `T` to an exit `t`: one grid
-cell cannot hold a link, so links live beside the grid.
+cell cannot hold a link, so links live beside the grid. `world` is one of `moss`,
+`fungus`, `ancient`, `crystal`, `ice`, `fossil`, `lava`, `phosphorus`, `dark` and
+`industrial` (`WORLDS`, the ten TLR worlds, S-010); it picks the terrain colours and
+the backdrop, never a rule. `night` dims the backdrop.
 
 | Char | Tile                                   | Char        | Tile                       |
 | ---- | -------------------------------------- | ----------- | -------------------------- |
@@ -591,9 +605,11 @@ Bombs), the snare and gas gun `s g` (B-027, see Snares and gas) and the goo buck
 | ----------------- | ----------------------------------------------------------------- | ------------------------------------------- |
 | Input size        | ≤ 64 KB (UTF-8 bytes)                                             | `too-large`                                 |
 | `format`          | exactly `"return-of-the-runners/level"`                           | `wrong-format`                              |
-| `version`         | the number `1` or `2`                                             | `unsupported-version`                       |
-| Fields            | the six above, plus `teleports` in v2                             | `missing-field`, `unknown-field`            |
+| `version`         | the number `2` or `3`                                             | `unsupported-version`                       |
+| Fields            | those of the document's version, plus `teleports`                 | `missing-field`, `unknown-field`            |
 | `name`            | 1–64 code points, not blank                                       | `invalid-name`                              |
+| `world`           | one of `WORLDS`, exact case                                       | `invalid-world`                             |
+| `night`           | `true` or `false`                                                 | `invalid-night`                             |
 | `width`, `height` | integers, 8–64 and 8–48                                           | `invalid-dimension`                         |
 | `grid`            | array of strings, right shape                                     | `invalid-grid`, `row-count`, `row-length`   |
 | Tiles             | only the characters of the document's version                     | `unknown-tile`                              |
@@ -620,7 +636,7 @@ properties so makers can build other sizes.
 ### Versioning
 
 - Every format change bumps `version` and ships a migration from the previous version
-  (exception: v1 → v2, see above).
+  (v2 → v3: `migrate` in `parse.ts`; exception: v1 → v2, see above).
 - Every version keeps fixture files in `tests/fixtures/levels/v<N>/` (`valid/` and
   `invalid/`; an invalid fixture is named after its expected error code, with an
   optional `--variant` suffix). Fixtures are excluded from Prettier so they stay
@@ -649,7 +665,7 @@ Code: `src/editor/` (pure modules, and `view.ts` / `library-view.ts` for the DOM
   validator reports.
 - **Editor screen** (`editor/view.ts`, the only editor file that touches the DOM): a
   palette (number keys 1–9, then 0 for the first ten entries, by `KeyboardEvent.code`, like the game keys), name and size
-  fields, undo and redo. `editor/pointer.ts` maps canvas pixels to cells at any CSS
+  fields, a world picker and a night box (B-035; not undo steps), undo and redo. `editor/pointer.ts` maps canvas pixels to cells at any CSS
   scale and turns pointer events into model operations: the left button paints, the
   right one erases (with the link tool, a left click links instead and starts no
   drag), and release, cancel and lost capture all end the stroke, so letting
@@ -666,7 +682,8 @@ Code: `src/editor/` (pure modules, and `view.ts` / `library-view.ts` for the DOM
   `LIMITS`); the list refreshes on every edit until the level is valid.
 - Editor levels are stored in the browser (`storage/levels.ts`): one `localStorage` key,
   `rotr.levels.v1`, holding a versioned document (`return-of-the-runners/my-levels`)
-  with an id counter and the levels as v2 documents. They are **drafts**
+  with an id counter and the levels as v3 documents (a stored v2 level is migrated
+  when read). They are **drafts**
   (`LevelDraft`, parsed with `parseLevel(text, { gameRules: false })`): the shape is
   checked, the game rules are not, so a level can be saved half-built. A draft has no
   `version` field, so the type system refuses to play one without a full `parseLevel`.
@@ -676,7 +693,7 @@ Code: `src/editor/` (pure modules, and `view.ts` / `library-view.ts` for the DOM
   before the next save replaces it; storage errors (quota, disabled) are returned, never
   thrown.
 - Levels are exported and imported as files (`level/file.ts`): `<name>.rotr.json`, the
-  exact v2 document, pretty-printed (one grid row and one teleporter link per line).
+  exact v3 document, pretty-printed (one grid row and one teleporter link per line).
   Export needs a playable level. An import is
   untrusted input: over 64 KB it is rejected from `File.size` before a byte is read,
   then it goes through `parseLevel` with the game rules; a read failure is the
@@ -684,14 +701,14 @@ Code: `src/editor/` (pure modules, and `view.ts` / `library-view.ts` for the DOM
   non-ASCII `download` "download"), and Windows device names get a `-level` suffix. A
   slow read is dropped if the editor changed or another import started meanwhile.
 - **Share links** (`share/link.ts`): `#level=<payload>`, where the payload is the
-  level's compact v2 JSON, compressed with raw DEFLATE (`CompressionStream`, built
+  level's compact v3 JSON (an old v2 link still opens), compressed with raw DEFLATE (`CompressionStream`, built
   into the browsers and Node, so no dependency) and written in base64url. The fragment
   never reaches a server. Decoding is untrusted input, capped at each step: at most
   `MAX_SHARE_PAYLOAD` (16 K) characters, canonical base64url (spare bits must be zero),
   and the inflated output is read until it passes 64 KB, then dropped (`too-large`);
   the input is fed in 256-byte slices, and DEFLATE expands at most ~1,032:1, so a "zip
   bomb" costs at most ~12 MB of work. Then `parseLevel` with the game rules. The
-  bundled level is a 266-character payload; the largest level fits well under the cap.
+  bundled level is a 352-character payload; the largest level fits well under the cap.
 - "Share" needs a playable level. It copies the link and also shows it in a read-only
   field, since the clipboard can be refused. A link opens on the play screen; "Edit a
   copy" saves it as a new level in "My levels" and opens it, unless the editor has

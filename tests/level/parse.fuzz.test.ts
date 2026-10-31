@@ -40,7 +40,7 @@ describe("parseLevel fuzzing", () => {
     for (let i = 0; i < ITERATIONS; i++) {
       const doc = structuredClone(valid[randInt(rng, valid.length)]) as Record<string, unknown>;
       const grid = [...(doc.grid as string[])];
-      switch (randInt(rng, 10)) {
+      switch (randInt(rng, 11)) {
         case 0: {
           // flip one tile
           const y = randInt(rng, grid.length);
@@ -78,7 +78,24 @@ describe("parseLevel fuzzing", () => {
           doc.teleports = [{}, "1,2,3,4", null, [], [[1, 2, 3, 4]]][randInt(rng, 5)];
           break;
         case 8:
-          doc.version = [1, 2, 3, "2"][randInt(rng, 4)];
+          doc.version = [1, 2, 3, 4, "3"][randInt(rng, 5)];
+          break;
+        case 9:
+          // the v3 fields: a known or unknown world, a night that is or is not a boolean,
+          // or one of them dropped
+          switch (randInt(rng, 4)) {
+            case 0:
+              doc.world = ["moss", "lava", "dark", "Moss", "", 0, null][randInt(rng, 7)];
+              break;
+            case 1:
+              doc.night = [true, false, "true", 0, null][randInt(rng, 5)];
+              break;
+            case 2:
+              delete doc.world;
+              break;
+            default:
+              delete doc.night;
+          }
           break;
         default:
           break;

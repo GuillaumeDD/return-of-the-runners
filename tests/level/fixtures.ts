@@ -4,7 +4,7 @@ import { join } from "node:path";
 const ROOT = join(import.meta.dirname, "../fixtures/levels");
 
 /** The format versions that keep fixtures, oldest first. */
-export const FIXTURE_VERSIONS = ["v2"] as const;
+export const FIXTURE_VERSIONS = ["v2", "v3"] as const;
 export type FixtureVersion = (typeof FIXTURE_VERSIONS)[number];
 
 export interface Fixture {

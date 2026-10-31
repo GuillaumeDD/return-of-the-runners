@@ -243,6 +243,9 @@ cap holds under a burst (randomized: 1,000 random event bursts never exceed it);
   Industrial, S-010 titles), each with a terrain set and a backdrop; a night variant.
 - Level format v3: `world` and `night` fields; migration v2 → v3 (default Moss, day);
   editor picker for both, translated.
+- Split in two on 2026-10-30: B-035 ships the format, the picker and the ten palettes
+  (terrain and a backdrop gradient, day and night); B-045 paints the backdrops and adds
+  the world details (icicles, crystals, rivets).
 
 `tests/level/format-v3.test.ts`: v2 fixtures migrate to v3 with defaults; unknown world
 rejected with a translated error; fixtures per new error code; fuzz test extended to v3.

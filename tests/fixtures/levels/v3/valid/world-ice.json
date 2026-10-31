@@ -1,0 +1,19 @@
+{
+  "format": "return-of-the-runners/level",
+  "version": 3,
+  "name": "Test",
+  "world": "ice",
+  "night": false,
+  "width": 8,
+  "height": 8,
+  "grid": [
+    "........",
+    "........",
+    "........",
+    "........",
+    "........",
+    "........",
+    ".P...E$.",
+    "########"
+  ]
+}

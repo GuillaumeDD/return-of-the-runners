@@ -1,7 +1,10 @@
 import {
+  DEFAULT_WORLD,
+  isWorld,
   LEVEL_FORMAT_ID,
   LEVEL_FORMAT_VERSION,
   LIMITS,
+  READ_VERSIONS,
   TILE,
   TILE_CHARS,
   codePoints,
@@ -12,9 +15,19 @@ import {
   type Teleport,
 } from "./format";
 
-const REQUIRED = ["format", "version", "name", "width", "height", "grid"] as const;
-const OPTIONAL = ["teleports"] as const;
-const KNOWN_FIELDS: ReadonlySet<string> = new Set([...REQUIRED, ...OPTIONAL]);
+/** The fields of each version read: required, then optional. */
+const FIELDS: Readonly<
+  Record<number, { required: readonly string[]; optional: readonly string[] }>
+> = {
+  2: {
+    required: ["format", "version", "name", "width", "height", "grid"],
+    optional: ["teleports"],
+  },
+  3: {
+    required: ["format", "version", "name", "world", "night", "width", "height", "grid"],
+    optional: ["teleports"],
+  },
+};
 
 const utf8 = new TextEncoder();
 
@@ -51,13 +64,19 @@ export function parseLevel(text: string, options: ParseOptions = {}): ParseResul
   if (!Object.hasOwn(obj, "format") || obj.format !== LEVEL_FORMAT_ID) {
     return fail("wrong-format", `"format" must be "${LEVEL_FORMAT_ID}"`);
   }
-  if (!Object.hasOwn(obj, "version") || obj.version !== LEVEL_FORMAT_VERSION) {
-    return fail("unsupported-version", `"version" must be ${String(LEVEL_FORMAT_VERSION)}`);
+  const version = obj.version;
+  if (
+    !Object.hasOwn(obj, "version") ||
+    typeof version !== "number" ||
+    !READ_VERSIONS.includes(version)
+  ) {
+    return fail("unsupported-version", `"version" must be one of ${READ_VERSIONS.join(", ")}`);
   }
 
-  const { errors, teleports } = validate(obj, gameRules);
+  const { errors, teleports } = validate(obj, version, gameRules);
   if (errors.length > 0) return { ok: false, errors };
 
+  // v2 → v3: a v2 level has no world; it is drawn in the default one, by day.
   const level: Level = {
     version: LEVEL_FORMAT_VERSION,
     name: obj.name as string,
@@ -65,6 +84,8 @@ export function parseLevel(text: string, options: ParseOptions = {}): ParseResul
     height: obj.height as number,
     grid: [...(obj.grid as string[])],
     teleports,
+    world: version >= 3 ? (obj.world as Level["world"]) : DEFAULT_WORLD,
+    night: version >= 3 ? (obj.night as boolean) : false,
   };
   return { ok: true, level };
 }
@@ -72,6 +93,7 @@ export function parseLevel(text: string, options: ParseOptions = {}): ParseResul
 /** Every content error of a document. */
 function validate(
   obj: Record<string, unknown>,
+  version: number,
   gameRules: boolean,
 ): { readonly errors: LevelError[]; readonly teleports: Teleport[] } {
   const errors: LevelError[] = [];
@@ -79,11 +101,21 @@ function validate(
     errors.push({ code, detail });
   };
 
+  const fields = FIELDS[version] ?? { required: [], optional: [] };
+  const known = new Set([...fields.required, ...fields.optional]);
   for (const key of Object.keys(obj)) {
-    if (!KNOWN_FIELDS.has(key)) add("unknown-field", `unknown field "${truncate(key)}"`);
+    if (!known.has(key)) add("unknown-field", `unknown field "${truncate(key)}"`);
   }
-  for (const key of REQUIRED) {
+  for (const key of fields.required) {
     if (!Object.hasOwn(obj, key)) add("missing-field", `missing field "${key}"`);
+  }
+  if (version >= 3) {
+    if (Object.hasOwn(obj, "world") && !isWorld(obj.world)) {
+      add("invalid-world", `"world" must be one of the ten world names`);
+    }
+    if (Object.hasOwn(obj, "night") && typeof obj.night !== "boolean") {
+      add("invalid-night", `"night" must be true or false`);
+    }
   }
 
   const { name, width, height, grid } = obj;

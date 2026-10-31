@@ -95,8 +95,8 @@ describe("round trip", () => {
     expect((await encodeLevel(big)).length).toBeLessThan(MAX_SHARE_PAYLOAD);
   });
 
-  it("a v2 payload decodes and encodes back to the same payload, teleporters included", async () => {
-    for (const f of loadFixtures("valid", "v2")) {
+  it("a payload decodes and encodes back to the same payload, teleporters included", async () => {
+    for (const f of loadFixtures("valid")) {
       const payload = await encodeLevel(parsed(f.text));
       const back = await decodeLevel(payload);
       if (!back.ok) throw new Error(f.file);

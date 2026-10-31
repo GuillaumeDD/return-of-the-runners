@@ -31,6 +31,7 @@ function recorder(): {
     fillRect() {
       fills.push(target.globalAlpha as number);
     },
+    createLinearGradient: () => ({ addColorStop() {} }),
   };
   const ctx = new Proxy(target, {
     get(t, p: string) {
