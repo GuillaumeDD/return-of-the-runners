@@ -5,6 +5,7 @@
  * See docs/ARCHITECTURE.md § Art direction.
  */
 import type { TileChar } from "../level/format";
+import type { Backdrops } from "./backdrop";
 
 /** A sprite: its size in logical pixels and how to draw it there, at the origin. */
 export interface SpriteDef {
@@ -27,6 +28,8 @@ export interface SpriteSheet {
   readonly scale: number;
   readonly image: CanvasImageSource | null;
   readonly frames: ReadonlyMap<string, Frame>;
+  /** The painted backdrops at this scale (`render/backdrop.ts`); without, a gradient. */
+  readonly backdrops?: Backdrops;
 }
 
 /** A blank drawing surface of whole device pixels, or null where none can be made. */
