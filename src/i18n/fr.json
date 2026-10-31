@@ -139,5 +139,6 @@
   "playerName2": "Joueur 2",
   "hudPlayer": "{player} : vies {lives}, or {gold}, bombes {bombs}",
   "hudBombs": "Bombes : {bombs}",
-  "hudOut": "{player} : éliminé"
+  "hudOut": "{player} : éliminé",
+  "hudOutTag": "ÉLIMINÉ"
 }

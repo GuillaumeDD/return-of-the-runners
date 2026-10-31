@@ -26,7 +26,7 @@ index.html ── src/main.ts        entry point: wires DOM, screens, input, loo
               src/editor/        level editor (step 2)
               src/i18n/          UI strings (en, fr)
               src/sim/           pure, deterministic game simulation
-              src/game/          fixed-timestep loop, play session, status line
+              src/game/          fixed-timestep loop, play session, status bar data
               src/input/         keyboard → per-tick PlayerInput, via a bindings table
               src/render/        Canvas 2D rendering of a simulation state
               src/levels/        bundled levels (JSON, validated at load like any import)
@@ -259,8 +259,7 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
   **empty** for movement, support and digging. A player in play whose centre enters
   one picks it up into its **bomb counter** (`Player.bombs`, one tile per bomb in
   pick-up order; empty at the start of each level, S-015; kept when the player dies).
-  Monks walk past bombs. The status line shows the counter (alone: only while it is
-  not empty).
+  Monks walk past bombs. The status bar shows the counter and the next bomb.
 - The bomb key (`PlayerInput.bomb`, once per press, `Player.bombHeld`) lays the
   **first bomb picked up**, lit, in the player's centre cell (`GameState.fuses`); not
   while falling or busy, nor where a bomb already lies or burns. It explodes
@@ -350,9 +349,10 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
   differs. In co-op the level is complete; in versus the player `playersAtExit` names
   wins, and both on the same tick is a draw (`game/hud.ts`, `statusMessage`). The
   simulation never sees the mode, so replays do not record it.
-- Per-player lives, gold and bombs show in a status line under a two-player game
-  (`game/hud.ts`); alone, the line shows only the bombs carried. Lives across levels
-  and scores come with level packs (step 4).
+- Per-player lives, gold, item and bombs show in the status bar under the playfield
+  (`game/hud.ts` reads them, `render/hud.ts` draws them; see Art direction, Frame and
+  HUD). A visually hidden text line (`playerStatusText`) says the same for screen
+  readers. Lives across levels and scores come with level packs (step 4).
 
 ### Monks
 
@@ -536,9 +536,19 @@ wait for Guillaume's playtest.
   clears them. With art, gas clouds and blasts are drawn as soft light (puffs that
   drift with the render time, fireballs) instead of the placeholder squares. Looks
   and timings are _provisional_.
-- **Frame and HUD** (B-036). A riveted dark metal frame; a status bar at the bottom, as
-  in TLR (_provisional_, open question 1 of the plan): per player lives, score, item
-  slot and bombs, the level number in the middle, between carved spirals.
+- **Frame and HUD** (B-036, `render/hud.ts`). The game canvas holds the playfield in a
+  riveted dark metal frame (`FRAME`, half a tile, on the left, right and top, so the
+  playfield starts on a whole device pixel) over a status bar (`BAR`, 40 logical
+  pixels), as in TLR. Per player, four panels: the runner and its lives, the gold it
+  took (no score until level packs), its item slot, and its next bomb with the count;
+  player 1 on the left, player 2 on the right, a player who is out dimmed and marked
+  (`hudOutTag`). The level's name sits in the middle between carved spirals, cut
+  between graphemes to fit. Without art the numbers stay, with plain marks for the
+  icons. The frame and bar never shake; the playfield is clipped to its place. The
+  editor grid has no frame. The editor palette draws its swatches with the level's
+  world and night at the grid's scale, over the world's gradient (a 24-pixel painted
+  scene is noise). Layout and looks are _provisional_ (open question 1 of the plan:
+  kept TLR's bar under the grid).
 - **Reduced motion.** Under `prefers-reduced-motion`: no screen shake, no flashes, a
   quarter of the particles (B-034, read on every frame); idle loops and glows stay
   still (not done yet: actors still animate).
