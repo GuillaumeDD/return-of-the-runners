@@ -106,3 +106,18 @@ export function gameWidth(
       : (logical.width * size) / 100;
   return Math.max(1, Math.min(room.width, wanted));
 }
+
+/**
+ * The height a canvas may take for "fit": the window's height less what the page shows
+ * above and below the canvas, from the page's top down to the bottom of the last
+ * element to keep in view (the page itself for the game, the hint under the editor's
+ * grid for the editor, B-050). Rectangles are the viewport's, so scrolling cancels out.
+ */
+export function roomHeight(
+  windowHeight: number,
+  page: { readonly top: number },
+  last: { readonly bottom: number },
+  canvas: { readonly height: number },
+): number {
+  return windowHeight - (last.bottom - page.top - canvas.height);
+}

@@ -24,7 +24,14 @@ import { decodeLevel } from "./share/link";
 import firstSteps from "./levels/first-steps.json?raw";
 import { canvasSize, context2d, fillBackdrop, render } from "./render/canvas";
 import { detectEvents, drawEffects, type Effect, shakeAt, updateEffects } from "./render/effects";
-import { fitCanvas, GAME_SIZES, gameWidth, parseGameSize, type GameSize } from "./render/scale";
+import {
+  fitCanvas,
+  GAME_SIZES,
+  gameWidth,
+  parseGameSize,
+  roomHeight,
+  type GameSize,
+} from "./render/scale";
 import { type Motion, trackMotion } from "./render/actors";
 import { sheetAt } from "./render/sheet";
 import type { ValidTest } from "./editor/view";
@@ -164,19 +171,29 @@ sizeSelect.addEventListener("change", () => {
   }
   playing?.refit();
   testGame?.refit();
+  editor.refit();
 });
 
 /**
- * The room a game canvas has: the width of its screen, and the window's height less
- * everything else on the page, so that "fit" shows the whole page (B-048).
+ * The room a canvas has: the width of its screen, and the window's height less
+ * everything else on the page down to `last` (the whole page by default), so that
+ * "fit" shows all of that (B-048, B-050).
  */
-function roomFor(target: HTMLCanvasElement): { width: number; height: number } {
+function roomFor(
+  target: HTMLCanvasElement,
+  last: Element | null = target.closest("main"),
+): { width: number; height: number } {
   const screen = target.parentElement;
   const page = target.closest("main");
   const width = screen === null ? window.innerWidth : screen.clientWidth;
-  const others =
-    page === null ? 0 : page.getBoundingClientRect().height - target.getBoundingClientRect().height;
-  return { width, height: window.innerHeight - others };
+  if (page === null || last === null) return { width, height: window.innerHeight };
+  const height = roomHeight(
+    window.innerHeight,
+    page.getBoundingClientRect(),
+    last.getBoundingClientRect(),
+    target.getBoundingClientRect(),
+  );
+  return { width, height };
 }
 
 /** A game: runs only while its screen is shown. */
@@ -350,10 +367,13 @@ function createGame(
   };
 }
 
+const editorGrid = byId("editor-grid", HTMLCanvasElement);
+const editorHint = byId("editor-hint", HTMLParagraphElement);
+
 // The level being edited lives as long as the page, across visits to other screens.
 const editor = createEditorView(
   {
-    canvas: byId("editor-grid", HTMLCanvasElement),
+    canvas: editorGrid,
     palette: byId("editor-palette", HTMLDivElement),
     name: byId("editor-name", HTMLInputElement),
     world: byId("editor-world", HTMLSelectElement),
@@ -371,7 +391,7 @@ const editor = createEditorView(
       night: byId("editor-night-label", HTMLSpanElement),
       width: byId("editor-width-label", HTMLSpanElement),
       height: byId("editor-height-label", HTMLSpanElement),
-      hint: byId("editor-hint", HTMLParagraphElement),
+      hint: editorHint,
       errors: byId("editor-errors-label", HTMLParagraphElement),
     },
   },
@@ -382,6 +402,9 @@ const editor = createEditorView(
     onChange: () => {
       library.changed();
     },
+    // "Fit" keeps the bar, palette, grid and hint in view; "My levels" and the settings
+    // below scroll, or a long list of levels would shrink the grid to nothing.
+    widthFor: (logical) => gameWidth(gameSize, logical, roomFor(editorGrid, editorHint)),
   },
 );
 

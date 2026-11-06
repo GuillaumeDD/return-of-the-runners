@@ -432,8 +432,11 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
   default, makes the play and test canvases as big as the window allows with the
   whole page in view (mode buttons, message and settings included), down to a
   quarter of the logical size; 50 % to 200 % are shares of the logical size (100 % =
-  a 24 CSS pixel tile). No size is wider than the page. The editor's grid keeps its
-  own width.
+  a 24 CSS pixel tile). No size is wider than the page. The editor's grid follows the
+  same choice (B-050): there "fit" keeps the bar, palette, grid and hint in view, while
+  "My levels" and the settings below scroll (a long list would otherwise shrink the
+  grid to nothing). The grid is refitted on show, resize, a new size or a new grid
+  size, not on every edit, so a status line appearing does not make it jump.
 - `render/sprites.ts` draws the art in code once per scale into a sprite sheet (one
   offscreen canvas, no image request) and copies frames from it. `TILE_ART` names each
   tile's sprite; a tile or actor without art, or a sprite whose drawing fails, falls

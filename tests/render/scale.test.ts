@@ -6,6 +6,7 @@ import {
   gameWidth,
   MAX_SCALE,
   parseGameSize,
+  roomHeight,
 } from "../../src/render/scale";
 
 const LEVEL = { width: 28 * TILE_PX, height: 16 * TILE_PX };
@@ -126,6 +127,26 @@ describe("game size (B-048)", () => {
     expect(parseGameSize("fit")).toBe("fit");
     for (const bad of [null, "", "80", "1e2", " 75", "Fit", "__proto__"]) {
       expect(parseGameSize(bad)).toBe("fit");
+    }
+  });
+});
+
+describe("room height for fit (B-050)", () => {
+  it("is the window less everything on the page, for the game", () => {
+    // Page 0–900 with a 400 px canvas: 500 px of other things.
+    expect(roomHeight(800, { top: 0 }, { bottom: 900 }, { height: 400 })).toBe(300);
+  });
+
+  it("ignores what lies below the last element kept in view, for the editor", () => {
+    // Hint ends at 600 (a long "My levels" list below): only 200 px of other things.
+    expect(roomHeight(800, { top: 0 }, { bottom: 600 }, { height: 400 })).toBe(600);
+  });
+
+  it("does not change when the page is scrolled", () => {
+    for (const scroll of [0, 120, 2000]) {
+      expect(roomHeight(800, { top: -scroll }, { bottom: 600 - scroll }, { height: 400 })).toBe(
+        600,
+      );
     }
   });
 });
