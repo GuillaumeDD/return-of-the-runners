@@ -61,6 +61,8 @@ export interface EditorOptions {
   readonly onTest: (test: ValidTest) => void;
   /** The level (grid, links, name, world or night) changed. */
   readonly onChange: () => void;
+  /** The CSS width to show the grid at, for its logical size (the game size, B-050). */
+  readonly widthFor: (logical: { readonly width: number; readonly height: number }) => number;
 }
 
 export interface EditorView {
@@ -68,6 +70,8 @@ export interface EditorView {
   readonly show: () => void;
   readonly hide: () => void;
   readonly setLocale: (locale: Locale) => void;
+  /** Sizes the grid again, after the player picked another game size. */
+  readonly refit: () => void;
   /** Puts the keyboard focus on "Test", where it was before a test started. */
   readonly focusTest: () => void;
   /** The level being edited. */
@@ -82,7 +86,7 @@ export interface EditorView {
  * goes through `textContent`, never `innerHTML`.
  */
 export function createEditorView(els: EditorElements, options: EditorOptions): EditorView {
-  const { initial, onTest, onChange } = options;
+  const { initial, onTest, onChange, widthFor } = options;
   const ctx = context2d(els.canvas);
   let editor = initial;
   let drag: Drag | null = null;
@@ -143,8 +147,21 @@ export function createEditorView(els: EditorElements, options: EditorOptions): E
   els.height.min = String(LIMITS.minHeight);
   els.height.max = String(LIMITS.maxHeight);
 
+  /** Whether the editor is on screen: a hidden grid has no room to measure. */
+  let visible = false;
+  /**
+   * The CSS width the grid was last fitted to, and for which logical size. Measured on
+   * show, resize, a new game size or a new grid size only, so that a status line or an
+   * error list appearing does not make the grid jump while painting.
+   */
+  let fitted: { readonly key: string; readonly width: number } | null = null;
+
   function draw(): void {
-    const scale = fitCanvas(els.canvas, ctx, gridCanvasSize(editor.grid));
+    if (!visible) return; // drawn on show
+    const logical = gridCanvasSize(editor.grid);
+    const key = `${String(logical.width)}x${String(logical.height)}`;
+    if (fitted?.key !== key) fitted = { key, width: widthFor(logical) };
+    const scale = fitCanvas(els.canvas, ctx, logical, fitted.width);
     const sheet = sheetAt(scale, editor.world, editor.night);
     const scene = { world: editor.world, night: editor.night };
     renderGrid(ctx, editor.grid, editor.teleports, editor.linkFrom, sheet, scene);
@@ -336,18 +353,29 @@ export function createEditorView(els: EditorElements, options: EditorOptions): E
   setLocale(locale);
   syncFields();
 
+  /** Measures the room again, then draws. */
+  const refit = (): void => {
+    fitted = null;
+    draw();
+  };
+
   return {
     show() {
+      visible = true;
       window.addEventListener("keydown", onKeyDown);
-      window.addEventListener("resize", draw);
-      draw();
+      window.addEventListener("resize", refit);
+      refit();
     },
     hide() {
+      visible = false;
       window.removeEventListener("keydown", onKeyDown);
-      window.removeEventListener("resize", draw);
+      window.removeEventListener("resize", refit);
       if (drag !== null) pointer({ kind: "end", pointer: drag.pointer });
     },
     setLocale,
+    refit() {
+      if (visible) refit();
+    },
     focusTest() {
       els.test.focus();
     },
