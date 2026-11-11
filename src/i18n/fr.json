@@ -148,7 +148,10 @@
   "versusWon1Next": "Le joueur 1 gagne ! Au niveau suivant…",
   "versusWon2Next": "Le joueur 2 gagne ! Au niveau suivant…",
   "versusDrawNext": "Égalité : les deux joueurs sont sortis en même temps ! Au niveau suivant…",
-  "packLabel": "Niveau",
+  "packLabel": "Pack",
+  "levelLabel": "Niveau",
+  "packSolo": "1 joueur",
+  "packDuo": "2 joueurs",
   "packOption": "{n}. {name}",
   "packOptionDone": "{n}. {name} ✓",
   "levelFirstSteps": "Premiers pas"

@@ -447,18 +447,24 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
   lists every sprite; sheets are packed in rows of at most 4096 device pixels, each
   sprite clipped to its box.
 - Bundled levels go through `parseLevel` like any imported level.
-- **The bundled pack** (B-051, `levels/pack.ts`): the play screen plays an ordered list
-  of levels, picked from a "Level" list above the game. Each entry has a stable id, a
+- **The bundled packs** (B-051, `levels/pack.ts`): the play screen plays ordered lists
+  of levels, picked from a "Pack" and a "Level" list above the game. There are two
+  packs (Guillaume, 2026-11-11): "1 player", whose games are played alone (no mode
+  buttons, even on a level with a player 2 start), and "2 players", whose games offer
+  co-op and versus only; each of its levels starts in the mode it is meant for, else
+  the two-player mode picked last. Each entry has an id stable within its pack, a
   title translated in every language (the file's `name` is the English one) and the
-  level file. A won level shows "On to the next level…" and, once its end screen is
+  level file. Until the two-player demo levels land, the "2 players" pack holds the
+  default level, in co-op. A won level shows "On to the next level…" and, once its end screen is
   over (`tickSession(…, "next")` then `levelDone`), the next level starts; after the
   last one, the first. Every level starts afresh (lives, items and bombs), unlike TLR,
   which keeps the held item from one level to the next (S-020): provisional, simpler
   while the levels are played in any order. The level list ticks the levels won. The
   level being played and the levels won are kept in `localStorage`
   (`storage/progress.ts`, `rotr.pack.v1`, a versioned document read as untrusted: only
-  known ids, each once; anything broken reads as no progress). Every level is open
-  from the start.
+  known `pack/level` keys, each once; anything broken reads as no progress); picking a
+  pack goes to its first level not won yet. Every level is open from the start
+  (Guillaume, 2026-11-11).
 - **Screens** (`app/route.ts`): the URL hash picks the screen, so the back button works
   without a server. `#edit` is the editor, `#level=<payload>` a shared level (of any
   length: the decoder refuses one over `MAX_SHARE_PAYLOAD` with a message),

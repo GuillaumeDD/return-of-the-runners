@@ -148,7 +148,10 @@
   "versusWon1Next": "Player 1 wins! On to the next level…",
   "versusWon2Next": "Player 2 wins! On to the next level…",
   "versusDrawNext": "Draw: both players got out together! On to the next level…",
-  "packLabel": "Level",
+  "packLabel": "Pack",
+  "levelLabel": "Level",
+  "packSolo": "1 player",
+  "packDuo": "2 players",
   "packOption": "{n}. {name}",
   "packOptionDone": "{n}. {name} ✓",
   "levelFirstSteps": "First steps"

@@ -278,7 +278,9 @@ button.primary {
 /* The bundled pack's level list, above the game (B-051). */
 .pack {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
+  gap: 8px 16px;
 }
 
 .pack[hidden] {
