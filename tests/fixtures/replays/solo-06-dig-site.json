@@ -1,0 +1,140 @@
+{
+  "about": "Demo level 6, The dig site (B-052): won alone with its monk in play. The runner takes the top floor's gold and the pickaxe; as the monk comes along under the bedrock shelf, the runner swings it and the rubble crushes the monk. It swaps the pickaxe for the jackhammer and drills down through three cells of bedrock into the sealed tunnel, letting go of the key as it lands. It takes the tunnel's three gold, digs through the tunnel's brick floor into the hall below, takes the hall's two gold, traps the monk that came down after it, and climbs the long ladder back to the exit.",
+  "replay": {
+    "format": "return-of-the-runners/replay",
+    "version": 2,
+    "seed": 1,
+    "level": {
+      "format": "return-of-the-runners/level",
+      "version": 3,
+      "name": "The dig site",
+      "world": "fossil",
+      "night": false,
+      "width": 28,
+      "height": 16,
+      "grid": [
+        "............................",
+        "............................",
+        "............................",
+        "...............@@@@@@@@.....",
+        ".P..j...$.E..k.............H",
+        "@@@@@@@@@@@@@@@@@@@@@@@@@@@H",
+        "@@@@@@@@@@@@@@@@@@@@@@@@@@@H",
+        "@@@@@@@@@@@@@@@@@@@@@@@@@@@H",
+        "@.......$......$.....$....@H",
+        "@#########################@H",
+        "...........................H",
+        "...........................H",
+        "...........................H",
+        "...........................H",
+        "...$........$.......M......H",
+        "############################"
+      ]
+    },
+    "inputs": [
+      [
+        [
+          192,
+          "R"
+        ],
+        [
+          1,
+          "I"
+        ],
+        [
+          1,
+          ""
+        ],
+        [
+          16,
+          "R"
+        ],
+        [
+          471,
+          ""
+        ],
+        [
+          1,
+          "X"
+        ],
+        [
+          1,
+          ""
+        ],
+        [
+          173,
+          "L"
+        ],
+        [
+          1,
+          "I"
+        ],
+        [
+          1,
+          ""
+        ],
+        [
+          16,
+          "L"
+        ],
+        [
+          333,
+          "X"
+        ],
+        [
+          287,
+          "R"
+        ],
+        [
+          1,
+          ">"
+        ],
+        [
+          15,
+          ""
+        ],
+        [
+          16,
+          "R"
+        ],
+        [
+          49,
+          ""
+        ],
+        [
+          303,
+          "L"
+        ],
+        [
+          354,
+          ""
+        ],
+        [
+          1,
+          ">"
+        ],
+        [
+          87,
+          ""
+        ],
+        [
+          384,
+          "R"
+        ],
+        [
+          160,
+          "U"
+        ],
+        [
+          266,
+          "L"
+        ]
+      ]
+    ]
+  },
+  "expected": {
+    "tick": 3130,
+    "status": "won",
+    "hash": 3069443594
+  }
+}
