@@ -162,5 +162,9 @@
   "levelFrostKeys": "Clés de givre",
   "levelDigSite": "Le chantier de fouilles",
   "levelFireworks": "Feu d'artifice",
-  "levelGlowingMist": "Brume luminescente"
+  "levelGlowingMist": "Brume luminescente",
+  "levelBetterTogether": "À deux, c'est mieux",
+  "levelDecoy": "Le leurre",
+  "levelFactoryDuel": "Duel à l'usine",
+  "levelGoldRush": "La ruée vers l'or"
 }

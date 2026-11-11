@@ -3,6 +3,8 @@ import { translate } from "../../src/i18n";
 import { parseLevel } from "../../src/level/parse";
 import { PACKS, nextIndex, packModes, packStartMode, progressKey } from "../../src/levels/pack";
 import { maxPlayers } from "../../src/sim/state";
+import { playersAtExit } from "../../src/sim/step";
+import { runReplay } from "../../src/sim/replay";
 import { replayFixtures } from "../helpers/replays";
 
 const entries = PACKS.flatMap((pack) => pack.levels.map((entry) => ({ pack, entry })));
@@ -51,7 +53,7 @@ describe("bundled packs", () => {
     }
   });
 
-  it("every level can be won: a replay fixture plays it to a win, alone in the one-player pack", () => {
+  it("every level can be won: a replay fixture plays it to a win, with the pack's number of players", () => {
     const fixtures = replayFixtures();
     for (const { pack, entry } of entries) {
       const r = parseLevel(entry.text);
@@ -60,10 +62,26 @@ describe("bundled packs", () => {
           f.expected.status === "won" &&
           r.ok &&
           JSON.stringify(f.replay.level) === JSON.stringify(r.level) &&
-          (pack.players === 2 || f.replay.inputs.length === 1),
+          f.replay.inputs.length === pack.players,
       );
       // Each fixture's own tick, status and hash are checked with the other replays.
       expect([progressKey(pack, entry), won.length > 0]).toEqual([progressKey(pack, entry), true]);
+    }
+  });
+
+  it("the two-player pack: two co-op levels, then two versus levels won by a single player", () => {
+    const duo = PACKS.find((p) => p.id === "duo");
+    expect(duo?.levels.map((e) => e.mode)).toEqual(["coop", "coop", "versus", "versus"]);
+    const fixtures = replayFixtures();
+    for (const entry of duo?.levels.filter((e) => e.mode === "versus") ?? []) {
+      const r = parseLevel(entry.text);
+      const f = fixtures.find(
+        (x) => r.ok && JSON.stringify(x.replay.level) === JSON.stringify(r.level),
+      );
+      if (f === undefined || !r.ok) throw new Error(`no replay for ${entry.id}`);
+      const end = runReplay({ level: r.level, seed: f.replay.seed, inputs: f.replay.inputs });
+      // Not a draw: the replay shows a winner.
+      expect([entry.id, playersAtExit(end.state).length]).toEqual([entry.id, 1]);
     }
   });
 

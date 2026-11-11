@@ -454,11 +454,13 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
   co-op and versus only; each of its levels starts in the mode it is meant for, else
   the two-player mode picked last. Each entry has an id stable within its pack, a
   title translated in every language (the file's `name` is the English one) and the
-  level file. The demo levels (B-052, B-053) are original, one per world, each showing a
-  few mechanics, from easy to hard; the default level closes the "1 player" pack.
-  Until the two-player demo levels land, the "2 players" pack holds the default
-  level, in co-op. Every pack level is won by a committed replay
-  (`tests/fixtures/replays/solo-*.json`), so it stays winnable
+  level file. The demo levels (B-052 to B-054) are original, each showing a few
+  mechanics: the "1 player" pack has eight, one per world, from easy to hard, closed
+  by the default level; the "2 players" pack has four, two in co-op (players who need
+  each other: swapped keys, a decoy for the monks) and two in versus (mirrored halves,
+  shared gold, burying the other). Every pack level is won by a committed replay with
+  the pack's number of players (`tests/fixtures/replays/solo-*.json`, `duo-*.json`;
+  each versus replay ends with one winner), so it stays winnable
   (`tests/levels/pack.test.ts`). A won level shows "On to the next level…" and, once its end screen is
   over (`tickSession(…, "next")` then `levelDone`), the next level starts; after the
   last one, the first. Every level starts afresh (lives, items and bombs), unlike TLR,
