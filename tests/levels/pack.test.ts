@@ -3,6 +3,7 @@ import { translate } from "../../src/i18n";
 import { parseLevel } from "../../src/level/parse";
 import { PACKS, nextIndex, packModes, packStartMode, progressKey } from "../../src/levels/pack";
 import { maxPlayers } from "../../src/sim/state";
+import { replayFixtures } from "../helpers/replays";
 
 const entries = PACKS.flatMap((pack) => pack.levels.map((entry) => ({ pack, entry })));
 
@@ -47,6 +48,22 @@ describe("bundled packs", () => {
       const r = parseLevel(entry.text);
       expect(translate("fr", entry.title)).not.toBe("");
       expect(r.ok && r.level.name).toBe(translate("en", entry.title));
+    }
+  });
+
+  it("every level can be won: a replay fixture plays it to a win, alone in the one-player pack", () => {
+    const fixtures = replayFixtures();
+    for (const { pack, entry } of entries) {
+      const r = parseLevel(entry.text);
+      const won = fixtures.filter(
+        (f) =>
+          f.expected.status === "won" &&
+          r.ok &&
+          JSON.stringify(f.replay.level) === JSON.stringify(r.level) &&
+          (pack.players === 2 || f.replay.inputs.length === 1),
+      );
+      // Each fixture's own tick, status and hash are checked with the other replays.
+      expect([progressKey(pack, entry), won.length > 0]).toEqual([progressKey(pack, entry), true]);
     }
   });
 

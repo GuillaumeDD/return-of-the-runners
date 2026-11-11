@@ -154,5 +154,9 @@
   "packDuo": "2 players",
   "packOption": "{n}. {name}",
   "packOptionDone": "{n}. {name} ✓",
-  "levelFirstSteps": "First steps"
+  "levelFirstSteps": "First steps",
+  "levelMossTrail": "Moss trail",
+  "levelMonkTraps": "Monk traps",
+  "levelTrickyTemple": "The tricky temple",
+  "levelPortals": "Portals"
 }

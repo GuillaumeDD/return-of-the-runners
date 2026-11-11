@@ -154,5 +154,9 @@
   "packDuo": "2 joueurs",
   "packOption": "{n}. {name}",
   "packOptionDone": "{n}. {name} ✓",
-  "levelFirstSteps": "Premiers pas"
+  "levelFirstSteps": "Premiers pas",
+  "levelMossTrail": "Le sentier de mousse",
+  "levelMonkTraps": "Pièges à moines",
+  "levelTrickyTemple": "Le temple trompeur",
+  "levelPortals": "Les portails"
 }

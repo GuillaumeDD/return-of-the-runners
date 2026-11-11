@@ -1,0 +1,152 @@
+{
+  "about": "Demo level 2, Monk traps (B-052): won alone with both monks in play. The runner takes the gold on the left of the ground floor and digs a hole the first monk falls into, climbs to the middle floor for its two gold and digs behind it, fetches the gold at the right of the ground floor and climbs to the top floor by the right. As both monks come along the top floor, it digs two holes side by side and traps them both, walks over their heads for the last gold at the far left, traps the monk that climbed out once more and runs over it to the exit.",
+  "replay": {
+    "format": "return-of-the-runners/replay",
+    "version": 2,
+    "seed": 1,
+    "level": {
+      "format": "return-of-the-runners/level",
+      "version": 3,
+      "name": "Monk traps",
+      "world": "fungus",
+      "night": false,
+      "width": 28,
+      "height": 16,
+      "grid": [
+        "............................",
+        "............................",
+        "............................",
+        ".$.........E........M.....$.",
+        "###H####################H###",
+        "...H....................H...",
+        "...H......--------......H...",
+        "...H....................H...",
+        "...H..M.....$..$........H...",
+        "########H##########H########",
+        "........H..........H........",
+        "........H..........H........",
+        "........H..........H........",
+        "........H..........H........",
+        "..$.....H....P.....H.....$..",
+        "@@########################@@"
+      ]
+    },
+    "inputs": [
+      [
+        [
+          176,
+          "L"
+        ],
+        [
+          64,
+          ""
+        ],
+        [
+          1,
+          ">"
+        ],
+        [
+          87,
+          ""
+        ],
+        [
+          96,
+          "R"
+        ],
+        [
+          96,
+          "U"
+        ],
+        [
+          112,
+          "R"
+        ],
+        [
+          1,
+          "<"
+        ],
+        [
+          15,
+          ""
+        ],
+        [
+          64,
+          "R"
+        ],
+        [
+          96,
+          "D"
+        ],
+        [
+          96,
+          "R"
+        ],
+        [
+          96,
+          "L"
+        ],
+        [
+          96,
+          "U"
+        ],
+        [
+          80,
+          "R"
+        ],
+        [
+          80,
+          "U"
+        ],
+        [
+          32,
+          "R"
+        ],
+        [
+          224,
+          "L"
+        ],
+        [
+          1,
+          "<"
+        ],
+        [
+          15,
+          ""
+        ],
+        [
+          16,
+          "R"
+        ],
+        [
+          1,
+          "<"
+        ],
+        [
+          177,
+          ""
+        ],
+        [
+          192,
+          "L"
+        ],
+        [
+          1,
+          ">"
+        ],
+        [
+          113,
+          ""
+        ],
+        [
+          152,
+          "R"
+        ]
+      ]
+    ]
+  },
+  "expected": {
+    "tick": 2180,
+    "status": "won",
+    "hash": 552189923
+  }
+}

@@ -1,0 +1,136 @@
+{
+  "about": "Demo level 4, Portals (B-052): won alone with its monk in play. Every room is closed by bedrock; only one-way teleporters link them. The runner takes the first portal of the hall to the left room of the middle floor, takes its two gold and walks on into the portal to the top-left room, whose gold leads it into a portal back to the hall. Meanwhile the monk, chasing it, walks into the hall's other portal and picks up the gold of the right room. The runner takes the hall's gold, follows through that portal and, as it arrives, digs a hole the monk falls into, dropping its gold. It takes the gold, walks into the portal to the top-right room, through its gold into the portal to the exit room, and leaves.",
+  "replay": {
+    "format": "return-of-the-runners/replay",
+    "version": 2,
+    "seed": 1,
+    "level": {
+      "format": "return-of-the-runners/level",
+      "version": 3,
+      "name": "Portals",
+      "world": "crystal",
+      "night": false,
+      "width": 28,
+      "height": 16,
+      "grid": [
+        ".........@........@.........",
+        ".........@........@.........",
+        ".........@........@.........",
+        ".........@........@.........",
+        ".t..$...T@T..t..E.@T..$...t.",
+        "@@@@@@@@@@@@@@@@@@@@@@@@@@@@",
+        "..............@.............",
+        "..............@.............",
+        "..............@.............",
+        ".t...$.....$.T@T....$.....t.",
+        "@@@@@@@@@@@@@@@############@",
+        ".........H--------..........",
+        ".........H..................",
+        ".........H..................",
+        ".P.....T.H...$..t...T......M",
+        "@##########################@"
+      ],
+      "teleports": [
+        [
+          7,
+          14,
+          1,
+          9
+        ],
+        [
+          20,
+          14,
+          26,
+          9
+        ],
+        [
+          13,
+          9,
+          1,
+          4
+        ],
+        [
+          15,
+          9,
+          26,
+          4
+        ],
+        [
+          8,
+          4,
+          16,
+          14
+        ],
+        [
+          10,
+          4,
+          16,
+          14
+        ],
+        [
+          19,
+          4,
+          13,
+          4
+        ]
+      ]
+    },
+    "inputs": [
+      [
+        [
+          236,
+          "R"
+        ],
+        [
+          50,
+          ""
+        ],
+        [
+          252,
+          "R"
+        ],
+        [
+          50,
+          ""
+        ],
+        [
+          48,
+          "L"
+        ],
+        [
+          112,
+          "R"
+        ],
+        [
+          45,
+          ""
+        ],
+        [
+          1,
+          "<"
+        ],
+        [
+          112,
+          ""
+        ],
+        [
+          332,
+          "L"
+        ],
+        [
+          46,
+          ""
+        ],
+        [
+          40,
+          "R"
+        ]
+      ]
+    ]
+  },
+  "expected": {
+    "tick": 1324,
+    "status": "won",
+    "hash": 3343747706
+  }
+}
