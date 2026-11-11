@@ -1,0 +1,160 @@
+{
+  "about": "Two-player demo level 4, Gold rush (B-054), in versus: player 1 wins, both players moving at the same time. The halves mirror each other and the gold is shared; the first player out wins. Each player takes its bottom and shelf gold, then crosses its half of the bar and falls through the gap onto the middle ledge, taking one of the two gold there, which makes the exit appear. Player 2 took the goo bucket on the way and throws it toward player 1, turning the ledge under player 1 into gooey turf; player 1 answers by digging the brick under player 2, which falls into the hole and is stuck there. Player 1 wades off the ledge, falls onto the teleporter, comes out on the top floor and reaches the exit while player 2 is still in the hole.",
+  "replay": {
+    "format": "return-of-the-runners/replay",
+    "version": 2,
+    "seed": 1,
+    "level": {
+      "format": "return-of-the-runners/level",
+      "version": 3,
+      "name": "Gold rush",
+      "world": "fossil",
+      "night": true,
+      "width": 28,
+      "height": 16,
+      "grid": [
+        "............................",
+        "............................",
+        ".......H...t.EE.t...H.......",
+        ".......H############H.......",
+        ".......H............H.......",
+        ".......H............H.......",
+        ".......H............H.......",
+        ".......H-----$$-----H.......",
+        ".......H............H.......",
+        ".$.....H............H.....$.",
+        "#######H....####....H#######",
+        ".......H....####....H.......",
+        ".......H............H.......",
+        ".......H............H.......",
+        ".Pu.$..H...T....T...H..$.uQ.",
+        "############################"
+      ],
+      "teleports": [
+        [
+          11,
+          14,
+          11,
+          2
+        ],
+        [
+          16,
+          14,
+          16,
+          2
+        ]
+      ]
+    },
+    "inputs": [
+      [
+        [
+          96,
+          "R"
+        ],
+        [
+          80,
+          "U"
+        ],
+        [
+          96,
+          "L"
+        ],
+        [
+          96,
+          "R"
+        ],
+        [
+          32,
+          "U"
+        ],
+        [
+          96,
+          "R"
+        ],
+        [
+          16,
+          ""
+        ],
+        [
+          1,
+          ">"
+        ],
+        [
+          15,
+          ""
+        ],
+        [
+          84,
+          "L"
+        ],
+        [
+          40,
+          ""
+        ],
+        [
+          68,
+          "R"
+        ]
+      ],
+      [
+        [
+          16,
+          "L"
+        ],
+        [
+          1,
+          "I"
+        ],
+        [
+          1,
+          ""
+        ],
+        [
+          80,
+          "L"
+        ],
+        [
+          80,
+          "U"
+        ],
+        [
+          96,
+          "R"
+        ],
+        [
+          96,
+          "L"
+        ],
+        [
+          32,
+          "U"
+        ],
+        [
+          96,
+          "L"
+        ],
+        [
+          16,
+          ""
+        ],
+        [
+          1,
+          "X"
+        ],
+        [
+          53,
+          ""
+        ],
+        [
+          152,
+          "R"
+        ]
+      ]
+    ]
+  },
+  "expected": {
+    "tick": 720,
+    "status": "won",
+    "hash": 2786348674
+  }
+}

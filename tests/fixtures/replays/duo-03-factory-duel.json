@@ -1,0 +1,198 @@
+{
+  "about": "Two-player demo level 3, Factory duel (B-054), in versus: player 2 wins, both players and both monks moving at the same time. The halves mirror each other; the gold is shared and the first player out wins. Each player takes the bottom gold of its side, climbs to the middle floor, takes the gold at the wall and traps the monk that comes down with the top gold, which it drops. Player 1 digs through the top floor and drops onto the middle platform, taking its two gold; player 2 tries to reach it along the middle floor and falls through the trapdoor. Once the exit appears, player 2 traps the monk that comes for it on the bottom floor and runs up its ladder; player 1 traps the other monk too but is still on its ladder when player 2 reaches the exit.",
+  "replay": {
+    "format": "return-of-the-runners/replay",
+    "version": 2,
+    "seed": 1,
+    "level": {
+      "format": "return-of-the-runners/level",
+      "version": 3,
+      "name": "Factory duel",
+      "world": "industrial",
+      "night": false,
+      "width": 28,
+      "height": 16,
+      "grid": [
+        "............................",
+        "............................",
+        "............................",
+        "............................",
+        "........$.M..EE..M.$........",
+        "###H####################H###",
+        "...H....................H...",
+        "...H....................H...",
+        "...H....................H...",
+        ".$.H....................H.$.",
+        "###H####%#........#%####H###",
+        "...H....................H...",
+        "...H.........$$.........H...",
+        "...H......########......H...",
+        ".P.H..$..............$..H.Q.",
+        "############################"
+      ]
+    },
+    "inputs": [
+      [
+        [
+          80,
+          "R"
+        ],
+        [
+          48,
+          "L"
+        ],
+        [
+          80,
+          "U"
+        ],
+        [
+          32,
+          "L"
+        ],
+        [
+          72,
+          ""
+        ],
+        [
+          1,
+          ">"
+        ],
+        [
+          39,
+          ""
+        ],
+        [
+          32,
+          "R"
+        ],
+        [
+          80,
+          "U"
+        ],
+        [
+          128,
+          "R"
+        ],
+        [
+          1,
+          ">"
+        ],
+        [
+          15,
+          ""
+        ],
+        [
+          16,
+          "R"
+        ],
+        [
+          64,
+          ""
+        ],
+        [
+          32,
+          "R"
+        ],
+        [
+          80,
+          "L"
+        ],
+        [
+          16,
+          ""
+        ],
+        [
+          48,
+          "L"
+        ],
+        [
+          177,
+          ""
+        ],
+        [
+          1,
+          "<"
+        ],
+        [
+          62,
+          ""
+        ],
+        [
+          48,
+          "L"
+        ],
+        [
+          90,
+          "U"
+        ]
+      ],
+      [
+        [
+          20,
+          ""
+        ],
+        [
+          80,
+          "L"
+        ],
+        [
+          48,
+          "R"
+        ],
+        [
+          80,
+          "U"
+        ],
+        [
+          32,
+          "R"
+        ],
+        [
+          70,
+          ""
+        ],
+        [
+          1,
+          "<"
+        ],
+        [
+          39,
+          ""
+        ],
+        [
+          184,
+          "L"
+        ],
+        [
+          175,
+          ""
+        ],
+        [
+          1,
+          ">"
+        ],
+        [
+          86,
+          ""
+        ],
+        [
+          112,
+          "R"
+        ],
+        [
+          160,
+          "U"
+        ],
+        [
+          154,
+          "L"
+        ]
+      ]
+    ]
+  },
+  "expected": {
+    "tick": 1242,
+    "status": "won",
+    "hash": 1356611042
+  }
+}

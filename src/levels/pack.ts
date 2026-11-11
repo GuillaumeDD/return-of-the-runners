@@ -9,6 +9,10 @@ import frostKeys from "./solo-05-frost-keys.json?raw";
 import digSite from "./solo-06-dig-site.json?raw";
 import fireworks from "./solo-07-fireworks.json?raw";
 import glowingMist from "./solo-08-glowing-mist.json?raw";
+import betterTogether from "./duo-01-better-together.json?raw";
+import decoy from "./duo-02-decoy.json?raw";
+import factoryDuel from "./duo-03-factory-duel.json?raw";
+import goldRush from "./duo-04-gold-rush.json?raw";
 
 /**
  * One level of a bundled pack: an `id` stable within its pack (progress is remembered
@@ -57,8 +61,12 @@ export const PACKS: readonly Pack[] = [
     id: "duo",
     title: "packDuo",
     players: 2,
-    // Until the two-player demo levels land, the default level, which has a player 2 start.
-    levels: [{ id: "first-steps", title: "levelFirstSteps", text: firstSteps, mode: "coop" }],
+    levels: [
+      { id: "better-together", title: "levelBetterTogether", text: betterTogether, mode: "coop" },
+      { id: "decoy", title: "levelDecoy", text: decoy, mode: "coop" },
+      { id: "factory-duel", title: "levelFactoryDuel", text: factoryDuel, mode: "versus" },
+      { id: "gold-rush", title: "levelGoldRush", text: goldRush, mode: "versus" },
+    ],
   },
 ];
 
