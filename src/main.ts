@@ -8,8 +8,10 @@ import {
   PLAY_MODES,
   PLAY_SEED,
   createSession,
+  levelDone,
   playerCount,
   tickSession,
+  type AfterWin,
   type PlayMode,
   type Session,
 } from "./game/session";
@@ -21,7 +23,8 @@ import { levelErrorMessage, uniqueCodes } from "./i18n/level-errors";
 import type { Level, LevelErrorCode } from "./level/format";
 import { parseLevel } from "./level/parse";
 import { decodeLevel } from "./share/link";
-import firstSteps from "./levels/first-steps.json?raw";
+import { PACKS, nextIndex, packModes, packStartMode, progressKey, type Pack } from "./levels/pack";
+import { markDone, readProgress, saveProgress, type Progress } from "./storage/progress";
 import { canvasSize, context2d, fillBackdrop, render } from "./render/canvas";
 import { detectEvents, drawEffects, type Effect, shakeAt, updateEffects } from "./render/effects";
 import {
@@ -63,6 +66,11 @@ const sharedBar = byId("shared-bar", HTMLDivElement);
 const sharedText = byId("shared-text", HTMLParagraphElement);
 const sharedErrors = byId("shared-errors", HTMLUListElement);
 const sharedEdit = byId("shared-edit", HTMLButtonElement);
+const packBar = byId("play-pack", HTMLDivElement);
+const packLabel = byId("play-pack-label", HTMLSpanElement);
+const packChoice = byId("play-pack-choice", HTMLSelectElement);
+const levelLabel = byId("play-level-label", HTMLSpanElement);
+const packSelect = byId("play-level", HTMLSelectElement);
 /** The player asked the system for less motion: no shake, no flashes, fewer particles. */
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
@@ -115,6 +123,9 @@ function renderText(): void {
   testMessage.textContent = translate(locale, testMessageKey);
   testBack.textContent = translate(locale, "testBack");
   sharedEdit.textContent = translate(locale, "sharedEdit");
+  packLabel.textContent = translate(locale, "packLabel");
+  levelLabel.textContent = translate(locale, "levelLabel");
+  renderPack();
   for (const els of [playPlayers, testPlayers]) {
     els.group.setAttribute("aria-label", translate(locale, "playersLabel"));
     for (const mode of PLAY_MODES) {
@@ -206,17 +217,32 @@ interface Game {
   readonly refit: () => void;
 }
 
+/** How a level of the pack differs from a single level (a shared link, a test). */
+interface InPack {
+  /** The level's title in the current locale, for the status bar. */
+  readonly title: () => string;
+  /** Called once, when the level was won and its end screen is over. */
+  readonly onDone: () => void;
+  /** The modes the pack offers, and the one the level starts in. */
+  readonly modes: readonly PlayMode[];
+  readonly start: PlayMode;
+}
+
 /**
  * A game of `level` on `target`, alone or with two players in co-op or versus
  * (`picked`, if the level allows two); `onStatus` gets the message to show whenever the
- * game's status or mode changes.
+ * game's status or mode changes. A single level is played again once won; a level of
+ * the pack hands over to the next one (`pack`).
  */
 function createGame(
   target: HTMLCanvasElement,
   els: PlayerEls,
   level: Level,
   onStatus: (key: MessageKey) => void,
+  pack?: InPack,
 ): Game {
+  const afterWin: AfterWin = pack === undefined ? "again" : "next";
+  let reported = false;
   const context = context2d(target);
   let scale = 1;
   let motion: Motion | null = null;
@@ -226,7 +252,8 @@ function createGame(
     const width = gameWidth(gameSize, logical, roomFor(target));
     scale = fitCanvas(target, context, logical, width);
   };
-  let mode = modeFor(level, picked);
+  const modes = pack?.modes ?? PLAY_MODES;
+  let mode = modeFor(level, pack?.start ?? picked);
   let count = playerCount(mode);
   let session = newSession();
   let shown: MessageKey | null = null;
@@ -257,6 +284,7 @@ function createGame(
 
   /** A new game in mode `m`, from the start of the level. */
   const choose = (m: PlayMode): void => {
+    if (!modes.includes(m)) return;
     picked = m;
     // Keys go to the game, not to the button just clicked.
     els.buttons[m].blur();
@@ -281,8 +309,11 @@ function createGame(
   };
 
   function showPlayers(): void {
-    els.group.hidden = maxPlayers(level) < 2;
-    for (const m of PLAY_MODES) els.buttons[m].setAttribute("aria-pressed", String(m === mode));
+    els.group.hidden = maxPlayers(level) < 2 || modes.length < 2;
+    for (const m of PLAY_MODES) {
+      els.buttons[m].hidden = !modes.includes(m);
+      els.buttons[m].setAttribute("aria-pressed", String(m === mode));
+    }
     shown = null; // the next frame shows the message and status line again
     hudText = null;
   }
@@ -293,11 +324,11 @@ function createGame(
     acc = result.acc;
     const inputs = inputsFrom(held, count);
     const before = session.state;
-    for (let i = 0; i < result.ticks; i++) session = tickSession(session, inputs);
+    for (let i = 0; i < result.ticks; i++) session = tickSession(session, inputs, afterWin);
     // A restarted level starts with a clean slate.
     if (session.state.tick < before.tick) effects = [];
     effects = updateEffects(effects, detectEvents(before, session.state), now);
-    const key = statusMessage(session.state, mode);
+    const key = statusMessage(session.state, mode, afterWin);
     if (key !== shown) {
       shown = key;
       onStatus(key);
@@ -316,7 +347,8 @@ function createGame(
     const sheet = sheetAt(scale, level.world, level.night);
     const scene = { world: level.world, night: level.night };
     drawFrame(context, layout);
-    drawHud(context, layout, sheet, locale, playerPanels(session.state), level.name);
+    const name = pack === undefined ? level.name : pack.title();
+    drawHud(context, layout, sheet, locale, playerPanels(session.state), name);
     context.save();
     context.beginPath();
     context.rect(field.x, field.y, field.width, field.height);
@@ -329,6 +361,11 @@ function createGame(
     render(context, session.state, sheet, now, motion, scene);
     drawEffects(context, effects, now, reduced);
     context.restore();
+    if (pack !== undefined && !reported && levelDone(session)) {
+      reported = true;
+      pack.onDone(); // pauses this game, usually: then no next frame
+    }
+    if (frameId === null) return;
     frameId = requestAnimationFrame(frame);
   };
 
@@ -487,15 +524,108 @@ const showMessage = (key: MessageKey): void => {
   message.textContent = translate(locale, key);
 };
 
-/** The bundled level, on the play screen. */
+/** The bundled packs (B-051), each level parsed; a broken one (a bug: tests parse them all) is left out. */
+const packs = PACKS.map((pack) => ({
+  pack,
+  levels: pack.levels.flatMap((entry) => {
+    const r = parseLevel(entry.text);
+    if (r.ok) return [{ entry, level: r.level, key: progressKey(pack, entry) }];
+    console.error(`Bundled level ${progressKey(pack, entry)} is invalid`, r.errors);
+    return [];
+  }),
+})).filter((p) => p.levels.length > 0);
+const packKeys = packs.flatMap((p) => p.levels.map((l) => l.key));
+let progress: Progress = readProgress(browserStorage(), packKeys);
+/** The pack and level on the play screen: the one played last, else the first. */
+let packIndex = Math.max(
+  0,
+  packs.findIndex((p) => p.levels.some((l) => l.key === progress.current)),
+);
+let levelIndex = Math.max(
+  0,
+  packs[packIndex]?.levels.findIndex((l) => l.key === progress.current) ?? 0,
+);
+/** The game of that level, on the play screen; null when there is no pack. */
 let game: Game | null = null;
-const parsed = parseLevel(firstSteps);
-if (parsed.ok) {
-  game = createGame(canvas, playPlayers, parsed.level, showMessage);
-} else {
-  messageKey = "levelError";
-  console.error("Bundled level is invalid", parsed.errors);
+
+function remember(next: Progress): void {
+  progress = next;
+  saveProgress(browserStorage(), progress); // not remembered when refused; play goes on
 }
+
+/** Starts level `index` of pack `p` from its beginning, in place of the current game. */
+function playPackLevel(p: number, index: number): void {
+  const pack: Pack | undefined = packs[p]?.pack;
+  const chosen = packs[p]?.levels[index];
+  if (pack === undefined || chosen === undefined) return;
+  packIndex = p;
+  levelIndex = index;
+  remember({ ...progress, current: chosen.key });
+  const wasPlaying = playing !== null && playing === game;
+  game?.pause();
+  game = createGame(canvas, playPlayers, chosen.level, showMessage, {
+    title: () => translate(locale, chosen.entry.title),
+    onDone: () => {
+      remember(markDone(progress, chosen.key, packKeys));
+      playPackLevel(p, nextIndex(index, pack.levels.length));
+    },
+    modes: packModes(pack),
+    start: packStartMode(pack, chosen.entry, picked),
+  });
+  renderPack();
+  if (wasPlaying) {
+    playing = game;
+    game.resume();
+  }
+}
+
+function option(value: number, text: string, selected: boolean): HTMLOptionElement {
+  const el = document.createElement("option");
+  el.value = String(value);
+  el.textContent = text;
+  el.selected = selected;
+  return el;
+}
+
+/** The pack and level lists above the game: number, title, and a tick for each level won. */
+function renderPack(): void {
+  packChoice.replaceChildren(
+    ...packs.map(({ pack }, i) => option(i, translate(locale, pack.title), i === packIndex)),
+  );
+  packSelect.replaceChildren(
+    ...(packs[packIndex]?.levels ?? []).map(({ entry, key }, i) =>
+      option(
+        i,
+        translate(locale, progress.done.includes(key) ? "packOptionDone" : "packOption")
+          .replace("{n}", () => String(i + 1))
+          .replace("{name}", () => translate(locale, entry.title)),
+        i === levelIndex,
+      ),
+    ),
+  );
+}
+
+packChoice.addEventListener("change", () => {
+  const p = Number(packChoice.value);
+  // Keys go to the game, not to the list.
+  packChoice.blur();
+  if (!Number.isInteger(p)) return;
+  // Back where this pack was left: its first level not won yet, else its first.
+  const levels = packs[p]?.levels ?? [];
+  playPackLevel(
+    p,
+    Math.max(
+      0,
+      levels.findIndex((l) => !progress.done.includes(l.key)),
+    ),
+  );
+});
+
+packSelect.addEventListener("change", () => {
+  const index = Number(packSelect.value);
+  packSelect.blur();
+  if (Number.isInteger(index)) playPackLevel(packIndex, index);
+});
 
 /**
  * The level of a share link, also on the play screen. Decoding is asynchronous, so it
@@ -576,6 +706,9 @@ sharedEdit.addEventListener("click", () => {
   else location.hash = "#edit";
 });
 
+if (packs.length === 0) messageKey = "levelError";
+else playPackLevel(packIndex, levelIndex);
+
 const TABS: readonly (readonly [HTMLAnchorElement, Route["screen"]])[] = [
   [navPlay, "play"],
   [navEdit, "edit"],
@@ -598,6 +731,7 @@ function show(route: Route): void {
   if (playing !== next) playing?.pause();
   playing = next;
   sharedBar.hidden = route.screen !== "shared";
+  packBar.hidden = route.screen !== "play" || game === null;
   // A link still opening, or broken: no game to show.
   const noGame = route.screen === "shared" && next === null;
   canvas.hidden = noGame;

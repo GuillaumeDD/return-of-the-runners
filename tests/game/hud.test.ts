@@ -56,6 +56,22 @@ describe("statusMessage", () => {
     expect(translate("en", "versusWon2")).toContain("Player 2");
     expect(translate("fr", "versusWon2")).toContain("joueur 2");
   });
+
+  it("in a pack, a won level announces the next level, in every mode", () => {
+    const solo = { ...stateFrom(exitRows), status: "won" as const };
+    expect(statusMessage(solo, "solo", "next")).toBe("wonNext");
+    expect(statusMessage(wonBy([1]), "coop", "next")).toBe("wonNext");
+    expect(statusMessage(wonBy([0]), "versus", "next")).toBe("versusWon1Next");
+    expect(statusMessage(wonBy([1]), "versus", "next")).toBe("versusWon2Next");
+    expect(statusMessage(wonBy([0, 1]), "versus", "next")).toBe("versusDrawNext");
+  });
+
+  it("in a pack, a game still playing or lost reads as usual", () => {
+    expect(statusMessage(stateFrom(exitRows), "solo", "next")).toBe("controls");
+    expect(statusMessage({ ...stateFrom(exitRows), status: "dead" }, "solo", "next")).toBe(
+      "caught",
+    );
+  });
 });
 
 describe("playerStatusText", () => {
