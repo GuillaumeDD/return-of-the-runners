@@ -1,0 +1,204 @@
+{
+  "about": "Demo level 5, Frost keys (B-052): won alone with its monk in play, by night. The runner takes the red key and opens the red door of the bottom vault, takes its gold and swaps the empty slot for the green key, and climbs out by the vault's ladder. On the middle floor it hides in the alcove while the monk walks over it, comes out and climbs to the top floor. The green key opens the top-left vault; the runner takes the blue key and its gold, digs a hole the following monk falls into, and walks over it. The blue key opens the exit vault; after its gold, the runner digs down through the vault's floor, traps the monk twice on the middle floor to take the last gold, climbs back and leaves by the exit.",
+  "replay": {
+    "format": "return-of-the-runners/replay",
+    "version": 2,
+    "seed": 1,
+    "level": {
+      "format": "return-of-the-runners/level",
+      "version": 3,
+      "name": "Frost keys",
+      "world": "ice",
+      "night": true,
+      "width": 28,
+      "height": 16,
+      "grid": [
+        "............................",
+        "@@@@@@@@@@..........@@@@@@@@",
+        ".........@..........@.......",
+        ".........@..........@.......",
+        ".........@..........@.......",
+        "..c..$...B......M$..C..$..E.",
+        "@########@###H######@#####@@",
+        ".............H..............",
+        ".............H..............",
+        ".............H..............",
+        ".....$.......H.n............",
+        "#########H########@@@@@@@@H@",
+        ".........H........@.......H.",
+        ".........H........@.......H.",
+        ".P....a..H........A..$..b.H.",
+        "############################"
+      ]
+    },
+    "inputs": [
+      [
+        [
+          80,
+          "R"
+        ],
+        [
+          1,
+          "I"
+        ],
+        [
+          1,
+          ""
+        ],
+        [
+          176,
+          "R"
+        ],
+        [
+          2,
+          ""
+        ],
+        [
+          112,
+          "R"
+        ],
+        [
+          1,
+          "I"
+        ],
+        [
+          1,
+          ""
+        ],
+        [
+          32,
+          "R"
+        ],
+        [
+          64,
+          "U"
+        ],
+        [
+          176,
+          "L"
+        ],
+        [
+          1,
+          "U"
+        ],
+        [
+          109,
+          ""
+        ],
+        [
+          1,
+          "D"
+        ],
+        [
+          1,
+          ""
+        ],
+        [
+          32,
+          "L"
+        ],
+        [
+          80,
+          "U"
+        ],
+        [
+          48,
+          "L"
+        ],
+        [
+          2,
+          ""
+        ],
+        [
+          128,
+          "L"
+        ],
+        [
+          1,
+          "I"
+        ],
+        [
+          115,
+          ""
+        ],
+        [
+          1,
+          ">"
+        ],
+        [
+          87,
+          ""
+        ],
+        [
+          272,
+          "R"
+        ],
+        [
+          2,
+          ""
+        ],
+        [
+          64,
+          "R"
+        ],
+        [
+          1,
+          "<"
+        ],
+        [
+          15,
+          ""
+        ],
+        [
+          16,
+          "L"
+        ],
+        [
+          41,
+          ""
+        ],
+        [
+          79,
+          "L"
+        ],
+        [
+          1,
+          "<"
+        ],
+        [
+          111,
+          ""
+        ],
+        [
+          192,
+          "L"
+        ],
+        [
+          1,
+          ">"
+        ],
+        [
+          207,
+          ""
+        ],
+        [
+          128,
+          "R"
+        ],
+        [
+          80,
+          "U"
+        ],
+        [
+          200,
+          "R"
+        ]
+      ]
+    ]
+  },
+  "expected": {
+    "tick": 2662,
+    "status": "won",
+    "hash": 2072697204
+  }
+}

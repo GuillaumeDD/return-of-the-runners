@@ -158,5 +158,9 @@
   "levelMossTrail": "Le sentier de mousse",
   "levelMonkTraps": "Pièges à moines",
   "levelTrickyTemple": "Le temple trompeur",
-  "levelPortals": "Les portails"
+  "levelPortals": "Les portails",
+  "levelFrostKeys": "Clés de givre",
+  "levelDigSite": "Le chantier de fouilles",
+  "levelFireworks": "Feu d'artifice",
+  "levelGlowingMist": "Brume luminescente"
 }

@@ -5,6 +5,10 @@ import mossTrail from "./solo-01-moss-trail.json?raw";
 import monkTraps from "./solo-02-monk-traps.json?raw";
 import trickyTemple from "./solo-03-tricky-temple.json?raw";
 import portals from "./solo-04-portals.json?raw";
+import frostKeys from "./solo-05-frost-keys.json?raw";
+import digSite from "./solo-06-dig-site.json?raw";
+import fireworks from "./solo-07-fireworks.json?raw";
+import glowingMist from "./solo-08-glowing-mist.json?raw";
 
 /**
  * One level of a bundled pack: an `id` stable within its pack (progress is remembered
@@ -41,6 +45,10 @@ export const PACKS: readonly Pack[] = [
       { id: "monk-traps", title: "levelMonkTraps", text: monkTraps },
       { id: "tricky-temple", title: "levelTrickyTemple", text: trickyTemple },
       { id: "portals", title: "levelPortals", text: portals },
+      { id: "frost-keys", title: "levelFrostKeys", text: frostKeys },
+      { id: "dig-site", title: "levelDigSite", text: digSite },
+      { id: "fireworks", title: "levelFireworks", text: fireworks },
+      { id: "glowing-mist", title: "levelGlowingMist", text: glowingMist },
       // The default level, last: every step 3 feature at once.
       { id: "first-steps", title: "levelFirstSteps", text: firstSteps },
     ],

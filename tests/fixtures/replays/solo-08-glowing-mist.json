@@ -1,0 +1,196 @@
+{
+  "about": "Demo level 8, Glowing mist (B-052): won alone with both monks in play, by night. The runner lays the snare on the ground floor; the first monk to come walks into it and hangs there for good. The second, carrying gold, walks past the snared monk into a hole the runner dug and drops its gold; the runner takes it and climbs to the middle floor and the top floor for more gold. It picks up the goo bucket and, as the monk comes up after it, throws the goo behind it: the monk slows on the gooey turf and turns back. The runner goes down the other side, takes the gas gun and fires it as the monk comes along the middle floor; the dazed monk stands still while the runner takes the last gold and climbs to the exit.",
+  "replay": {
+    "format": "return-of-the-runners/replay",
+    "version": 2,
+    "seed": 1,
+    "level": {
+      "format": "return-of-the-runners/level",
+      "version": 3,
+      "name": "Glowing mist",
+      "world": "phosphorus",
+      "night": true,
+      "width": 28,
+      "height": 16,
+      "grid": [
+        "............................",
+        "............................",
+        "............................",
+        "............................",
+        ".......$....u.......$M...ME.",
+        "..#H####################H###",
+        "...H....................H...",
+        "...H....................H...",
+        "...H....................H...",
+        ".$.H.....g....$.........H...",
+        "#######H############H#######",
+        ".......H............H.......",
+        ".......H............H.......",
+        ".......H............H.......",
+        ".P..s..H.....$......H....$..",
+        "##########~~~~~~############"
+      ]
+    },
+    "inputs": [
+      [
+        [
+          48,
+          "R"
+        ],
+        [
+          1,
+          "I"
+        ],
+        [
+          1,
+          ""
+        ],
+        [
+          32,
+          "R"
+        ],
+        [
+          1,
+          "X"
+        ],
+        [
+          1,
+          ""
+        ],
+        [
+          48,
+          "L"
+        ],
+        [
+          651,
+          ""
+        ],
+        [
+          1,
+          ">"
+        ],
+        [
+          116,
+          ""
+        ],
+        [
+          64,
+          "R"
+        ],
+        [
+          80,
+          "U"
+        ],
+        [
+          96,
+          "L"
+        ],
+        [
+          32,
+          "R"
+        ],
+        [
+          80,
+          "U"
+        ],
+        [
+          144,
+          "R"
+        ],
+        [
+          1,
+          "I"
+        ],
+        [
+          1,
+          ""
+        ],
+        [
+          32,
+          "R"
+        ],
+        [
+          22,
+          ""
+        ],
+        [
+          16,
+          "L"
+        ],
+        [
+          1,
+          "X"
+        ],
+        [
+          45,
+          ""
+        ],
+        [
+          176,
+          "R"
+        ],
+        [
+          80,
+          "D"
+        ],
+        [
+          240,
+          "L"
+        ],
+        [
+          1,
+          "I"
+        ],
+        [
+          92,
+          ""
+        ],
+        [
+          1,
+          "X"
+        ],
+        [
+          15,
+          ""
+        ],
+        [
+          175,
+          "R"
+        ],
+        [
+          80,
+          "D"
+        ],
+        [
+          80,
+          "R"
+        ],
+        [
+          80,
+          "L"
+        ],
+        [
+          80,
+          "U"
+        ],
+        [
+          64,
+          "R"
+        ],
+        [
+          80,
+          "U"
+        ],
+        [
+          24,
+          "R"
+        ]
+      ]
+    ]
+  },
+  "expected": {
+    "tick": 2782,
+    "status": "won",
+    "hash": 3187893983
+  }
+}

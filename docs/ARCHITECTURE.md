@@ -454,7 +454,7 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
   co-op and versus only; each of its levels starts in the mode it is meant for, else
   the two-player mode picked last. Each entry has an id stable within its pack, a
   title translated in every language (the file's `name` is the English one) and the
-  level file. The demo levels (B-052) are original, one per world, each showing a
+  level file. The demo levels (B-052, B-053) are original, one per world, each showing a
   few mechanics, from easy to hard; the default level closes the "1 player" pack.
   Until the two-player demo levels land, the "2 players" pack holds the default
   level, in co-op. Every pack level is won by a committed replay

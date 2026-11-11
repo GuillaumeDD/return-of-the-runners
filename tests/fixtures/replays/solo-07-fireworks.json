@@ -1,0 +1,136 @@
+{
+  "about": "Demo level 7, Fireworks (B-052): won alone with its monk in play. The runner picks up a small and a big bomb, climbs to the corridor and lays the small bomb as the monk comes along: the blast kills the monk and lights the first of the four bombs lying in the corridor, which go off one after another (a chain reaction) and kill the monk again as it comes back. Downstairs, the runner takes the gold and a spare small bomb, lays the big bomb against the bedrock vault and steps back: the blast opens the vault for good. It takes the vault's two gold, leaves by the vault's teleporter, climbs to the top floor, traps the monk in a hole and runs to the last gold and the exit.",
+  "replay": {
+    "format": "return-of-the-runners/replay",
+    "version": 2,
+    "seed": 1,
+    "level": {
+      "format": "return-of-the-runners/level",
+      "version": 3,
+      "name": "Fireworks",
+      "world": "lava",
+      "night": false,
+      "width": 28,
+      "height": 16,
+      "grid": [
+        "............................",
+        "............................",
+        "............................",
+        "............................",
+        ".............E...$..........",
+        "..........################H#",
+        "..........................H.",
+        "..........................H.",
+        "..........................H.",
+        "..............o.o.o.o...MtH.",
+        "########H###################",
+        "........H...................",
+        "........H.......@@@@@@......",
+        "........H.......@....@......",
+        "........H.......@....@......",
+        ".P.o.O..H..$.o..@.$$T@......"
+      ],
+      "teleports": [
+        [
+          20,
+          15,
+          25,
+          9
+        ]
+      ]
+    },
+    "inputs": [
+      [
+        [
+          112,
+          "R"
+        ],
+        [
+          96,
+          "U"
+        ],
+        [
+          64,
+          "R"
+        ],
+        [
+          82,
+          ""
+        ],
+        [
+          1,
+          "B"
+        ],
+        [
+          1,
+          ""
+        ],
+        [
+          64,
+          "L"
+        ],
+        [
+          85,
+          ""
+        ],
+        [
+          95,
+          "D"
+        ],
+        [
+          112,
+          "R"
+        ],
+        [
+          1,
+          "B"
+        ],
+        [
+          1,
+          ""
+        ],
+        [
+          48,
+          "L"
+        ],
+        [
+          101,
+          ""
+        ],
+        [
+          127,
+          "R"
+        ],
+        [
+          46,
+          ""
+        ],
+        [
+          16,
+          "R"
+        ],
+        [
+          80,
+          "U"
+        ],
+        [
+          1,
+          "<"
+        ],
+        [
+          71,
+          ""
+        ],
+        [
+          202,
+          "L"
+        ]
+      ]
+    ]
+  },
+  "expected": {
+    "tick": 1406,
+    "status": "won",
+    "hash": 3097692540
+  }
+}
