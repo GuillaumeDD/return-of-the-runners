@@ -1,0 +1,116 @@
+{
+  "about": "Demo level 3, The tricky temple (B-052): won alone with both monks in play. The monk on the right ledge falls through the trapdoor turf onto the gold below and carries it toward the runner, which traps it: the monk drops the gold, and the runner takes it, then the gold at the left. It climbs onto the temple roof for its gold and walks onto the trapdoor turf, falling into the temple; it takes the gold there before the temple monk arrives and digs its way out through the floor. It climbs the right ladder for the last gold on the roof: the hidden ladder appears on the roof, and the runner climbs it to the exit.",
+  "replay": {
+    "format": "return-of-the-runners/replay",
+    "version": 2,
+    "seed": 1,
+    "level": {
+      "format": "return-of-the-runners/level",
+      "version": 3,
+      "name": "The tricky temple",
+      "world": "ancient",
+      "night": false,
+      "width": 28,
+      "height": 16,
+      "grid": [
+        "R............E.............R",
+        ".............h..............",
+        ".............h..............",
+        ".............h..............",
+        ".....H..$....h....$...H.....",
+        ".....H@@@@%@@@@@@@@@@@H.....",
+        ".....H@..............@H.....",
+        ".....H@..............@H.....",
+        ".....H@..............@H.....",
+        ".....H@.$.........M..@H..M..",
+        "##%##H@##############@H##%##",
+        ".....H................H.....",
+        ".....H................H.....",
+        ".....H................H.....",
+        "..$..H...P............H..$..",
+        "@@@######################@@@"
+      ]
+    },
+    "inputs": [
+      [
+        [
+          366,
+          ""
+        ],
+        [
+          1,
+          ">"
+        ],
+        [
+          87,
+          ""
+        ],
+        [
+          16,
+          "R"
+        ],
+        [
+          128,
+          "L"
+        ],
+        [
+          48,
+          "R"
+        ],
+        [
+          160,
+          "U"
+        ],
+        [
+          80,
+          "R"
+        ],
+        [
+          41,
+          ""
+        ],
+        [
+          31,
+          "L"
+        ],
+        [
+          1,
+          "<"
+        ],
+        [
+          15,
+          ""
+        ],
+        [
+          16,
+          "L"
+        ],
+        [
+          41,
+          ""
+        ],
+        [
+          239,
+          "R"
+        ],
+        [
+          160,
+          "U"
+        ],
+        [
+          144,
+          "L"
+        ],
+        [
+          58,
+          "U"
+        ]
+      ]
+    ]
+  },
+  "expected": {
+    "tick": 1632,
+    "status": "won",
+    "hash": 3388961184
+  }
+}

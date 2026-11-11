@@ -25,8 +25,9 @@ editor. 1–2 players on one keyboard.
 
 ![The level editor: the palette of tiles and items above the level, here in the Crystal world by night](docs/screenshots/readme-editor.png)
 
-> Status: in development. Rules, tools, two players, worlds and the editor are
-> playable; music, level packs and menus come next. See the
+> Status: in development. Rules, tools, two players, worlds, the editor and two packs
+> of demo levels (one player, two players) are playable; music and menus come next.
+> See the
 > [roadmap](docs/PRD.md#7-roadmap).
 
 ## Development

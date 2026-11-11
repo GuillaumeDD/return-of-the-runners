@@ -1,6 +1,10 @@
 import type { PlayMode } from "../game/session";
 import type { MessageKey } from "../i18n";
 import firstSteps from "./first-steps.json?raw";
+import mossTrail from "./solo-01-moss-trail.json?raw";
+import monkTraps from "./solo-02-monk-traps.json?raw";
+import trickyTemple from "./solo-03-tricky-temple.json?raw";
+import portals from "./solo-04-portals.json?raw";
 
 /**
  * One level of a bundled pack: an `id` stable within its pack (progress is remembered
@@ -32,7 +36,14 @@ export const PACKS: readonly Pack[] = [
     id: "solo",
     title: "packSolo",
     players: 1,
-    levels: [{ id: "first-steps", title: "levelFirstSteps", text: firstSteps }],
+    levels: [
+      { id: "moss-trail", title: "levelMossTrail", text: mossTrail },
+      { id: "monk-traps", title: "levelMonkTraps", text: monkTraps },
+      { id: "tricky-temple", title: "levelTrickyTemple", text: trickyTemple },
+      { id: "portals", title: "levelPortals", text: portals },
+      // The default level, last: every step 3 feature at once.
+      { id: "first-steps", title: "levelFirstSteps", text: firstSteps },
+    ],
   },
   {
     id: "duo",
