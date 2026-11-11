@@ -143,5 +143,13 @@
   "hudPlayer": "{player}: lives {lives}, gold {gold}, bombs {bombs}",
   "hudBombs": "Bombs: {bombs}",
   "hudOut": "{player}: out",
-  "hudOutTag": "OUT"
+  "hudOutTag": "OUT",
+  "wonNext": "Level complete! On to the next level…",
+  "versusWon1Next": "Player 1 wins! On to the next level…",
+  "versusWon2Next": "Player 2 wins! On to the next level…",
+  "versusDrawNext": "Draw: both players got out together! On to the next level…",
+  "packLabel": "Level",
+  "packOption": "{n}. {name}",
+  "packOptionDone": "{n}. {name} ✓",
+  "levelFirstSteps": "First steps"
 }

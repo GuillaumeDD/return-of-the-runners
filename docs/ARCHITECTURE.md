@@ -326,8 +326,9 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
   Exits belong to no player.
 - Order within a tick: each player acts (dig or move), picks up or drops an item,
   opens a door and collects gold, then the exit
-  is checked, holes age, and deaths are counted. `game/session.ts` restarts the level after a win, since there is
-  only one level until packs exist.
+  is checked, holes age, and deaths are counted. `game/session.ts` restarts a lost
+  level; a won one is played again (a shared link, a test) or, in the bundled pack,
+  hands over to the next level (B-051, see Game loop).
 
 ### Players
 
@@ -446,6 +447,18 @@ players) and `step(state, inputs) → state` (one `PlayerInput` per player).
   lists every sprite; sheets are packed in rows of at most 4096 device pixels, each
   sprite clipped to its box.
 - Bundled levels go through `parseLevel` like any imported level.
+- **The bundled pack** (B-051, `levels/pack.ts`): the play screen plays an ordered list
+  of levels, picked from a "Level" list above the game. Each entry has a stable id, a
+  title translated in every language (the file's `name` is the English one) and the
+  level file. A won level shows "On to the next level…" and, once its end screen is
+  over (`tickSession(…, "next")` then `levelDone`), the next level starts; after the
+  last one, the first. Every level starts afresh (lives, items and bombs), unlike TLR,
+  which keeps the held item from one level to the next (S-020): provisional, simpler
+  while the levels are played in any order. The level list ticks the levels won. The
+  level being played and the levels won are kept in `localStorage`
+  (`storage/progress.ts`, `rotr.pack.v1`, a versioned document read as untrusted: only
+  known ids, each once; anything broken reads as no progress). Every level is open
+  from the start.
 - **Screens** (`app/route.ts`): the URL hash picks the screen, so the back button works
   without a server. `#edit` is the editor, `#level=<payload>` a shared level (of any
   length: the decoder refuses one over `MAX_SHARE_PAYLOAD` with a message),

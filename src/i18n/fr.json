@@ -143,5 +143,13 @@
   "hudPlayer": "{player} : vies {lives}, or {gold}, bombes {bombs}",
   "hudBombs": "Bombes : {bombs}",
   "hudOut": "{player} : éliminé",
-  "hudOutTag": "ÉLIMINÉ"
+  "hudOutTag": "ÉLIMINÉ",
+  "wonNext": "Niveau terminé ! Au niveau suivant…",
+  "versusWon1Next": "Le joueur 1 gagne ! Au niveau suivant…",
+  "versusWon2Next": "Le joueur 2 gagne ! Au niveau suivant…",
+  "versusDrawNext": "Égalité : les deux joueurs sont sortis en même temps ! Au niveau suivant…",
+  "packLabel": "Niveau",
+  "packOption": "{n}. {name}",
+  "packOptionDone": "{n}. {name} ✓",
+  "levelFirstSteps": "Premiers pas"
 }

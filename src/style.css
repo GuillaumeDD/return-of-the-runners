@@ -274,3 +274,13 @@ button.primary {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* The bundled pack's level list, above the game (B-051). */
+.pack {
+  display: flex;
+  justify-content: center;
+}
+
+.pack[hidden] {
+  display: none;
+}

@@ -2,7 +2,7 @@ import { translate, type Locale, type MessageKey } from "../i18n";
 import type { Level } from "../level/format";
 import { maxPlayers, type GameState } from "../sim/state";
 import { playersAtExit } from "../sim/step";
-import type { PlayMode } from "./session";
+import type { AfterWin, PlayMode } from "./session";
 
 /**
  * The mode a level is played in: the mode the players picked, when the level allows it
@@ -15,9 +15,27 @@ export function modeFor(level: Level, picked: PlayMode): PlayMode {
 /**
  * The message under a game: the controls while playing, then how the level ended. In
  * versus, the end names the winner, or says it is a draw when both players reached an
- * exit on the same tick.
+ * exit on the same tick. A won level says what comes next: the same level again, or
+ * the next level of a pack (`afterWin`).
  */
 export function statusMessage(
+  state: Pick<GameState, "status" | "tiles" | "goldLeft" | "players">,
+  mode: PlayMode,
+  afterWin: AfterWin = "again",
+): MessageKey {
+  const key = endMessage(state, mode);
+  return afterWin === "next" ? (NEXT[key] ?? key) : key;
+}
+
+/** The end messages of a won level, when the next level of a pack follows. */
+const NEXT: Partial<Record<MessageKey, MessageKey>> = {
+  won: "wonNext",
+  versusWon1: "versusWon1Next",
+  versusWon2: "versusWon2Next",
+  versusDraw: "versusDrawNext",
+};
+
+function endMessage(
   state: Pick<GameState, "status" | "tiles" | "goldLeft" | "players">,
   mode: PlayMode,
 ): MessageKey {
